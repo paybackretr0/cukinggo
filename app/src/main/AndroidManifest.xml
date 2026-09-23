@@ -7,6 +7,14 @@
     <!-- Lokasi: menandai titik ketemu kucing secara otomatis -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!--
+      Kabar "dekat kucing": lokasi perlu tetap bisa dibaca saat app tertutup.
+      Izin ini tidak bisa diberikan lewat dialog biasa sejak Android 11, jadi
+      pengguna diantar ke Pengaturan, dan untuk rilis ke Play Store perlu
+      formulir deklarasi terpisah.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Internet: hanya untuk download tile peta OpenStreetMap -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -17,6 +25,21 @@
     <uses-feature
         android:name="android.hardware.location.gps"
         android:required="false" />
+
+    <!--
+      Widget di layar utama digambar oleh paket launcher lewat RemoteViews.
+      Supaya foto kucing (yang ada di storage privat app) bisa tampil, provider
+      perlu memberi izin baca URI ke paket host, dan paket host-nya dicari lewat
+      query intent HOME. Sejak Android 11, query seperti itu harus didaftarkan
+      di sini, kalau tidak hasilnya selalu kosong. SystemUI tidak perlu didaftarkan
+      karena namanya sudah tetap.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
 
     <application
         android:name=".CukingGoApp"
@@ -33,6 +56,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.CukingGo"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -41,6 +65,62 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".widget.CatWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cat_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.CatOfDayWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_of_day_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cat_of_day_widget_info" />
+        </receiver>
+
+        <!--
+          Alarm tengah malam kedua widget: memilih kucing baru untuk "Kucing hari
+          ini", dan menghitung ulang lencana rentetan di keduanya. exported=false
+          karena hanya app ini yang boleh memicunya.
+        -->
+        <receiver
+            android:name=".widget.WidgetMidnightReceiver"
+            android:exported="false" />
+
+        <!--
+          Pemicu kabar "dekat kucing". exported=false karena Play Services
+          memicunya lewat PendingIntent milik app ini, bukan lewat broadcast biasa.
+        -->
+        <receiver
+            android:name=".location.NearbyAlertReceiver"
+            android:exported="false" />
+
+        <!--
+          FileProvider dipakai widget untuk memberi URI content:// foto kucing ke
+          paket host. exported=false: tidak ada pihak lain yang bisa membuka
+          provider ini tanpa izin yang kita berikan sendiri untuk satu URI tertentu.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

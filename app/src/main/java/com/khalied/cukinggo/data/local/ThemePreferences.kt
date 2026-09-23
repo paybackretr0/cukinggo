@@ -17,6 +17,12 @@ class ThemePreferences(context: Context) {
     private val _themeModeKey = MutableStateFlow(preferences.getString(KEY_THEME_MODE, null))
     val themeModeKey: StateFlow<String?> = _themeModeKey.asStateFlow()
 
+    /**
+     * Bacaan sinkron untuk komponen yang tidak punya alur Compose, yaitu widget
+     * di layar utama.
+     */
+    fun currentThemeModeKey(): String? = _themeModeKey.value
+
     fun setThemeModeKey(key: String) {
         preferences.edit().putString(KEY_THEME_MODE, key).apply()
         _themeModeKey.value = key

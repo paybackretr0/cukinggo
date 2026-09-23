@@ -3,6 +3,10 @@ package com.khalied.cukinggo.ui.home
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -32,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,13 +50,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
+import com.khalied.cukinggo.data.local.NearbyAlertPreferences
 import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.location.MAX_WATCH_AREAS
+import com.khalied.cukinggo.location.NearbyAlertState
+import com.khalied.cukinggo.location.NearbyAlerts
+import com.khalied.cukinggo.location.NearbyRadius
+import com.khalied.cukinggo.location.nearbyAlertState
 import com.khalied.cukinggo.ui.components.CatListCard
 import com.khalied.cukinggo.ui.components.CatMapView
 import com.khalied.cukinggo.ui.components.InfoChip
+import com.khalied.cukinggo.ui.components.NearbyAlertDialog
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
 import com.khalied.cukinggo.ui.components.ThemePickerDialog
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
@@ -60,6 +75,11 @@ import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.util.catStreak
+import com.khalied.cukinggo.util.hasBackgroundLocationPermission
+import com.khalied.cukinggo.util.hasNotificationPermission
+import com.khalied.cukinggo.util.openAppSettings
+import java.time.LocalDate
 
 @Composable
 fun HomeScreen(
@@ -72,9 +92,111 @@ fun HomeScreen(
     // Peta tetap digambar walau data belum siap, marker-nya menyusul sendiri.
     val cats = (uiState as? HomeUiState.Content)?.cats.orEmpty()
     val context = LocalContext.current
-    val themePreferences = remember(context) { context.appContainer.themePreferences }
+    val container = remember(context) { context.appContainer }
+
+    // Rentetan harian dihitung dari catatan yang sudah ada di layar ini, jadi
+    // tidak perlu query tambahan. Kuncinya daftar kucing, artinya angkanya ikut
+    // segar setiap kali ada kucing baru atau ada yang dihapus.
+    // Tanggalnya disimpan sebagai state, bukan dipanggil langsung sebagai
+    // LocalDate.now() di dalam remember, supaya angkanya ikut segar kalau app
+    // dibuka lagi setelah melewati tengah malam (lihat ON_RESUME di bawah).
+    var today by remember { mutableStateOf(LocalDate.now()) }
+    val streakDays = remember(cats, today) {
+        catStreak(timestamps = cats.map { cat -> cat.timestamp }, today = today)
+    }
+    val themePreferences = container.themePreferences
     val themeModeKey by themePreferences.themeModeKey.collectAsStateWithLifecycle()
     var showThemeDialog by remember { mutableStateOf(false) }
+
+    val nearbyPreferences = remember(context) { NearbyAlertPreferences(context) }
+    var showNearbyDialog by remember { mutableStateOf(false) }
+    var nearbyEnabled by remember { mutableStateOf(nearbyPreferences.isEnabled()) }
+    var nearbyRadius by remember {
+        mutableStateOf(NearbyRadius.fromMeters(nearbyPreferences.radiusMeters()))
+    }
+    var canNotify by remember { mutableStateOf(context.hasNotificationPermission()) }
+    var hasForegroundLocation by remember {
+        mutableStateOf(container.locationHelper.hasLocationPermission())
+    }
+    var hasBackgroundLocation by remember {
+        mutableStateOf(context.hasBackgroundLocationPermission())
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> canNotify = granted }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasForegroundLocation = granted }
+
+    val backgroundPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasBackgroundLocation = granted }
+
+    fun refreshPermissions() {
+        canNotify = context.hasNotificationPermission()
+        hasForegroundLocation = container.locationHelper.hasLocationPermission()
+        hasBackgroundLocation = context.hasBackgroundLocationPermission()
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                // Izin bisa berubah / dicabut saat app di background, dan pengguna
+                // sering kembali dari pengaturan izin atau pengaturan lokasi.
+                refreshPermissions()
+                // Rentetan dihitung per hari, jadi tanggalnya harus ikut diganti
+                // kalau halaman ini dibuka lagi besoknya.
+                today = LocalDate.now()
+                NearbyAlerts.syncAsync(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val nearbyState = nearbyAlertState(
+        enabled = nearbyEnabled,
+        canPostNotifications = canNotify,
+        hasForegroundLocation = hasForegroundLocation,
+        hasBackgroundLocation = hasBackgroundLocation
+    )
+
+    fun turnOffNearby() {
+        nearbyEnabled = false
+        NearbyAlerts.setEnabled(context, false)
+    }
+
+    fun fixPermission() {
+        when (nearbyState) {
+            // Pemeriksaan versi ini tidak akan pernah gagal saat dijalankan:
+            // state ini hanya muncul kalau izin notifikasi memang belum ada, dan
+            // di bawah Android 13 notifikasi tidak butuh izin sama sekali.
+            NearbyAlertState.NEED_NOTIFICATION_PERMISSION ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+
+            NearbyAlertState.NEED_FOREGROUND_LOCATION ->
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+
+            NearbyAlertState.NEED_BACKGROUND_LOCATION ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    // Sejak Android 11 dialog sistem tidak lagi punya opsi
+                    // "sepanjang waktu", jadi pengguna harus diantar ke pengaturan
+                    // app untuk memilihnya sendiri.
+                    context.openAppSettings()
+                } else {
+                    backgroundPermissionLauncher.launch(
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                    )
+                }
+
+            else -> Unit
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -104,8 +226,25 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                NearbyPill(
+                    active = nearbyState == NearbyAlertState.ACTIVE,
+                    onClick = { showNearbyDialog = true }
+                )
                 ThemePill(onClick = { showThemeDialog = true })
             }
+
+            // Rentetan harian hanya muncul kalau sudah jalan. Widget pun begitu:
+            // tidak ada yang menagih sebelum pengguna mulai sendiri.
+            if (streakDays > 0) {
+                Spacer(Modifier.height(10.dp))
+                InfoChip(
+                    text = stringResource(R.string.streak_chip, streakDays),
+                    iconRes = R.drawable.ic_flame,
+                    containerColor = PeachAccent,
+                    contentColor = InkSoft
+                )
+            }
+
             Spacer(Modifier.height(14.dp))
 
             // Satu-satunya shadow di layar ini, dan memang alasannya: peta adalah
@@ -175,6 +314,28 @@ fun HomeScreen(
             onDismiss = { showThemeDialog = false }
         )
     }
+
+    if (showNearbyDialog) {
+        NearbyAlertDialog(
+            state = nearbyState,
+            radius = nearbyRadius,
+            watchedCount = cats.size.coerceAtMost(MAX_WATCH_AREAS),
+            onRadiusChange = { radius ->
+                nearbyRadius = radius
+                NearbyAlerts.setRadius(context, radius)
+            },
+            onTurnOn = {
+                nearbyEnabled = true
+                NearbyAlerts.setEnabled(context, true)
+            },
+            onTurnOff = {
+                turnOffNearby()
+                showNearbyDialog = false
+            },
+            onFixPermission = ::fixPermission,
+            onDismiss = { showNearbyDialog = false }
+        )
+    }
 }
 
 /** Wadah daftar kucing saat datanya belum siap, memakai bahasa loading app. */
@@ -230,6 +391,34 @@ private fun CatsErrorCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
                     Text(text = stringResource(R.string.add_retry))
                 }
             }
+        }
+    }
+}
+
+/**
+ * Kontrol kabar "dekat kucing": bulat dan ikon saja supaya tidak menyempitkan
+ * judul di sebelahnya. Warnanya berubah jadi MintPop waktu fiturnya aktif, jadi
+ * statusnya kelihatan tanpa harus membuka dialog.
+ *
+ * Tinggi 44dp supaya tetap lolos tap target (R-03).
+ */
+@Composable
+private fun NearbyPill(active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = CircleShape,
+        color = if (active) MintPop else MaterialTheme.colorScheme.primaryContainer,
+        contentColor = if (active) InkSoft else MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Box(
+            modifier = Modifier.size(44.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_bell),
+                contentDescription = stringResource(R.string.nearby_pill_description),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

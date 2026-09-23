@@ -1,0 +1,18 @@
+<!--
+  Bingkai polaroid widget, mode terang: isian CreamSurface dengan garis tepi
+  tipis PawBrown 22 persen. Garis tipis (bukan shadow) dipakai karena di layar
+  utama widget tidak sedang "melayang" di atas permukaan app, jadi shadow justru
+  terlihat seperti bayangan palsu di atas wallpaper (lihat alasan yang sama di
+  ui/theme/CardStyle.kt).
+
+  Radius 18dp: sengaja di antara token kecil (16dp) dan sedang (22dp), karena
+  widget ini hanya selebar 2 sel dan radius token besar akan memakan bidang foto.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FFFDF8" />
+    <corners android:radius="18dp" />
+    <stroke
+        android:width="1dp"
+        android:color="#388B5E3C" />
+</shape>

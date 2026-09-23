@@ -1,6 +1,7 @@
 package com.khalied.cukinggo.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,10 +31,20 @@ object Routes {
 @Composable
 fun CukingGoNavHost(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    openCatId: Long? = null,
+    onOpenCatConsumed: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
+
+    // Tap widget di layar utama membawa id kucing, dan itu langsung dibuka.
+    LaunchedEffect(openCatId) {
+        if (openCatId != null) {
+            navController.navigate(Routes.catDetail(openCatId))
+            onOpenCatConsumed()
+        }
+    }
 
     NavHost(
         navController = navController,

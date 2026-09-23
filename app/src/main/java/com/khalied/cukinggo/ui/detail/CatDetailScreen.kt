@@ -1,5 +1,6 @@
 package com.khalied.cukinggo.ui.detail
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,11 +51,14 @@ import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.theme.BlushPink
 import com.khalied.cukinggo.ui.theme.InkSoft
 import com.khalied.cukinggo.ui.theme.MintPop
+import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.util.catShareIntent
 import com.khalied.cukinggo.util.distanceMeters
 import com.khalied.cukinggo.util.formatCoordinates
 import com.khalied.cukinggo.util.formatDistance
 import com.khalied.cukinggo.util.formatFullDateTime
+import com.khalied.cukinggo.util.mapsLinkFor
 import java.io.File
 
 /** Batas tunggu singkat: cukup untuk satu fix GPS kalau belum ada posisi tersimpan. */
@@ -249,6 +253,8 @@ private fun DetailContent(
             }
         }
 
+        item { ShareCatButton(cat = cat) }
+
         item {
             Button(
                 onClick = onDeleteRequest,
@@ -275,6 +281,55 @@ private fun DetailContent(
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/**
+ * Tombol bagikan: foto kucing dikirim bersama template chat berisi catatan
+ * (kalau ada), koordinat, dan link Google Maps.
+ *
+ * Isi pesannya sengaja disusun dari string resource, bukan ditempel di kode,
+ * supaya kalimatnya gampang diganti tanpa menyentuh logika intent-nya.
+ */
+@Composable
+private fun ShareCatButton(cat: Cat, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val note = cat.description?.trim()?.takeIf { it.isNotEmpty() }
+    val coordinates = formatCoordinates(cat.latitude, cat.longitude)
+    val mapsLink = mapsLinkFor(cat.latitude, cat.longitude)
+
+    val message = if (note != null) {
+        stringResource(R.string.share_message_with_note, note, coordinates, mapsLink)
+    } else {
+        stringResource(R.string.share_message, coordinates, mapsLink)
+    }
+    val chooserTitle = stringResource(R.string.share_chooser_title)
+
+    Button(
+        onClick = {
+            context.startActivity(
+                Intent.createChooser(catShareIntent(context, cat.photoPath, message), chooserTitle)
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(54.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = PeachAccent,
+            contentColor = InkSoft
+        )
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_share),
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = stringResource(R.string.share_button),
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }
 

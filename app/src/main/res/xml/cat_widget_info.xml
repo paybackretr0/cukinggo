@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  2x2 sel, tidak bisa di-resize, hanya di layar utama.
+
+  updatePeriodMillis 0: tidak ada bangun-bangun berkala. Widget ini isinya
+  "kucing terakhir", dan itu hanya berubah kalau app-nya sendiri menambah atau
+  menghapus kucing. Saat itu terjadi, CatWidgetProvider.refresh dipanggil dari
+  repository, jadi tidak perlu alarm harian yang membangunkan perangkat.
+
+  initialLayout menunjuk ke layout widget yang sama, jadi sebelum data pertama
+  masuk yang tampil adalah versi kosongnya (jejak kaki + ajakan), bukan kotak
+  kosong atau pola bawaan sistem.
+
+  targetCellWidth/Height dan previewLayout baru dipakai Android 12 ke atas.
+  Keduanya tetap ditulis di sini (bukan di folder xml-v31) karena saran resmi
+  Android memang begitu: aplikasi menyediakan kedua bentuk sekaligus, dan
+  perangkat lama memakai minWidth/minHeight. Bawaan lama mengabaikan atribut
+  yang tidak dikenalnya, jadi tidak ada yang rusak di Android 10 dan 11.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_cat_photo"
+    android:minHeight="110dp"
+    android:minWidth="110dp"
+    android:previewLayout="@layout/widget_cat_photo_preview"
+    android:resizeMode="none"
+    android:targetCellHeight="2"
+    android:targetCellWidth="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    tools:ignore="UnusedAttribute" />

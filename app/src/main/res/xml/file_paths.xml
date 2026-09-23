@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Foto kucing disimpan langsung di filesDir (lihat util/ImageStorageHelper.kt),
+  jadi path-nya harus filesDir itu sendiri.
+
+  Catatan jujur soal cakupan: "path=." berarti seluruh filesDir terdaftar di
+  provider. Provider-nya sendiri exported=false dan tidak pernah membuka apa pun
+  selain URI yang kita minta, dan app hanya meminta URI untuk file yang lolos
+  pemeriksaan di WidgetPhoto (induk folder filesDir + nama cat_*.jpg). Jadi tidak
+  ada file lain yang bisa diminta pihak luar.
+-->
+<paths>
+    <files-path
+        name="cat_photos"
+        path="." />
+</paths>

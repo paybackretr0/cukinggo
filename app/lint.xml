@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Aturan lint yang sengaja dimatikan, beserta alasannya.
+
+  PluralsCandidate: lint menyarankan mengganti "%1$d kucing" jadi <plurals>
+  supaya bentuk jamaknya benar. Saran itu berlaku untuk bahasa berjamak
+  (Inggris: 1 cat / 2 cats). Aplikasi ini hanya berbahasa Indonesia, dan bahasa
+  Indonesia tidak mengubah bentuk kata karena jumlah, jadi memaksakan <plurals>
+  justru menambah lapisan yang tidak pernah terpakai.
+-->
+<lint>
+    <issue id="PluralsCandidate" severity="ignore" />
+</lint>

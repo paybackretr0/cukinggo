@@ -54,6 +54,43 @@
     <string name="detail_loading">Lagi membuka catatannya…</string>
     <string name="detail_error_message">Coba sekali lagi ya.</string>
 
+    <!-- Bagikan -->
+    <string name="share_button">Bagikan kucing ini</string>
+    <string name="share_chooser_title">Bagikan lewat mana?</string>
+    <string name="share_message">Ketemu kucing di CukingGo 🐾\n\n📍 %1$s\nLihat di Google Maps:\n%2$s</string>
+    <string name="share_message_with_note">Ketemu kucing di CukingGo 🐾\n\n%1$s\n\n📍 %2$s\nLihat di Google Maps:\n%3$s</string>
+
+    <!-- Rentetan harian -->
+    <string name="streak_chip">%1$d hari beruntun</string>
+    <string name="streak_badge_description">Rentetan %1$d hari</string>
+
+    <!-- Kabar dekat kucing -->
+    <string name="nearby_pill_description">Kabar kalau dekat kucing</string>
+    <string name="nearby_dialog_title">Ingatkan kalau aku lewat dekat kucing</string>
+    <string name="nearby_dialog_off">App cek kucing yang pernah kamu tandai di sekitar sini, lalu kasih kabar kalau kamu masuk radius %1$d m. Pengecekannya jalan di HP kamu sendiri, tidak ada lokasi yang dikirim ke mana pun.</string>
+    <string name="nearby_radius_title">Radius</string>
+    <string name="nearby_radius_100">100 m</string>
+    <string name="nearby_radius_200">200 m</string>
+    <string name="nearby_radius_500">500 m</string>
+    <string name="nearby_radius_100_hint">Paling sedikit salah kabar, tapi kamu harus benar-benar lewat di dekatnya.</string>
+    <string name="nearby_radius_200_hint">Pas untuk jalan kaki biasa.</string>
+    <string name="nearby_radius_500_hint">Paling sering keinget, tapi kabarnya bisa muncul walau kamu cuma lewat di jalan besar sebelahnya.</string>
+    <string name="nearby_dialog_need_notification">Biar kabarnya bisa muncul, app butuh izin notifikasi.</string>
+    <string name="nearby_dialog_need_foreground">Sebelum bisa dapat izin lokasi latar belakang, app perlu izin lokasi biasa dulu.</string>
+    <string name="nearby_dialog_need_background">Biar kabarnya tetap muncul walau app sedang tertutup, izinkan lokasi dipakai sepanjang waktu: Pengaturan → Izin → Lokasi → pilih %1$s.</string>
+    <string name="nearby_dialog_active">Aktif. %1$d kucing dipantau, radius %2$d m.</string>
+    <string name="nearby_action_turn_on">Nyalakan</string>
+    <string name="nearby_action_turn_off">Matikan</string>
+    <string name="nearby_action_notification">Izinkan notifikasi</string>
+    <string name="nearby_action_foreground">Izinkan lokasi</string>
+    <string name="nearby_action_background">Buka pengaturan izin</string>
+    <string name="nearby_action_decline">Jangan aktifkan</string>
+    <string name="nearby_background_option_fallback">Izinkan sepanjang waktu</string>
+    <string name="nearby_channel_name">Kucing di dekatmu</string>
+    <string name="nearby_channel_description">Kabar waktu kamu masuk radius kucing yang pernah kamu tandai.</string>
+    <string name="nearby_alert_title">Kucing di dekat sini 🐱</string>
+    <string name="nearby_alert_body">Kamu pernah nandain kucing di sekitar sini.</string>
+
     <!-- Tema -->
     <string name="theme_button">Tema</string>
     <string name="theme_title">Pilih tema</string>
@@ -63,6 +100,39 @@
     <string name="theme_light_desc">Selalu terang, seperti susu hangat.</string>
     <string name="theme_dark">Gelap</string>
     <string name="theme_dark_desc">Selalu gelap, nyaman buat malam.</string>
+
+    <!-- Widget -->
+    <string name="widget_label">Kucing terakhir</string>
+    <string name="widget_description">Polaroid kucing terakhir yang kamu tandai.</string>
+    <string name="widget_of_day_label">Kucing hari ini</string>
+    <string name="widget_of_day_description">Satu kucing dari koleksimu, berganti sendiri tiap hari.</string>
+    <string name="widget_empty">Belum ada kucing di sini 🐾</string>
+    <string name="widget_preview_caption">Kucing ini nggak suka basa-basi.</string>
+    <string name="cd_widget_photo">Foto kucing terakhir</string>
+
+    <!--
+      Dipakai widget kalau kucing terakhir belum punya catatan. Semuanya sengaja
+      hanya bercerita soal catatannya yang kosong, bukan mengarang cerita tentang
+      kucingnya. Dipilih bergilir berdasarkan id kucing, jadi kucing yang sama
+      selalu dapat baris yang sama (widget tidak berubah-ubah tiap refresh).
+    -->
+    <string-array name="widget_funny_lines">
+        <item>Catatannya kosong, misterinya penuh.</item>
+        <item>Nggak ada catatan, ada kucing.</item>
+        <item>Foto dulu, cerita belakangan.</item>
+        <item>Kucing ini nggak suka basa-basi.</item>
+        <item>Dia lolos dari sesi tanya jawab.</item>
+        <item>Belum sempat diceritain, tapi manis.</item>
+        <item>Catatan menyusul, janji.</item>
+        <item>Dia cuma lewat, aku sempat jepret.</item>
+        <item>Kucing mode senyap.</item>
+        <item>Belum ada ceritanya, buktinya ada.</item>
+        <item>Ada yang lebih penting: makan.</item>
+        <item>Nggak semua kucing mau diwawancarai.</item>
+        <item>Dia pergi sebelum sempat diceritakan.</item>
+        <item>Cukup fotonya saja.</item>
+        <item>Yang penting kelihatan manis.</item>
+    </string-array>
 
     <!-- Umum -->
     <string name="action_cancel">Batal</string>

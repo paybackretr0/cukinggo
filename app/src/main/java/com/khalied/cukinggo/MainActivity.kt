@@ -1,5 +1,6 @@
 package com.khalied.cukinggo
 
+import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,12 +19,18 @@ import com.khalied.cukinggo.ui.theme.CreamBg
 import com.khalied.cukinggo.ui.theme.CukingGoTheme
 import com.khalied.cukinggo.ui.theme.NightBg
 import com.khalied.cukinggo.ui.theme.ThemeMode
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
+
+    /** Kucing yang diminta dibuka, misalnya dari tap widget di layar utama. */
+    private val pendingCatId = MutableStateFlow<Long?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        pendingCatId.value = intent.requestedCatId()
         val themePreferences = appContainer.themePreferences
 
         setContent {
@@ -40,9 +47,32 @@ class MainActivity : ComponentActivity() {
 
             CukingGoTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    CukingGoNavHost()
+                    val openCatId by pendingCatId.collectAsStateWithLifecycle()
+                    CukingGoNavHost(
+                        openCatId = openCatId,
+                        onOpenCatConsumed = { pendingCatId.value = null }
+                    )
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // launchMode singleTop: app yang sudah terbuka menerima intent baru di
+        // sini, bukan lewat onCreate.
+        setIntent(intent)
+        pendingCatId.value = intent.requestedCatId()
+    }
+
+    private fun Intent?.requestedCatId(): Long? =
+        this?.getLongExtra(EXTRA_CAT_ID, NO_CAT_ID)?.takeIf { it > 0 }
+
+    companion object {
+        /** Extra dari widget, supaya tap-nya langsung mendarat di detail kucing. */
+        const val EXTRA_CAT_ID = "extra_cat_id"
+
+        /** Widget tanpa data kucing mengirim ini, artinya cukup buka Home. */
+        const val NO_CAT_ID = -1L
     }
 }

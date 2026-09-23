@@ -1,0 +1,13 @@
+<!--
+  Varian gelap dari widget_polaroid_frame.xml. Dipilih dari kode (bukan dari
+  kualifikasi values-night) karena tema app ditentukan oleh pilihan pengguna,
+  bukan hanya oleh setelan gelap HP.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#2C231E" />
+    <corners android:radius="18dp" />
+    <stroke
+        android:width="1dp"
+        android:color="#38FFB27A" />
+</shape>

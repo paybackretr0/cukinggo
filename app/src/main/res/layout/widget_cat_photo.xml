@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Layout widget "Kucing terakhir": satu foto persegi di dalam bingkai polaroid,
+  dengan satu baris catatan di bawahnya.
+
+  Semua atribut di sini hanya boleh memakai view yang didukung RemoteViews
+  (LinearLayout, FrameLayout, ImageView, TextView) dan atribut yang dibaca saat
+  inflate, bukan saat runtime. Alasannya: layout ini di-inflate oleh proses
+  launcher, jadi perubahan warna dan gambar dilakukan dari CatWidgetProvider
+  lewat RemoteViews (setTextColor, setImageViewResource, setViewVisibility).
+
+  Tinggi foto memakai weight, bukan ukuran tetap, supaya widget tetap proporsional
+  kalau host memberi sel yang lebih tinggi dari 110dp. Karena widget ini tidak
+  bisa di-resize (resizeMode none), lebar selalu 2 sel.
+
+  Font: Nunito, sama dengan body text di app, karena baris ini isinya catatan
+  pengguna, bukan judul.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_polaroid_frame"
+    android:orientation="vertical"
+    android:padding="6dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/widget_photo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/cd_widget_photo"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/widget_art"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_paw_light" />
+
+        <!--
+          Badge rentetan harian, menempel di sudut kanan atas foto. Disembunyikan
+          dari kode kalau rentetannya masih nol, jadi widget tidak pernah menagih
+          apa pun ke pengguna yang belum mulai.
+
+          Latarnya PeachAccent yang tetap di kedua tema, jadi teks InkSoft di
+          atasnya selalu terbaca (kontras 7,7:1).
+        -->
+        <LinearLayout
+            android:id="@+id/widget_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="4dp"
+            android:background="@drawable/widget_streak_badge"
+            android:gravity="center_vertical"
+            android:importantForAccessibility="yes"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/widget_streak_icon"
+                android:layout_width="13dp"
+                android:layout_height="13dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/widget_flame" />
+
+            <TextView
+                android:id="@+id/widget_streak_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nunito"
+                android:importantForAccessibility="no"
+                android:layout_marginStart="3dp"
+                android:textColor="#3A2E26"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/widget_caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/nunito"
+        android:maxLines="2"
+        android:paddingStart="2dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="2dp"
+        android:paddingBottom="1dp"
+        android:text="@string/widget_empty"
+        android:textColor="#3A2E26"
+        android:textSize="11sp" />
+</LinearLayout>

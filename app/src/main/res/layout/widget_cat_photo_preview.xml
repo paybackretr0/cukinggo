@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pratinjau statis untuk pemilih widget (dipakai Android 12+ lewat previewLayout
+  di cat_widget_info.xml). Bentuknya sengaja persis mengikuti widget_cat_photo.xml
+  pada ukuran 2 sel, hanya saja fotonya diganti jejak kaki karena di layar pemilih
+  belum ada data kucing.
+
+  Ini layout biasa, bukan RemoteViews, jadi di sini boleh ada ukuran tetap.
+  Angka "3" pada lencana rentetan juga contoh, bukan data nyata, jadi sengaja
+  tidak dijadikan string resource yang bisa diterjemahkan.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="110dp"
+    android:layout_height="110dp"
+    android:background="@drawable/widget_polaroid_frame"
+    android:orientation="vertical"
+    android:padding="6dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ImageView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_paw_light" />
+
+        <!-- Badge rentetan ditampilkan di pratinjau dengan contoh angka, supaya
+             bentuk widget yang dijanjikan ke pemilih widget sama dengan aslinya. -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="4dp"
+            android:background="@drawable/widget_streak_badge"
+            android:gravity="center_vertical"
+            android:importantForAccessibility="no"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp">
+
+            <ImageView
+                android:layout_width="13dp"
+                android:layout_height="13dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/widget_flame" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/nunito"
+                android:layout_marginStart="3dp"
+                android:text="3"
+                android:textColor="#3A2E26"
+                tools:ignore="HardcodedText"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/nunito"
+        android:maxLines="2"
+        android:paddingStart="2dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="2dp"
+        android:paddingBottom="1dp"
+        android:text="@string/widget_preview_caption"
+        android:textColor="#3A2E26"
+        android:textSize="11sp" />
+</LinearLayout>
