@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Foreground ikon adaptif: jejak kaki kucing warna InkSoft di atas PeachAccent,
+  sama seperti tombol utama di dalam app.
+  Bentuknya digambar ulang dari jalur ikon paw yang dipakai di app, lalu
+  diperbesar: tinggi 108dp, area aman 66dp, jadi transform 2.8 dan geser 20.4
+  menaruh jejak kaki sekitar 44dp tepat di tengah.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2.8"
+        android:scaleY="2.8"
+        android:translateX="20.4"
+        android:translateY="20.4">
+        <path
+            android:fillColor="#3A2E26"
+            android:pathData="M4.2,9.8 a2.2,2.4 0 1,0 4.4,0 a2.2,2.4 0 1,0 -4.4,0 z" />
+        <path
+            android:fillColor="#3A2E26"
+            android:pathData="M7.9,6.6 a2.3,2.6 0 1,0 4.6,0 a2.3,2.6 0 1,0 -4.6,0 z" />
+        <path
+            android:fillColor="#3A2E26"
+            android:pathData="M11.5,6.6 a2.3,2.6 0 1,0 4.6,0 a2.3,2.6 0 1,0 -4.6,0 z" />
+        <path
+            android:fillColor="#3A2E26"
+            android:pathData="M15.4,9.8 a2.2,2.4 0 1,0 4.4,0 a2.2,2.4 0 1,0 -4.4,0 z" />
+        <path
+            android:fillColor="#3A2E26"
+            android:pathData="M6.8,16 a5.2,4.4 0 1,0 10.4,0 a5.2,4.4 0 1,0 -10.4,0 z" />
+    </group>
+</vector>

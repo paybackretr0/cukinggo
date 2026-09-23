@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+   Data kucing (foto, deskripsi, koordinat) sengaja TIDAK di-backup ke cloud
+   supaya klaim "100% lokal" di privacy policy tetap jujur.
+   Backup otomatis hanya berlaku untuk API < 31; lihat data_extraction_rules.xml
+   untuk aturan versi baru.
+-->
+<full-backup-content>
+    <exclude domain="database" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="sharedpref" path="osmdroid.xml" />
+</full-backup-content>

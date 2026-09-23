@@ -1,0 +1,74 @@
+<resources>
+    <string name="app_name">CukingGo</string>
+
+    <!-- Home -->
+    <string name="home_title">Kucing yang kutemui 🐾</string>
+    <string name="home_subtitle">Tersimpan di HP kamu, nggak ke mana-mana</string>
+    <string name="home_counter">🐱 %1$d kucing ditemukan</string>
+    <string name="home_empty_title">Belum ada kucing yang ditandain, yuk jalan-jalan!</string>
+    <string name="home_empty_subtitle">Jepret kucing pertamamu, lokasinya kami tandai otomatis.</string>
+    <string name="home_recent_title">Jejak terbaru</string>
+    <string name="home_loading">Lagi memuat catatan kucing…</string>
+    <string name="error_load_title">Catatannya belum kebaca 😿</string>
+    <string name="home_error_message">Coba sekali lagi, biasanya langsung beres.</string>
+    <string name="home_delete_hint">Kucingnya dilepas 😿</string>
+    <string name="home_my_location">Ke lokasi kamu</string>
+    <string name="map_offline_notice">Peta butuh internet buat gambarnya. Catatan kucingmu tetap aman di HP.</string>
+    <string name="map_tiles_failed_notice">Peta belum bisa dimuat. Coba lagi ya.</string>
+    <string name="home_location_unknown">Lokasi kamu belum kebaca 😿 Coba lagi sebentar ya.</string>
+    <string name="home_location_permission">Izin lokasi belum aktif. Buka Pengaturan → Izin untuk mengaktifkan.</string>
+    <string name="fab_add_cat">Tandai kucing</string>
+
+    <!-- Add cat -->
+    <string name="add_title">Tandai kucing baru</string>
+    <string name="add_camera_hint">Arahkan ke kucingnya, lalu jepret 📸</string>
+    <string name="add_capture">Jepret</string>
+    <string name="add_retake">Ambil ulang</string>
+    <string name="add_description_hint">Kucingnya lagi ngapain nih? (opsional)</string>
+    <string name="add_save">Simpan &amp; Tandain! 🐾</string>
+    <string name="add_locating">Lagi nyari lokasi kamu…</string>
+    <string name="add_saving">Menyimpan kucing kamu…</string>
+    <string name="add_error_location">Hmm, lokasi kamu belum kebaca. Coba keluar sebentar atau nyalakan GPS ya.</string>
+    <string name="add_error_no_photo">Fotonya belum ada, jepret dulu ya 📸</string>
+    <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
+    <string name="add_error_save">Kucingnya gagal disimpan. Coba sekali lagi ya.</string>
+    <string name="add_retry">Coba lagi</string>
+
+    <!-- Permission -->
+    <string name="permission_title">Izin dulu ya, biar bisa nandain kucing 🐾</string>
+    <string name="permission_camera">Kamera dipakai buat foto kucing yang kamu temui.</string>
+    <string name="permission_location">Lokasi dipakai buat nandain titik ketemu kucing di peta. Semuanya tetap di HP kamu.</string>
+    <string name="permission_grant">Izinkan</string>
+    <string name="permission_denied">Izinnya masih mati. Buka pengaturan app untuk mengaktifkan manual.</string>
+    <string name="permission_open_settings">Buka pengaturan</string>
+
+    <!-- Detail -->
+    <string name="detail_title">Detail kucing</string>
+    <string name="detail_no_description">Belum ada catatan buat kucing ini.</string>
+    <string name="detail_distance">≈ %1$s dari kamu</string>
+    <string name="detail_delete">Hapus kucing ini</string>
+    <string name="detail_delete_title">Hapus kucing ini?</string>
+    <string name="detail_delete_message">Foto &amp; catatannya bakal hilang permanen dari HP kamu.</string>
+    <string name="detail_delete_confirm">Hapus</string>
+    <string name="detail_missing">Kucingnya sudah nggak ada di catatan.</string>
+    <string name="detail_loading">Lagi membuka catatannya…</string>
+    <string name="detail_error_message">Coba sekali lagi ya.</string>
+
+    <!-- Tema -->
+    <string name="theme_button">Tema</string>
+    <string name="theme_title">Pilih tema</string>
+    <string name="theme_system">Ikut sistem</string>
+    <string name="theme_system_desc">Ganti otomatis mengikuti pengaturan HP kamu.</string>
+    <string name="theme_light">Terang</string>
+    <string name="theme_light_desc">Selalu terang, seperti susu hangat.</string>
+    <string name="theme_dark">Gelap</string>
+    <string name="theme_dark_desc">Selalu gelap, nyaman buat malam.</string>
+
+    <!-- Umum -->
+    <string name="action_cancel">Batal</string>
+    <string name="action_close">Tutup</string>
+    <string name="action_back">Kembali</string>
+    <string name="cd_cat_photo">Foto kucing</string>
+    <string name="day_today">Hari ini</string>
+    <string name="day_yesterday">Kemarin</string>
+</resources>
