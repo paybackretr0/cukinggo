@@ -10,6 +10,7 @@ kotlin = "2.4.10"
 composeBom = "2026.02.01"
 ksp = "2.3.12"
 room = "2.8.5"
+paging = "3.3.6"
 navigationCompose = "2.10.0"
 camerax = "1.6.2"
 playServicesLocation = "21.4.0"
@@ -39,6 +40,11 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+
+# Paging for the full cat list
+androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 
 # Camera
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }

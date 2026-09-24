@@ -41,10 +41,25 @@
         </intent>
     </queries>
 
+    <!--
+      Gesture kembali memakai transisi pop yang sama dengan tombol kembali, jadi
+      layar sebelumnya terlihat menyusul di belakang jari.
+
+      Untuk app yang menargetkan API 36, Android 16 sudah mengaktifkannya sendiri,
+      tapi di Android 13 sampai 15 atribut ini masih opt-in. Ditulis di sini supaya
+      perilakunya sama di ketiganya, bukan cuma di HP terbaru.
+
+      Aman dinyalakan karena app ini tidak memakai onBackPressed maupun
+      KeyEvent.KEYCODE_BACK (keduanya tidak lagi dipanggil di Android 16 saat app
+      menargetkan API 36), sedangkan navigasinya sudah ditangani NavHost lewat
+      OnBackPressedDispatcher. Dialog tetap ditangani Compose, dan itu tetap
+      dipanggil apa pun nilai atribut ini.
+    -->
     <application
         android:name=".CukingGoApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

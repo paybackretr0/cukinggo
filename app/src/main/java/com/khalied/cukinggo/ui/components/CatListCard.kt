@@ -114,13 +114,16 @@ fun CatListCard(
                 // setiap kartu hanya menambah bacaan tanpa menambah makna.
                 // Di layar detail dan review foto, labelnya tetap dipakai karena
                 // di sana fotonya memang isi utama.
+                // Foto ini yang menyambung ke layar detail waktu kartunya disentuh
+                // (lihat sharedCatPhoto), jadi potongan membulatnya dipasang lewat
+                // helper itu, bukan lewat clip sendiri.
                 AsyncImage(
                     model = File(cat.photoPath),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(64.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .sharedCatPhoto(catId = cat.id, clip = RoundedCornerShape(18.dp))
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(

@@ -1,6 +1,7 @@
 package com.khalied.cukinggo.data.local
 
 import androidx.room.Dao
+import androidx.paging.PagingSource
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
@@ -25,6 +26,20 @@ interface CatDao {
      */
     @Query("SELECT * FROM cats ORDER BY timestamp DESC")
     suspend fun getCatsOnce(): List<CatEntity>
+
+    /**
+     * Seluruh koleksi untuk halaman "Semua cuking", sehalaman per permintaan.
+     *
+     * Room yang mengurus batas barisnya, dan PagingSource ini ditandai basi
+     * sendiri saat isi tabelnya berubah, jadi catatan yang baru ditambah atau
+     * dihapus tidak perlu diberitahukan dari luar.
+     */
+    @Query("SELECT * FROM cats ORDER BY timestamp DESC")
+    fun pagingSourceAllCats(): PagingSource<Int, CatEntity>
+
+    /** Jumlah seluruh catatan, dipakai chip jumlah di halaman daftar. */
+    @Query("SELECT COUNT(*) FROM cats")
+    fun observeCatCount(): Flow<Int>
 
     /**
      * Hanya waktu catatan, dipakai menghitung rentetan harian. Kolomnya dipilih

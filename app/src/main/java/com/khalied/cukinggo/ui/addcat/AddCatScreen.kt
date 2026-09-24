@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
+import com.khalied.cukinggo.ui.components.CatSaveCelebration
 import com.khalied.cukinggo.ui.components.PermissionCard
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
@@ -80,6 +81,15 @@ import kotlinx.coroutines.delay
  * dinaikkan.
  */
 private const val AUTO_CAPTURE_DELAY_MILLIS = 900L
+
+/**
+ * Lama animasi perayaan disimpan sebelum layar ini menutup sendiri.
+ *
+ * Sekitar satu setengah detik: cukup untuk melihat cukingnya melompat dua kali,
+ * tapi belum terasa seperti menunggu. Ketukan di mana saja melompatinya, jadi
+ * angka ini cuma batas paling lama, bukan waktu tontonan yang wajib.
+ */
+private const val CELEBRATION_DURATION_MILLIS = 1500L
 
 /**
  * [autoCapture] dipakai tombol jepret di widget: kameranya langsung menjepret
@@ -130,8 +140,22 @@ fun AddCatScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    // Setelah tersimpan, layarnya ditahan sebentar untuk merayakannya. Satu
+    // penanda dipakai bersama supaya ketukan dan batas waktu tidak sama-sama
+    // memanggil onSaved, yang akan memundurkan dua layar sekaligus.
+    var handedOff by remember { mutableStateOf(false) }
+    val finishSaving = {
+        if (!handedOff) {
+            handedOff = true
+            onSaved()
+        }
+    }
+
     LaunchedEffect(uiState) {
-        if (uiState is AddCatUiState.Saved) onSaved()
+        if (uiState is AddCatUiState.Saved) {
+            delay(CELEBRATION_DURATION_MILLIS)
+            finishSaving()
+        }
     }
 
     val controller = remember {
@@ -186,95 +210,115 @@ fun AddCatScreen(
 
     val busy = uiState is AddCatUiState.Locating || uiState is AddCatUiState.Saving
 
-    Column(modifier = modifier.fillMaxSize()) {
-        PlayfulTopBar(title = stringResource(R.string.add_title), onBack = onBack)
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PlayfulTopBar(title = stringResource(R.string.add_title), onBack = onBack)
 
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .navigationBarsPadding()
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            if (!cameraGranted || !locationGranted) {
-                PermissionCard(
-                    cameraGranted = cameraGranted,
-                    locationGranted = locationGranted,
-                    showSettingsHint = permissionsAsked,
-                    onRequest = {
-                        permissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.CAMERA,
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                if (!cameraGranted || !locationGranted) {
+                    PermissionCard(
+                        cameraGranted = cameraGranted,
+                        locationGranted = locationGranted,
+                        showSettingsHint = permissionsAsked,
+                        onRequest = {
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.CAMERA,
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
                             )
-                        )
-                    },
-                    onOpenSettings = { context.openAppSettings() }
-                )
-            } else if (captureFile == null) {
-                CameraCaptureArea(
-                    controller = controller,
-                    cameraFailed = cameraFailed,
-                    onCapture = takePhoto
-                )
-            } else {
-                PhotoReview(
-                    photoFile = captureFile!!,
-                    name = name,
-                    onNameChange = { name = it },
-                    description = description,
-                    onDescriptionChange = { description = it },
-                    onRetake = {
-                        container.imageStorageHelper.discardCapture(captureFile)
-                        captureFile = null
-                        viewModel.clearError()
-                    }
-                )
-
-                when (val state = uiState) {
-                    is AddCatUiState.Error -> ErrorCard(
-                        message = stringResource(state.messageRes),
-                        onRetry = { viewModel.saveCat(captureFile, name, description) },
-                        onDismiss = viewModel::clearError
+                        },
+                        onOpenSettings = { context.openAppSettings() }
+                    )
+                } else if (captureFile == null) {
+                    CameraCaptureArea(
+                        controller = controller,
+                        cameraFailed = cameraFailed,
+                        onCapture = takePhoto
+                    )
+                } else {
+                    PhotoReview(
+                        photoFile = captureFile!!,
+                        name = name,
+                        onNameChange = { name = it },
+                        description = description,
+                        onDescriptionChange = { description = it },
+                        onRetake = {
+                            container.imageStorageHelper.discardCapture(captureFile)
+                            captureFile = null
+                            viewModel.clearError()
+                        }
                     )
 
-                    else -> Button(
-                        onClick = { viewModel.saveCat(captureFile, name, description) },
-                        enabled = !busy,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = PeachAccent,
-                            contentColor = InkSoft
+                    when (val state = uiState) {
+                        is AddCatUiState.Error -> ErrorCard(
+                            message = stringResource(state.messageRes),
+                            onRetry = { viewModel.saveCat(captureFile, name, description) },
+                            onDismiss = viewModel::clearError
                         )
-                    ) {
-                        Text(
-                            text = stringResource(R.string.add_save),
-                            style = MaterialTheme.typography.labelLarge
-                        )
+
+                        else -> Button(
+                            onClick = { viewModel.saveCat(captureFile, name, description) },
+                            enabled = !busy,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PeachAccent,
+                                contentColor = InkSoft
+                            )
+                        ) {
+                            Text(
+                                text = stringResource(R.string.add_save),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
+
+                when (uiState) {
+                    AddCatUiState.Locating -> WalkingCatLoader(
+                        text = stringResource(R.string.add_locating),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    AddCatUiState.Saving -> WalkingCatLoader(
+                        text = stringResource(R.string.add_saving),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    else -> Unit
+                }
             }
+        }
 
-            when (uiState) {
-                AddCatUiState.Locating -> WalkingCatLoader(
-                    text = stringResource(R.string.add_locating),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                AddCatUiState.Saving -> WalkingCatLoader(
-                    text = stringResource(R.string.add_saving),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                else -> Unit
-            }
+        // Digambar paling akhir supaya menutupi form yang baru diisi, bukan
+        // menggeser isinya. Kalau catatan barusan memanjangkan rentetan harian,
+        // pesannya berganti; gambar dan gerakannya tetap sama.
+        val saved = uiState as? AddCatUiState.Saved
+        if (saved != null) {
+            CatSaveCelebration(
+                message = stringResource(
+                    if (saved.streakDays != null) {
+                        R.string.add_saved_streak
+                    } else {
+                        R.string.add_saved_celebration
+                    }
+                ),
+                hint = stringResource(R.string.celebration_tap_hint),
+                streakDays = saved.streakDays,
+                onDismiss = finishSaving
+            )
         }
     }
 }

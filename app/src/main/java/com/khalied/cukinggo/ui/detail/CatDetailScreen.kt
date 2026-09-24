@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -45,9 +44,11 @@ import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.ui.components.CatGoodbyeCelebration
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
+import com.khalied.cukinggo.ui.components.sharedCatPhoto
 import com.khalied.cukinggo.ui.theme.BlushPink
 import com.khalied.cukinggo.ui.theme.InkSoft
 import com.khalied.cukinggo.ui.theme.MintPop
@@ -61,9 +62,18 @@ import com.khalied.cukinggo.util.formatDistance
 import com.khalied.cukinggo.util.formatFullDateTime
 import com.khalied.cukinggo.util.mapsLinkFor
 import java.io.File
+import kotlinx.coroutines.delay
 
 /** Batas tunggu singkat: cukup untuk satu fix GPS kalau belum ada posisi tersimpan. */
 private const val DETAIL_LOCATION_TIMEOUT_MILLIS = 5_000L
+
+/**
+ * Lama pamitan ditahan sebelum layar ini menutup sendiri.
+ *
+ * Sedikit lebih pendek dari perayaan setelah menyimpan: yang ini menutup sebuah
+ * catatan, jadi cukup untuk satu-dua lambaian. Ketukan di mana saja melewatinya.
+ */
+private const val FAREWELL_DURATION_MILLIS = 1_400L
 
 @Composable
 fun CatDetailScreen(
@@ -76,6 +86,25 @@ fun CatDetailScreen(
     val container = remember(context) { context.appContainer }
     var distanceFromUser by remember { mutableStateOf<Double?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Catatannya sudah terhapus, tapi layarnya belum menutup: cukingnya melambai
+    // dulu. Penanda yang sama dipakai oleh ketukan dan batas waktu, supaya onBack
+    // tidak pernah terpanggil dua kali.
+    var sayingGoodbye by remember { mutableStateOf(false) }
+    var closedScreen by remember { mutableStateOf(false) }
+    val closeScreen = {
+        if (!closedScreen) {
+            closedScreen = true
+            onBack()
+        }
+    }
+
+    LaunchedEffect(sayingGoodbye) {
+        if (sayingGoodbye) {
+            delay(FAREWELL_DURATION_MILLIS)
+            closeScreen()
+        }
+    }
 
     val currentCat = (uiState as? CatDetailUiState.Content)?.cat
 
@@ -98,32 +127,47 @@ fun CatDetailScreen(
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        PlayfulTopBar(title = stringResource(R.string.detail_title), onBack = onBack)
+    Box(modifier = modifier.fillMaxSize()) {
+        // Saat berpamitan, isi layarnya dilepas sama sekali: catatannya sudah tidak
+        // ada, jadi tanpa ini yang ada di belakang peredup justru keterangan
+        // "catatan sudah tidak ada" tepat saat cukingnya sedang melambai.
+        if (!sayingGoodbye) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                PlayfulTopBar(title = stringResource(R.string.detail_title), onBack = onBack)
 
-        when (val state = uiState) {
-            CatDetailUiState.Loading -> DetailPlaceholder(
-                modifier = Modifier.fillMaxSize(),
-                loaderText = stringResource(R.string.detail_loading)
-            )
+                when (val state = uiState) {
+                    CatDetailUiState.Loading -> DetailPlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        loaderText = stringResource(R.string.detail_loading)
+                    )
 
-            CatDetailUiState.Missing -> DetailPlaceholder(
-                modifier = Modifier.fillMaxSize(),
-                message = stringResource(R.string.detail_missing)
-            )
+                    CatDetailUiState.Missing -> DetailPlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        message = stringResource(R.string.detail_missing)
+                    )
 
-            CatDetailUiState.Failed -> DetailPlaceholder(
-                modifier = Modifier.fillMaxSize(),
-                message = stringResource(R.string.error_load_title),
-                actionLabel = stringResource(R.string.add_retry),
-                onAction = viewModel::retry
-            )
+                    CatDetailUiState.Failed -> DetailPlaceholder(
+                        modifier = Modifier.fillMaxSize(),
+                        message = stringResource(R.string.error_load_title),
+                        actionLabel = stringResource(R.string.add_retry),
+                        onAction = viewModel::retry
+                    )
 
-            is CatDetailUiState.Content -> DetailContent(
-                cat = state.cat,
-                distanceFromUser = distanceFromUser,
-                onDeleteRequest = { showDeleteDialog = true },
-                modifier = Modifier.fillMaxSize()
+                    is CatDetailUiState.Content -> DetailContent(
+                        cat = state.cat,
+                        distanceFromUser = distanceFromUser,
+                        onDeleteRequest = { showDeleteDialog = true },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
+        if (sayingGoodbye) {
+            CatGoodbyeCelebration(
+                message = stringResource(R.string.detail_goodbye_message),
+                hint = stringResource(R.string.celebration_tap_hint),
+                onDismiss = closeScreen
             )
         }
     }
@@ -150,7 +194,9 @@ fun CatDetailScreen(
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        viewModel.deleteCat(onDeleted = onBack)
+                        // Penghapusannya jalan sekarang, tapi kembalinya ke Home
+                        // menunggu pamitannya selesai.
+                        viewModel.deleteCat(onDeleted = { sayingGoodbye = true })
                     }
                 ) {
                     Text(
@@ -182,6 +228,8 @@ private fun DetailContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
+            // Foto yang sama dengan foto di kartu daftar: begitu kartunya disentuh,
+            // yang bergerak ke sini cuma fotonya (lihat sharedCatPhoto).
             AsyncImage(
                 model = File(cat.photoPath),
                 contentDescription = stringResource(R.string.cd_cat_photo),
@@ -189,7 +237,7 @@ private fun DetailContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(MaterialTheme.shapes.extraLarge)
+                    .sharedCatPhoto(catId = cat.id, clip = MaterialTheme.shapes.extraLarge)
             )
         }
 

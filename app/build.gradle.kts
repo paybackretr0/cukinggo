@@ -54,6 +54,11 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Paging: the full cat list is read one page at a time from Room
+    implementation(libs.androidx.room.paging)
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
+
     // CameraX (in-app camera)
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)

@@ -5,12 +5,24 @@ import com.khalied.cukinggo.data.local.CatEntity
 import com.khalied.cukinggo.data.local.toDomain
 import com.khalied.cukinggo.domain.model.Cat
 import com.khalied.cukinggo.util.ImageStorageHelper
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.khalied.cukinggo.util.blankToNull
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+
+/**
+ * Jumlah catatan per halaman di halaman "Semua cuking".
+ *
+ * Dua puluh: cukup banyak untuk mengisi layar tanpa membuat pemuatan pertamanya
+ * terasa berat, dan sisanya menyusul sendiri saat daftarnya digulir.
+ */
+const val CAT_PAGE_SIZE = 20
 
 /**
  * Satu-satunya pintu masuk ke data kucing: Room DB + file foto lokal.
@@ -28,6 +40,30 @@ class CatRepository(
 
     fun getAllCats(): Flow<List<Cat>> =
         catDao.getAllCats().map { entities -> entities.map(CatEntity::toDomain) }
+
+    /**
+     * Seluruh koleksi sebagai halaman-halaman untuk halaman daftar.
+     *
+     * Halaman pertamanya baru dimuat saat flow-nya dikumpulkan, jadi layar yang
+     * tidak dibuka tidak membaca apa-apa.
+     */
+    fun pagingAllCats(): Flow<PagingData<Cat>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = CAT_PAGE_SIZE,
+                // Bawaan Paging memuat tiga halaman sekaligus di permintaan
+                // pertama; di sini satu halaman sudah lebih dari satu layar penuh,
+                // jadi sisanya dibiarkan menyusul saat digulir.
+                initialLoadSize = CAT_PAGE_SIZE,
+                // Tanpa placeholder: baris kosong sementara di daftar yang isinya
+                // foto terbaca seperti catatan yang gagal dimuat.
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { catDao.pagingSourceAllCats() }
+        ).flow.map { pagingData -> pagingData.map { entity -> entity.toDomain() } }
+
+    /** Jumlah seluruh catatan, dipakai chip jumlah di halaman daftar. */
+    fun observeCatCount(): Flow<Int> = catDao.observeCatCount()
 
     /** Kucing terbaru, dipakai widget "Kucing terakhir". */
     suspend fun latestCat(): Cat? = withContext(ioDispatcher) {

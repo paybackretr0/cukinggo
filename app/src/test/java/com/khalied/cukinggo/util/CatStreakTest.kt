@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CatStreakTest {
@@ -75,6 +76,27 @@ class CatStreakTest {
     @Test
     fun `rentetan yang cuma berisi masa depan diabaikan`() {
         assertEquals(0, streakOf(today.plusDays(1), today.plusDays(2)))
+    }
+
+    @Test
+    fun `catatan pertama hari ini yang memanjangkan rentetan layak dirayakan`() {
+        assertEquals(2, streakToCelebrate(streakBefore = 1, streakAfter = 2))
+        assertEquals(7, streakToCelebrate(streakBefore = 6, streakAfter = 7))
+    }
+
+    @Test
+    fun `catatan kedua di hari yang sama tidak menambah rentetan`() {
+        assertNull(streakToCelebrate(streakBefore = 3, streakAfter = 3))
+    }
+
+    @Test
+    fun `hari pertama rentetan belum dirayakan sebagai rentetan yang bertambah`() {
+        assertNull(streakToCelebrate(streakBefore = 0, streakAfter = 1))
+    }
+
+    @Test
+    fun `catatan yang tidak menyambung rentetan apa pun tidak dirayakan`() {
+        assertNull(streakToCelebrate(streakBefore = 0, streakAfter = 0))
     }
 
     @Test

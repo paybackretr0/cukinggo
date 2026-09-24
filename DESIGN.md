@@ -252,6 +252,134 @@ Keputusan dan alasan (R-31, satu baris per keputusan):
 - **Varian kedua memperbesar jejak kaki sampai 55% (batas amannya 57%), bukan sebesar mungkin:** logo kecil di tengah bidang besar terasa hilang saat ditampilkan di daftar, tapi melewati area aman berarti sudutnya berisiko terpotong di perangkat yang masking-nya bulat. Batas itu dihitung dari bentuknya, bukan angka yang dipatok.
 - **Tidak ada PNG yang ditanam ke `res/mipmap-*`:** `minSdk` 29, jadi semua perangkat yang disasar sudah mendukung adaptive icon. Menambah PNG di sana hanya menambah bobot APK tanpa pernah dipakai.
 
+## Animasi setelah cuking tersimpan (permintaan pemilik, sesi 2026-09-24)
+
+Layar "Tandai cuking baru" tidak langsung menutup begitu catatannya masuk. Ada
+satu perayaan singkat: cukingnya melompat di tempat sambil hati kecil berhamburan
+di sekitarnya, di dalam kartu yang menutupi form. Dial **ENERGY 2 / RHYTHM 2 /
+MOTION 2**, sama dengan dial app.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Perayaannya di layar Add, bukan overlay di Home:** layar inilah yang punya keadaan "berhasil", jadi tidak perlu ada sinyal hasil simpan yang baru di antara dua layar, dan kalau pengguna ingin melihat lagi form yang baru diisi, layarnya masih ada di belakang.
+- **Grafikanya digambar di kode (Canvas), dengan kosakata bentuk yang sama seperti cuking empty state:** konsisten dengan keputusan marker peta, tidak butuh aset baru, dan warnanya ikut palet. Bedanya cuma matanya melek, karena mata terpejam sudah dipakai untuk keadaan kosong.
+- **Hati memakai BlushPink saja:** DESIGN.md memang menyediakan warna itu untuk hati dan dekorasi, jadi satu animasi pendek tidak perlu warna kedua.
+- **Gerakannya cuma satu objek dan satu lingkaran hati:** spec melarang animasi di semua tempat sekaligus, dan dengan ini momen "jadi bintang" di app menjadi dua (marker peta dan perayaan ini), masih di dalam batas 1-2 momen. Tidak ada gerakan lain yang ditambahkan ke layar ini.
+- **Layar ditahan 1,5 detik lalu lanjut sendiri, dan satu ketukan melewatinya:** perayaan yang wajib ditunggu mengubah momen menyenangkan jadi waktu tunggu, sedangkan perayaan yang wajib diketuk menambah satu ketukan ke alur satu jepret. Keduanya dihindari: bawaannya jalan sendiri, angkanya cuma batas paling lama.
+- **Satu penanda `handedOff` dipakai bersama oleh ketukan dan batas waktu:** keduanya bisa selesai di saat yang hampir sama, dan dua kali `onSaved()` akan memundurkan dua layar sekaligus.
+- **Layarnya diredupkan, bukan dikartukan penuh:** form yang baru diisi masih terlihat samar di belakang, jadi terasa seperti lapisan yang diletakkan di atas pekerjaan yang baru selesai, bukan layar baru.
+- **Ada baris "Ketuk buat lanjut" di bawah pesannya:** ketukannya nyata (melewati perayaan), jadi ia harus terlihat dan bukan sesuatu yang kebetulan ditemukan.
+
+Batas yang diketahui: perayaan ini belum pernah dilihat di perangkat. Yang belum
+dibuktikan: apakah 1,5 detik terasa pas saat pengguna buru-buru menandai cuking
+berikutnya, dan apakah hati kecilnya masih terbaca di layar kecil.
+
+## Perayaan rentetan bertambah dan lambaian saat cuking dihapus (permintaan pemilik, sesi 2026-09-24)
+
+Dua momen lain ikut dapat animasi, dengan dial yang sama (ENERGY 2 / RHYTHM 2 /
+MOTION 2) dan kosakata gerak yang sudah ada: cuking yang sama, digambar dari
+bentuk yang sama seperti perayaan simpan.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Rentetan dihitung sebelum dan sesudah menyimpan, bukan disimpan sebagai angka:** selisih keduanya yang menjawab "apakah rentetannya baru saja memanjang", dan aturannya tetap di satu tempat (`catStreak`) yang sudah dipakai chip Home dan lencana widget, jadi tidak ada angka tersimpan yang bisa berbeda dari yang tampil di dua tempat itu.
+- **Keadaannya tetap satu (`Saved(streakDays)`), bukan dua keadaan "berhasil":** yang berbeda cuma pesan dan satu lencana, sedangkan gambar, gerakan, dan cara menutupnya sama persis. Dua keadaan akan jadi dua jalur kode yang bisa saling menyimpang.
+- **Batas bawahnya dua hari (`streakToCelebrate`):** naik dari 0 ke 1 berarti rentetannya baru mulai, dan angka "1 hari beruntun" di layar justru terbaca seperti mengulang dari nol, bukan seperti rentetan yang bertambah.
+- **Lencana api memakai `InfoChip` dan string `streak_chip` yang sama dengan chip di Home:** angkanya harus terbaca sebagai angka yang sama dengan yang nanti ditemukan di Home, jadi bentuk dan kalimatnya dipinjam, bukan ditulis ulang.
+- **Lencananya melompat sekali dengan pegas, tidak berdenyut terus:** angkanya memang berita di versi ini, tapi lencana yang berdenyut terbaca seperti tombol yang minta ditekan. Lompatan kecil sekali itu juga yang membedakan versi ini dari perayaan biasa tanpa menambah kosakata gerak baru.
+- **Lambaian saat menghapus nadanya lebih rendah, bukan perayaan hati:** yang baru terjadi bukan sesuatu untuk dirayakan, jadi tidak ada lompatan dan tidak ada hati; yang bergerak cuma satu kaki depan yang diputar dari bahunya, plus ekor yang bergoyang pelan.
+- **Lambaiannya di layar Detail, dan isi layarnya dilepas selama melambai:** catatannya sudah terhapus saat itu, jadi kalau isinya dibiarkan, yang ada di belakang peredup justru keterangan "catatan sudah tidak ada" tepat saat cukingnya sedang melambai.
+- **Penghapusannya jalan lebih dulu, layarnya baru menunggu pamitan:** menaruh animasi sebelum penghapusan berarti pengguna yang keluar dari app di tengah lambaian meninggalkan data yang sudah dijanjikan terhapus.
+- **Kembalinya ke Home dipicu laporan lapisan data (`onDeleted`), bukan hitungan waktu:** layarnya tidak boleh menutup sebelum catatannya benar-benar hilang.
+- **Kerangka kartunya (peredup, kartu, baris "Ketuk buat lanjut") dipakai bersama perayaan simpan:** cara menutup kedua momen ini harus sama, dan satu kerangka berarti perbaikan berikutnya cuma perlu sekali.
+- **Semua adegan memakai satu fungsi gambar (`drawCat`):** tiga adegan (melompat, melambai, tidur di empty state) yang digambar sendiri-sendiri akan cepat saling menyimpang, padahal maksudnya cuking yang sama.
+
+Batas yang diketahui: ketiga adegan ini belum pernah dilihat di perangkat, dan
+lambaiannya cuma diperiksa dari angkanya. Kalau terlihat aneh, yang perlu diubah
+cuma dua angka di `WavingCatScene` (sudut dan tempo lambaiannya).
+
+## Halaman "Semua cuking" dengan paging, dan Home dibatasi lima (permintaan pemilik, sesi 2026-09-24)
+
+Home sekarang menampilkan lima cuking terbaru saja, dan seluruh koleksinya pindah
+ke halaman sendiri yang dibuka dari baris "Lihat semua cuking" di antara peta dan
+daftar. Halaman itu membaca catatannya sehalaman demi sehalaman, bukan sekaligus.
+
+Reading this as: daftar panjang koleksi pribadi untuk pemakaian harian, dalam
+bahasa visual yang sama dengan Home, dial **ENERGY 2 / RHYTHM 2 / MOTION 1**.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Paging dari Room, bukan membaca semua lalu memotong di layar:** memotong daftar di Compose tetap membaca seluruh catatan ke memori lebih dulu, jadi ia tidak menyelesaikan hal yang diminta. Dengan PagingSource, halaman pertama yang dibaca cuma dua puluh baris.
+- **`room-paging`, bukan PagingSource tulis sendiri:** PagingSource milik Room menandai dirinya basi saat isi tabelnya berubah, jadi catatan yang baru ditandai atau dihapus ikut hilang dari daftar tanpa ada yang perlu memberi tahu dari luar.
+- **Dua puluh catatan per halaman, dan `initialLoadSize` disamakan dengannya:** cukup untuk mengisi layar tanpa membuat pemuatan pertamanya berat, dan sisanya menyusul sambil digulir. Angka bawaannya tiga halaman sekaligus, dan itu melebihi satu layar penuh untuk daftar yang isinya foto.
+- **Tanpa placeholder (`enablePlaceholders = false`):** baris kosong sementara di daftar yang isinya foto terbaca seperti catatan yang gagal dimuat.
+- **Daftarnya di-cache di scope ViewModel (`cachedIn`):** tanpa itu, menggulir jauh lalu memutar layar akan memuat ulang dari halaman pertama dan posisi bacaannya hilang.
+- **Yang dibatasi di Home cuma daftar kartunya:** peta tetap menampilkan semua marker, dan chip rentetan serta kartu cuking terdekat tetap dihitung dari seluruh catatan. Membatasi seluruh halaman akan menyisakan lima titik di peta, padahal peta itulah isi utama layar itu.
+- **Chip jumlah di Home menampilkan jumlah seluruh koleksi, bukan jumlah kartu di bawahnya:** lima dari dua puluh tiga yang ditulis "5 cuking ditemukan" justru angka yang salah.
+- **Baris "Lihat semua" cuma muncul kalau memang masih ada sisa (lebih dari lima):** kalau koleksinya belum lebih dari lima, halaman daftarnya isinya sama persis dengan yang sudah ada di Home, jadi baris itu cuma menambah satu ketukan tanpa menambah apa pun.
+- **Barisnya duduk di antara peta dan daftar, berwarna `surfaceVariant`:** di posisi itu ia terbaca sebagai pintu keluar dari lima kartu yang dipotong, dan warnanya sengaja lebih tenang daripada FAB supaya aksi utama layar ini tetap "Tandai cuking".
+- **Angka di baris itu tidak diulang:** chip jumlah di bawahnya sudah menyebutkan angka yang sama, dan dua angka yang sama di satu layar cuma menambah bacaan.
+- **Kartu di halaman daftar memakai `CatListCard` yang sama, termasuk swipe untuk menghapus:** kartu yang bisa di-swipe di Home tapi diam saja di halaman daftar akan terbaca sebagai kontrol yang rusak. Penghapusannya tidak diberi lambaian pamit, karena yang dipamitkan di layar Detail adalah sebuah layar yang menutup, sedangkan di sini kartunya memang sedang disapu keluar dari daftar.
+- **Keadaan kosong dan keadaan gagal memakai kalimat Home yang sama:** yang terjadi sama persis, yaitu belum ada catatan atau catatannya belum kebaca, dan satu keadaan tidak perlu punya dua versi kalimat.
+- **Penanda ujung daftar ("Udah semua, nih") muncul saat Paging bilang tidak ada halaman lagi:** tanpa itu, daftar yang berhenti karena sudah habis terlihat sama seperti daftar yang berhenti karena macet.
+- **Chip jumlah disembunyikan selama angkanya belum kebaca:** angka 0 yang muncul sekejap terbaca sebagai "koleksimu kosong", padahal catatannya cuma belum selesai dihitung.
+- **Gagal memuat halaman berikutnya tidak mengosongkan layar:** kartu yang sudah termuat tetap ada, dan yang muncul cuma satu baris dengan tombol coba lagi.
+
+Batas yang diketahui: halaman ini belum pernah dibuka di perangkat, jadi yang belum
+terbukti adalah apakah gulirannya terasa mulus saat halaman kedua menyusul, dan
+apakah dua puluh kartu per halaman terasa pas saat koleksinya sudah banyak.
+Dependency Paging 3 dan `room-paging` baru masuk di sesi ini, jadi ukuran APK-nya
+sedikit bertambah.
+
+## Transisi antar layar (permintaan pemilik, sesi 2026-09-24)
+
+Tiap alur dapat gerak yang berbeda sesuai hubungan antar layarnya, dan fotonya
+menyambung dari kartu daftar ke fotonya di layar detail.
+
+Reading this as: perpindahan antar halaman di app catatan harian, dial
+**ENERGY 2 / RHYTHM 2 / MOTION 2**.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Alur telusur (Home ke Detail, Home ke daftar lengkap, daftar ke Detail) pakai geser mendatar:** ketiganya berarti "masuk lebih dalam", dan geseran mendatar adalah cara Android menunjukkan arah itu. Karena kembalinya dibalik, tombol kembali dan gerakan kembali mengucapkan hal yang sama.
+- **Layar kamera naik dari bawah, bukan digeser dari kanan:** menandai cuking bukan tempat yang ditelusuri, tapi satu tugas yang dikerjakan lalu ditinggalkan, dan gerakan dari bawah sudah dipakai untuk hal seperti itu.
+- **Menuju kamera, Home tidak ikut bergeser, cuma memudar dan menyusut sedikit:** kameranya masuk dari bawah, jadi kalau Home ikut bergeser ke kiri, satu layar bergerak ke dua arah sekaligus dan terbaca seperti dua kejadian yang tidak berhubungan.
+- **Durasi fade lebih pendek dari durasi geser (220 ms dan 300 ms):** fade yang sama panjang membuat layar sempat terlihat kosong di tengah jalan, sedangkan yang lebih pendek cuma memuluskan tepinya.
+- **Layar kamera dikasih waktu lebih longgar (380 ms):** jarak yang ditempuhnya satu layar penuh, jadi tempo yang sama dengan geseran mendatar akan terasa menyentak.
+- **Foto kartu menyambung jadi foto di layar detail:** yang berpindah cuma satu benda, jadi mata tidak perlu mencari lagi cuking mana yang barusan dibuka. Ini satu-satunya gerakan menyambung di app ini, supaya tidak jadi hiasan di mana-mana.
+- **Cakupan animasi bersama disediakan lewat composition local, bukan parameter tiap layar:** yang dipakai layar cuma satu modifier, sedangkan meneruskan dua cakupan animasi berarti dua janji tambahan di setiap tanda tangan fungsi layar. Kalau cakupannya tidak ada, modifier itu diam saja.
+- **Potongan membulat foto dipasang lewat helper yang sama dengan elemen bersamanya:** potongan yang diletakkan di luar elemen bersama tidak berlaku di perjalanannya, dan yang terlihat justru foto bersudut tegak saat terbang.
+- **Karena kuncinya sama, foto yang sama juga menyambung antara daftar di Home dan halaman "Semua cuking":** keduanya menampilkan catatan yang sama, jadi kartunya memang lanjutan dari kartu yang sama, bukan dua benda berbeda yang kebetulan mirip.
+- **Tap dari notifikasi atau widget tetap dianimasikan biasa:** saat itu layar Detail tidak punya pasangan foto di layar mana pun, dan elemen bersamanya cuma tidak menemukan pasangan, bukan gagal.
+- **Peta di Home ikut dianimasikan, tanpa pengecualian:** peta memang isi utama layar itu, jadi mengeluarkannya dari animasi akan membuat peta terlihat "diam di tempat" sementara layarnya bergerak.
+
+Batas yang diketahui: semua ini belum pernah dilihat di perangkat. Tiga yang paling
+berisiko: peta di Home adalah AndroidView yang berat, jadi geserannya di HP lambat
+bisa tersendat; radius foto berpindah dari 18dp ke 36dp saat serah terima di tengah
+penerbangan (bentuknya berganti, bukan ikut dianimasikan); dan foto di layar detail
+baru digambar setelah Coil selesai membacanya, jadi kalau cache fotonya kosong,
+fotonya bisa menyusul beberapa bingkai setelah penerbangannya mulai.
+
+## Gesture kembali ikut memakai transisi pop (permintaan pemilik, sesi 2026-09-24)
+
+`android:enableOnBackInvokedCallback="true"` dipasang di `<application>`, jadi
+gesture kembali sistem memakai transisi pop yang sama dengan tombol kembali, dan
+layar sebelumnya terlihat menyusul di belakang jari.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Nilainya ditulis eksplisit walau di Android 16 sudah jadi bawaan:** untuk app yang menargetkan API 36, predictive back memang sudah aktif di HP Android 16, tapi di Android 13 sampai 15 atribut ini masih opt-in. Ditulis di manifest supaya perilakunya sama di ketiga versi itu, bukan cuma di HP terbaru.
+- **Dipasang di `<application>`, bukan per activity:** app ini cuma punya satu activity, dan menaruhnya per activity berarti aturan yang sama ditulis di tempat yang harus dicari lebih dulu.
+- **Tidak ada `BackHandler` atau `PredictiveBackHandler` yang ditambahkan:** NavHost sudah menangani gesture-nya sejak Navigation Compose 2.8, dan transisi pop yang sudah dipasang itulah yang dipakai untuk menyusuri gerak jarinya. Menambahkan handler sendiri justru akan menutupi transisi itu.
+- **Dipasang setelah memastikan tidak ada `onBackPressed` atau `KeyEvent.KEYCODE_BACK` di kode:** keduanya tidak lagi dipanggil di Android 16 saat app menargetkan API 36, jadi memakainya akan langsung jadi bug. Pemeriksaan itu yang membuat atribut ini aman dinyalakan sekarang.
+- **Dialog hapus tidak ikut diurus:** `AlertDialog` memakai `OnBackPressedDispatcher`, dan itu tetap dipanggil apa pun nilai atribut ini, jadi menutup dialog dengan back tetap jalan.
+
+Batas yang diketahui: belum dicoba di perangkat. Gesture kembali cuma ada di mode
+navigasi gesture; di mode tombol tiga, tombol kembali tetap memakai transisi pop
+yang sama. Yang belum terbukti: apakah geseran mendatar di layar Home terasa mulus
+saat jarinya menyusuri peta yang berat, dan apakah gesture kembali dari layar kamera
+(transisi tegak) ikut terasa menyambung.
+
 ## Override yang perlu keputusan pemilik produk
 
 - **R-11 (variasi border radius) vs spec 14.1:** spec minta semua elemen membulat tanpa sudut tajam, sedangkan R-11 melarang semua elemen berbentuk pill tanpa variasi radius.

@@ -11,19 +11,30 @@ import com.khalied.cukinggo.data.repository.CatRepository
 import com.khalied.cukinggo.di.AppContainer
 import com.khalied.cukinggo.location.LocationHelper
 import com.khalied.cukinggo.util.ImageStorageHelper
+import com.khalied.cukinggo.util.catStreak
+import com.khalied.cukinggo.util.streakToCelebrate
+import java.io.File
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 sealed interface AddCatUiState {
     data object Idle : AddCatUiState
     data object Locating : AddCatUiState
     data object Saving : AddCatUiState
-    data object Saved : AddCatUiState
+
+    /**
+     * [streakDays] berisi panjang rentetan harian kalau catatan barusan
+     * memanjangkannya, dan null kalau tidak. Layar memakainya untuk memilih
+     * versi perayaannya, jadi keadaannya tetap satu dan bukan dua keadaan
+     * "berhasil" yang berbeda.
+     */
+    data class Saved(val streakDays: Int? = null) : AddCatUiState
+
     data class Error(@StringRes val messageRes: Int) : AddCatUiState
 }
 
@@ -56,6 +67,14 @@ class AddCatViewModel(
             }
 
             _uiState.value = AddCatUiState.Saving
+
+            // Rentetan dihitung sebelum dan sesudah menyimpan, dari waktu
+            // catatan yang sudah ada, sama seperti chip di Home dan lencana di
+            // widget. Selisih keduanya yang menjawab "apakah rentetannya baru
+            // saja memanjang", tanpa perlu ada angka tersimpan yang bisa salah.
+            val today = LocalDate.now()
+            val streakBefore = catStreak(catRepository.getAllTimestamps(), today)
+
             runCatching {
                 val photoPath = withContext(Dispatchers.IO) {
                     imageStorageHelper.moveCaptureToInternalStorage(captureFile)
@@ -68,7 +87,10 @@ class AddCatViewModel(
                     longitude = location.longitude
                 )
             }.onSuccess {
-                _uiState.value = AddCatUiState.Saved
+                val streakAfter = catStreak(catRepository.getAllTimestamps(), today)
+                _uiState.value = AddCatUiState.Saved(
+                    streakDays = streakToCelebrate(streakBefore, streakAfter)
+                )
             }.onFailure {
                 _uiState.value = AddCatUiState.Error(R.string.add_error_save)
             }

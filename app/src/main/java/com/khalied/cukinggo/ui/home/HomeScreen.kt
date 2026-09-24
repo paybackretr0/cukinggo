@@ -93,11 +93,21 @@ import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
 import java.time.LocalDate
 
+/**
+ * Jumlah cuking di daftar Home.
+ *
+ * Lima: cukup untuk melihat jejak terakhir tanpa mendesak peta di atasnya keluar
+ * dari layar, sedangkan sisanya ada di halaman "Semua cuking" lewat baris Lihat
+ * semua. Peta, chip rentetan, dan kartu cuking terdekat tidak ikut dibatasi.
+ */
+private const val RECENT_CAT_LIMIT = 5
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onAddCat: () -> Unit,
     onCatClick: (Long) -> Unit,
+    onSeeAllCats: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -344,14 +354,27 @@ fun HomeScreen(
                             .weight(1f)
                     )
                 } else {
-                    RecentCatsSection(
-                        cats = state.cats,
-                        onCatClick = onCatClick,
-                        onDelete = viewModel::deleteCat,
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                    )
+                    ) {
+                        // Baris ini cuma muncul kalau memang masih ada sisa: kalau
+                        // koleksinya belum lebih dari lima, halaman daftarnya isinya
+                        // sama persis dengan yang sudah ada di layar ini.
+                        if (state.cats.size > RECENT_CAT_LIMIT) {
+                            SeeAllCatsRow(onClick = onSeeAllCats)
+                            Spacer(Modifier.height(10.dp))
+                        }
+
+                        RecentCatsSection(
+                            cats = state.cats.take(RECENT_CAT_LIMIT),
+                            totalCount = state.cats.size,
+                            onCatClick = onCatClick,
+                            onDelete = viewModel::deleteCat,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
@@ -590,9 +613,42 @@ private fun AppearancePill(onClick: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Baris menuju halaman daftar lengkap, duduk di antara peta dan jejak terbaru.
+ *
+ * Warnanya `surfaceVariant`, bukan PeachAccent seperti FAB: yang jadi aksi utama di
+ * layar ini tetap "Tandai cuking", sedangkan baris ini cuma jalan ke daftar.
+ * Tingginya 48dp supaya lolos tap target (R-03), dan angkanya sengaja tidak
+ * diulang di sini karena chip jumlah di bawahnya sudah menyebutkannya.
+ */
+@Composable
+private fun SeeAllCatsRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Box(
+            modifier = Modifier
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stringResource(R.string.home_see_all),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+}
+
 @Composable
 private fun RecentCatsSection(
     cats: List<Cat>,
+    totalCount: Int,
     onCatClick: (Long) -> Unit,
     onDelete: (Cat) -> Unit,
     modifier: Modifier = Modifier
@@ -608,8 +664,11 @@ private fun RecentCatsSection(
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
+            // Angkanya jumlah seluruh koleksi, bukan jumlah kartu di bawahnya:
+            // menulis "5 cuking ditemukan" saat catatannya ada 23 justru angka yang
+            // salah, dan sisanya memang ada di halaman "Semua cuking".
             InfoChip(
-                text = stringResource(R.string.home_counter, cats.size),
+                text = stringResource(R.string.home_counter, totalCount),
                 containerColor = MintPop,
                 contentColor = InkSoft
             )

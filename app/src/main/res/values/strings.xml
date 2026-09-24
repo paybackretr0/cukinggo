@@ -8,6 +8,10 @@
     <string name="home_empty_title">Belum ada cuking yang ditandain, yuk jalan-jalan!</string>
     <string name="home_empty_subtitle">Jepret cuking pertamamu, lokasinya kami tandai otomatis.</string>
     <string name="home_recent_title">Jejak terbaru</string>
+    <string name="home_see_all">Lihat semua cuking</string>
+    <string name="cat_list_title">Semua cuking</string>
+    <string name="cat_list_loading_more">Lagi nyusul yang lain…</string>
+    <string name="cat_list_end">Udah semua, nih 🐾</string>
     <string name="home_nearest_label">Cuking terdekat</string>
     <string name="home_loading">Lagi memuat catatan cuking…</string>
     <string name="error_load_title">Catatannya belum kebaca 😿</string>
@@ -37,6 +41,9 @@
     <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
     <string name="add_error_save">Cukingnya gagal disimpan. Coba sekali lagi ya.</string>
     <string name="add_retry">Coba lagi</string>
+    <string name="add_saved_celebration">Cukingnya udah ditandain! 🐾</string>
+    <string name="add_saved_streak">Rentetanmu makin panjang!</string>
+    <string name="celebration_tap_hint">Ketuk buat lanjut</string>
 
     <!-- Permission -->
     <string name="permission_title">Izin dulu ya, biar bisa nandain cuking 🐾</string>
@@ -54,6 +61,7 @@
     <string name="detail_delete_title">Hapus cuking ini?</string>
     <string name="detail_delete_message">Foto &amp; catatannya bakal hilang permanen dari HP kamu.</string>
     <string name="detail_delete_confirm">Hapus</string>
+    <string name="detail_goodbye_message">Cukingnya melambai pamit. Sampai ketemu lagi ya 🐾</string>
     <string name="detail_missing">Cukingnya sudah nggak ada di catatan.</string>
     <string name="detail_loading">Lagi membuka catatannya…</string>
     <string name="detail_error_message">Coba sekali lagi ya.</string>

@@ -47,3 +47,22 @@ fun catStreak(
     }
     return streak
 }
+
+/** Rentetan di bawah angka ini cuma hari pertama, jadi belum layak dirayakan. */
+private const val STREAK_CELEBRATION_MINIMUM_DAYS = 2
+
+/**
+ * Panjang rentetan yang layak dirayakan setelah satu catatan baru masuk, atau
+ * null kalau catatan itu tidak memanjangkan rentetan.
+ *
+ * Dipakai layar "Tandai cuking baru": kalau catatan yang barusan disimpan adalah
+ * yang pertama hari itu dan rentetannya sudah jalan sebelumnya, perayaannya
+ * diganti versi rentetan (lihat DESIGN.md bagian "Animasi setelah cuking
+ * tersimpan").
+ *
+ * Dua hari adalah batas bawahnya, bukan satu: naik dari 0 ke 1 berarti
+ * rentetannya baru mulai, dan angka "1 hari beruntun" di layar justru terbaca
+ * seperti baru mengulang dari nol, bukan seperti rentetan yang bertambah.
+ */
+fun streakToCelebrate(streakBefore: Int, streakAfter: Int): Int? =
+    streakAfter.takeIf { it > streakBefore && it >= STREAK_CELEBRATION_MINIMUM_DAYS }
