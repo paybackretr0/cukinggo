@@ -69,13 +69,30 @@ import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.util.hasCameraPermission
 import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
+import kotlinx.coroutines.delay
 
+/**
+ * Jeda sebelum kamera menjepret sendiri saat dibuka dari tombol jepret di widget.
+ *
+ * Angkanya pilihan kasar: kamera perlu waktu menyala setelah di-bind, dan
+ * memotret terlalu cepat bisa menghasilkan bingkai gelap. Belum diukur di
+ * perangkat, jadi kalau ternyata fotonya masih gelap, angka inilah yang perlu
+ * dinaikkan.
+ */
+private const val AUTO_CAPTURE_DELAY_MILLIS = 900L
+
+/**
+ * [autoCapture] dipakai tombol jepret di widget: kameranya langsung menjepret
+ * sendiri begitu siap, jadi dari layar utama cukup satu ketukan. Tombol "Tandai
+ * cuking" di Home membiarkannya false dan tetap menunggu jepretan dari pengguna.
+ */
 @Composable
 fun AddCatScreen(
     viewModel: AddCatViewModel,
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    autoCapture: Boolean = false
 ) {
     val context = LocalContext.current
     val container = remember { context.appContainer }
@@ -87,6 +104,7 @@ fun AddCatScreen(
     }
     var permissionsAsked by remember { mutableStateOf(false) }
     var captureFile by remember { mutableStateOf<File?>(null) }
+    var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var cameraFailed by remember { mutableStateOf(false) }
 
@@ -152,6 +170,20 @@ fun AddCatScreen(
         )
     }
 
+    // Jepretan otomatis cuma sekali per kunjungan: kalau hasilnya jelek, "Ambil
+    // ulang" tetap ada, dan pengguna yang menekannya memang sedang sengaja
+    // mengulang, jadi jangan dijepretkan lagi diam-diam.
+    var autoCaptureDone by remember { mutableStateOf(false) }
+    LaunchedEffect(autoCapture, cameraGranted, captureFile, cameraFailed) {
+        if (!autoCapture || autoCaptureDone) return@LaunchedEffect
+        if (!cameraGranted || captureFile != null || cameraFailed) return@LaunchedEffect
+        // Ditandai sebelum menunggu, supaya kamera yang belum siap tidak memicu
+        // penjadwalan jepretan kedua lewat perubahan status di tengah penantian.
+        autoCaptureDone = true
+        delay(AUTO_CAPTURE_DELAY_MILLIS)
+        takePhoto()
+    }
+
     val busy = uiState is AddCatUiState.Locating || uiState is AddCatUiState.Saving
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -192,6 +224,8 @@ fun AddCatScreen(
             } else {
                 PhotoReview(
                     photoFile = captureFile!!,
+                    name = name,
+                    onNameChange = { name = it },
                     description = description,
                     onDescriptionChange = { description = it },
                     onRetake = {
@@ -204,12 +238,12 @@ fun AddCatScreen(
                 when (val state = uiState) {
                     is AddCatUiState.Error -> ErrorCard(
                         message = stringResource(state.messageRes),
-                        onRetry = { viewModel.saveCat(captureFile, description) },
+                        onRetry = { viewModel.saveCat(captureFile, name, description) },
                         onDismiss = viewModel::clearError
                     )
 
                     else -> Button(
-                        onClick = { viewModel.saveCat(captureFile, description) },
+                        onClick = { viewModel.saveCat(captureFile, name, description) },
                         enabled = !busy,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -314,6 +348,8 @@ private fun CameraCaptureArea(
 @Composable
 private fun PhotoReview(
     photoFile: File,
+    name: String,
+    onNameChange: (String) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
     onRetake: () -> Unit,
@@ -336,6 +372,31 @@ private fun PhotoReview(
                     .clip(MaterialTheme.shapes.large)
             )
             Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = {
+                    Text(
+                        text = stringResource(R.string.add_name_label),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.add_name_hint),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                supportingText = {
+                    Text(
+                        text = stringResource(R.string.add_name_support),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                },
+                shape = MaterialTheme.shapes.large
+            )
             OutlinedTextField(
                 value = description,
                 onValueChange = onDescriptionChange,

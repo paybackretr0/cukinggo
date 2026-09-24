@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.khalied.cukinggo.MainActivity
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.util.blankToNull
 
 /**
  * Kabar di bilah notifikasi saat kamu masuk radius kucing yang pernah ditandai.
@@ -44,12 +45,20 @@ internal object NearbyAlertNotifier {
 
         ensureChannel(context)
 
-        val note = cat.description?.trim()?.takeIf { it.isNotEmpty() }
+        val name = blankToNull(cat.name)
+        val note = blankToNull(cat.description)
         val body = note ?: context.getString(R.string.nearby_alert_body)
+        // Nama cuking dipakai sebagai judul kalau ada, supaya kabarnya bisa dikenali
+        // dari bilah notifikasi tanpa membuka app dulu.
+        val title = if (name != null) {
+            context.getString(R.string.nearby_alert_title_named, name)
+        } else {
+            context.getString(R.string.nearby_alert_title)
+        }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_paw)
-            .setContentTitle(context.getString(R.string.nearby_alert_title))
+            .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setContentIntent(openCatIntent(context, cat.id))

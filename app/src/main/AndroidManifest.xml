@@ -90,9 +90,21 @@
                 android:resource="@xml/cat_of_day_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.NearbyCatWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_nearby_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/nearby_cat_widget_info" />
+        </receiver>
+
         <!--
-          Alarm tengah malam kedua widget: memilih kucing baru untuk "Kucing hari
-          ini", dan menghitung ulang lencana rentetan di keduanya. exported=false
+          Alarm tengah malam ketiga widget: memilih kucing baru untuk "Kucing hari
+          ini", dan menghitung ulang lencana rentetan di semuanya. exported=false
           karena hanya app ini yang boleh memicunya.
         -->
         <receiver

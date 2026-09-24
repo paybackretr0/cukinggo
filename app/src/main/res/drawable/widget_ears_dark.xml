@@ -1,0 +1,21 @@
+<!-- Varian gelap widget_ears.xml, dengan warna badan dan garis tepi tema gelap. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="54dp"
+    android:height="18dp"
+    android:viewportWidth="100"
+    android:viewportHeight="33">
+    <path
+        android:fillColor="#2C231E"
+        android:pathData="M4,31 L22,2 L40,31"
+        android:strokeColor="#F3E7DC"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="4" />
+    <path
+        android:fillColor="#2C231E"
+        android:pathData="M60,31 L78,2 L96,31"
+        android:strokeColor="#F3E7DC"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="4" />
+</vector>

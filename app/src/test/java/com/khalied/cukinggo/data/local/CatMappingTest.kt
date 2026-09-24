@@ -12,7 +12,8 @@ class CatMappingTest {
         val entity = CatEntity(
             id = 7L,
             photoPath = "/data/files/cat_7.jpg",
-            description = "Kucing oren di warung",
+            name = "si Kumis",
+            description = "Cuking oren di warung",
             latitude = -6.2,
             longitude = 106.816666,
             timestamp = 1_700_000_000_000L
@@ -22,7 +23,8 @@ class CatMappingTest {
 
         assertEquals(7L, cat.id)
         assertEquals("/data/files/cat_7.jpg", cat.photoPath)
-        assertEquals("Kucing oren di warung", cat.description)
+        assertEquals("si Kumis", cat.name)
+        assertEquals("Cuking oren di warung", cat.description)
         assertEquals(-6.2, cat.latitude, 0.0)
         assertEquals(106.816666, cat.longitude, 0.0)
         assertEquals(1_700_000_000_000L, cat.timestamp)
@@ -33,6 +35,7 @@ class CatMappingTest {
         val cat = Cat(
             id = 0,
             photoPath = "/data/files/cat_8.jpg",
+            name = null,
             description = null,
             latitude = 1.0,
             longitude = 2.0,
@@ -41,7 +44,26 @@ class CatMappingTest {
 
         val entity = cat.toEntity()
 
+        assertNull(entity.name)
         assertNull(entity.description)
         assertEquals("/data/files/cat_8.jpg", entity.photoPath)
+    }
+
+    @Test
+    fun `nama ikut dipetakan bolak-balik tanpa berubah`() {
+        val cat = Cat(
+            id = 9L,
+            photoPath = "/data/files/cat_9.jpg",
+            name = "si Belang",
+            description = null,
+            latitude = 3.0,
+            longitude = 4.0,
+            timestamp = 99L
+        )
+
+        val bolakBalik = cat.toEntity().toDomain()
+
+        assertEquals("si Belang", bolakBalik.name)
+        assertNull(bolakBalik.description)
     }
 }

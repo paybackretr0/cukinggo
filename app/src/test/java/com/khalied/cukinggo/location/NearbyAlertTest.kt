@@ -88,6 +88,7 @@ class NearbyAlertTest {
     private fun cat(id: Long, latitude: Double, longitude: Double): Cat = Cat(
         id = id,
         photoPath = "cat_$id.jpg",
+        name = null,
         description = null,
         latitude = latitude,
         longitude = longitude,

@@ -1,0 +1,34 @@
+<!--
+  Dua telinga cuking untuk bentuk stiker, mode terang.
+
+  Tiap telinga digambar sebagai jalur TERBUKA (tanpa perintah Z), jadi yang
+  bergaris cuma dua sisi miringnya, sedangkan sisi bawahnya tidak. Isiannya
+  memakai warna badan, jadi telinganya menyatu dengan badan di bawahnya dan
+  garis tepi badan hanya terputus selebar telinga. Itu yang membuatnya terbaca
+  sebagai satu stiker, bukan dua bentuk yang menempel begitu saja.
+
+  Ukurannya 54 x 18dp dan diletakkan di pita 18dp di atas badan stiker, jadi
+  telinganya naik 12dp di atas garis badan sementara pangkalnya tetap masuk 6dp
+  ke dalam badan. Versi pertama cuma naik 6dp dengan pangkal masuk 9dp, dan
+  hasilnya terbaca sebagai dua segitiga yang digambar di dalam kartu.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="54dp"
+    android:height="18dp"
+    android:viewportWidth="100"
+    android:viewportHeight="33">
+    <path
+        android:fillColor="#FFFDF8"
+        android:pathData="M4,31 L22,2 L40,31"
+        android:strokeColor="#3A2E26"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="4" />
+    <path
+        android:fillColor="#FFFDF8"
+        android:pathData="M60,31 L78,2 L96,31"
+        android:strokeColor="#3A2E26"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="4" />
+</vector>

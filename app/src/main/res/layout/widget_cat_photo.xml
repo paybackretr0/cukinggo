@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Layout widget "Kucing terakhir": satu foto persegi di dalam bingkai polaroid,
-  dengan satu baris catatan di bawahnya.
+  Layout kedua widget layar utama: satu foto cuking dengan satu baris catatan di
+  bawahnya. Namanya masih "widget_cat_photo" karena itu id yang sudah dipakai
+  dua provider, tapi bentuknya sekarang berganti tiap hari (lihat WidgetSkin).
+
+  Satu layout dipakai untuk ketiga bentuk, dan yang berbeda hanya aset serta
+  jarak yang dipasang dari kode lewat RemoteViews. Alasannya: tiga file layout
+  yang isinya 90 persen sama akan cepat saling menyimpang, sedangkan hiasannya
+  sendiri cuma beberapa ImageView yang tinggal disembunyikan.
 
   Semua atribut di sini hanya boleh memakai view yang didukung RemoteViews
   (LinearLayout, FrameLayout, ImageView, TextView) dan atribut yang dibaca saat
-  inflate, bukan saat runtime. Alasannya: layout ini di-inflate oleh proses
-  launcher, jadi perubahan warna dan gambar dilakukan dari CatWidgetProvider
-  lewat RemoteViews (setTextColor, setImageViewResource, setViewVisibility).
+  inflate, bukan saat runtime: layout ini di-inflate oleh proses launcher.
+
+  Dua ImageView foto dipakai karena bentuk jendela perlu scaleType fitCenter
+  (supaya foto bulatnya tetap bulat), sedangkan dua bentuk lain memakai centerCrop
+  (supaya fotonya mengisi bingkai). Keduanya tidak bisa berbagi satu ImageView
+  tanpa mengganti scaleType saat runtime, dan itu tidak didukung RemoteViews.
 
   Tinggi foto memakai weight, bukan ukuran tetap, supaya widget tetap proporsional
-  kalau host memberi sel yang lebih tinggi dari 110dp. Karena widget ini tidak
-  bisa di-resize (resizeMode none), lebar selalu 2 sel.
+  di ukuran sel berapa pun, termasuk setelah pengguna menariknya sendiri.
+
+  Tombol jepret di sudut kanan bawah juga milik semua bentuk: satu-satunya jalan
+  pintas yang berguna dari layar utama adalah memotret cuking yang sedang di depan
+  mata, dan itu tidak bergantung pada bentuk bingkainya.
 
   Font: Nunito, sama dengan body text di app, karena baris ini isinya catatan
   pengguna, bukan judul.
@@ -20,14 +32,21 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_polaroid_frame"
+    android:background="@drawable/widget_frame_sticker"
     android:orientation="vertical"
     android:padding="6dp">
 
+    <!--
+      Kotak ini isinya cuma foto dan hiasan, sedangkan catatannya ada di bawahnya.
+      clipChildren=false dipasang sebagai jaring pengaman: hiasan yang letaknya
+      persis di tepi kotak ini (misalnya telinga bentuk stiker, yang harus terlihat
+      mencuat di atas garis badan stiker) tetap tergambar utuh.
+    -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipChildren="false">
 
         <ImageView
             android:id="@+id/widget_photo"
@@ -35,6 +54,14 @@
             android:layout_height="match_parent"
             android:contentDescription="@string/cd_widget_photo"
             android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/widget_photo_window"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/cd_widget_photo"
+            android:scaleType="fitCenter"
             android:visibility="gone" />
 
         <ImageView
@@ -46,9 +73,45 @@
             android:src="@drawable/widget_paw_light" />
 
         <!--
+          Hiasan bentuk stiker: dua telinga cuking berdiri di pita 18dp di atas
+          badan stiker, jadi 12dp pertamanya naik di atas garis badan.
+        -->
+        <ImageView
+            android:id="@+id/widget_ears"
+            android:layout_width="54dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|center_horizontal"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ears"
+            android:visibility="gone" />
+
+        <!-- Hiasan bentuk balon: ekor kecil di kiri bawah. -->
+        <ImageView
+            android:id="@+id/widget_tail"
+            android:layout_width="16dp"
+            android:layout_height="13dp"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="16dp"
+            android:layout_marginBottom="2dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_tail"
+            android:visibility="gone" />
+
+        <!--
+          Kumis bentuk jendela TIDAK digambar di sini, melainkan di dalam bitmap
+          fotonya (lihat WidgetPhoto): hiasan di layout punya jarak tetap dari tepi
+          kartu, sedangkan lingkaran fotonya menyusut di tengah dan ukurannya ikut
+          berubah saat widget ditarik, jadi kumis akan melayang jauh dari
+          lingkarannya. Itu yang terjadi pada versi pertama bentuk ini.
+        -->
+
+        <!--
           Badge rentetan harian, menempel di sudut kanan atas foto. Disembunyikan
           dari kode kalau rentetannya masih nol, jadi widget tidak pernah menagih
           apa pun ke pengguna yang belum mulai.
+
+          Jarak atasnya 16dp supaya badge-nya selalu masuk ke dalam badan widget,
+          termasuk di bentuk stiker yang badannya dimulai 18dp dari tepi atas.
 
           Latarnya PeachAccent yang tetap di kedua tema, jadi teks InkSoft di
           atasnya selalu terbaca (kontras 7,7:1).
@@ -58,7 +121,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|end"
-            android:layout_margin="4dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="4dp"
             android:background="@drawable/widget_streak_badge"
             android:gravity="center_vertical"
             android:importantForAccessibility="yes"
@@ -80,13 +144,42 @@
                 android:id="@+id/widget_streak_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
                 android:fontFamily="@font/nunito"
                 android:importantForAccessibility="no"
-                android:layout_marginStart="3dp"
                 android:textColor="#3A2E26"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <!--
+          Tombol jepret. Kotak yang bisa disentuh 44dp, sedangkan lingkarannya
+          sendiri 32dp di tengahnya: ia harus lolos tap target minimum (R-03),
+          tapi lingkaran 44dp di atas foto akan memakan sepertiga tinggi foto.
+          Sisanya tembus pandang, jadi yang terlihat tetap lingkaran kecilnya,
+          dan ImageView di dalamnya tidak clickable, jadi sentuhan diteruskan ke
+          kotak 44dp ini.
+
+          Letaknya di bawah, berseberangan dengan lencana rentetan di atas, dan
+          sengaja tidak menutupi bagian tengah foto.
+        -->
+        <FrameLayout
+            android:id="@+id/widget_capture"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|end"
+            android:contentDescription="@string/widget_capture_description"
+            android:importantForAccessibility="yes">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:background="@drawable/widget_capture_button"
+                android:importantForAccessibility="no"
+                android:padding="8dp"
+                android:src="@drawable/widget_paw_ink" />
+        </FrameLayout>
     </FrameLayout>
 
     <TextView
@@ -102,5 +195,5 @@
         android:paddingBottom="1dp"
         android:text="@string/widget_empty"
         android:textColor="#3A2E26"
-        android:textSize="11sp" />
+        android:textSize="12sp" />
 </LinearLayout>

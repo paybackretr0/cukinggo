@@ -124,13 +124,30 @@ fun CatListCard(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = cat.description ?: stringResource(R.string.detail_no_description),
+                        text = cat.name
+                            ?: cat.description
+                            ?: stringResource(R.string.detail_no_description),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        fontStyle = if (cat.description == null) FontStyle.Italic else FontStyle.Normal,
+                        fontStyle = if (cat.name == null && cat.description == null) {
+                            FontStyle.Italic
+                        } else {
+                            FontStyle.Normal
+                        },
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
+                    // Catatan tetap ikut ditampilkan saat namanya ada, tapi dipotong
+                    // satu baris supaya tingginya tidak mendorong kartu jadi gemuk.
+                    if (cat.name != null && cat.description != null) {
+                        Text(
+                            text = cat.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Text(
                         text = "${
                             formatDayLabel(

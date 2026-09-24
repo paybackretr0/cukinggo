@@ -11,6 +11,7 @@ class MapClusteringTest {
     private fun cat(id: Long, latitude: Double, longitude: Double) = Cat(
         id = id,
         photoPath = "/tmp/cat_$id.jpg",
+        name = null,
         description = null,
         latitude = latitude,
         longitude = longitude,

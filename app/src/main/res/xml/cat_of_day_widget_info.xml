@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Widget "Kucing hari ini". Isinya sama bentuknya dengan "Kucing terakhir", dan
-  memang memakai layout serta pratinjau yang sama, karena yang membedakan keduanya
-  hanya kucing mana yang ditampilkan. Di layar pemilih, bedanya dikenali dari
-  label dan deskripsi masing-masing.
+  Widget "Cuking hari ini". Ukuran, kemampuan di-resize, dan pratinjaunya sama
+  persis dengan "Cuking terakhir", karena yang membedakan keduanya hanya cuking
+  mana yang ditampilkan dan bentuk harian dipakai bersama. Di layar pemilih,
+  bedanya dikenali dari label dan deskripsi masing-masing.
 
   updatePeriodMillis tetap 0: pergantian harinya diurus oleh satu alarm inexact
   yang dipasang ulang setiap kali widget digambar, bukan oleh pembaruan berkala
   sistem yang jamnya mengikuti kapan widget dipasang.
-
-  targetCellWidth/Height dan previewLayout baru dipakai Android 12 ke atas,
-  tetapi sengaja ditulis di sini (bukan di folder xml-v31) mengikuti saran resmi
-  Android: perangkat lama memakai minWidth/minHeight dan mengabaikan sisanya.
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:description="@string/widget_of_day_description"
     android:initialLayout="@layout/widget_cat_photo"
+    android:maxResizeHeight="180dp"
+    android:maxResizeWidth="250dp"
     android:minHeight="110dp"
-    android:minWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="180dp"
     android:previewLayout="@layout/widget_cat_photo_preview"
-    android:resizeMode="none"
+    android:resizeMode="horizontal|vertical"
     android:targetCellHeight="2"
-    android:targetCellWidth="2"
+    android:targetCellWidth="3"
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen"
     tools:ignore="UnusedAttribute" />

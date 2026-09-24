@@ -7,8 +7,8 @@ import android.content.Intent
 /**
  * Dijalankan saat alarm tengah malam berbunyi.
  *
- * Tugasnya dua: menggambar ulang kedua varian widget (supaya "Kucing hari ini"
- * berganti kucing, dan lencana rentetan di keduanya ikut dihitung ulang), lalu
+ * Tugasnya dua: menggambar ulang ketiga varian widget (supaya "Kucing hari ini"
+ * berganti kucing, dan lencana rentetan di semuanya ikut dihitung ulang), lalu
  * memasang alarm untuk tengah malam berikutnya.
  *
  * Pemanggilan [CatWidgets.scheduleMidnightRefresh] aman walau ternyata sudah tidak

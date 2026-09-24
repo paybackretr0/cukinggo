@@ -1,0 +1,17 @@
+<!--
+  Ekor balon bicara, mode terang. Sama seperti telinga pada bentuk stiker, sisi
+  atasnya sengaja tidak digariskan supaya ekornya menyatu dengan badan balon.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="13dp"
+    android:viewportWidth="100"
+    android:viewportHeight="80">
+    <path
+        android:fillColor="#FFFDF8"
+        android:pathData="M2,6 L98,6 L16,74"
+        android:strokeColor="#8FD3C0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="6" />
+</vector>

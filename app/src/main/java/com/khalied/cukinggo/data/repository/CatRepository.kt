@@ -5,6 +5,7 @@ import com.khalied.cukinggo.data.local.CatEntity
 import com.khalied.cukinggo.data.local.toDomain
 import com.khalied.cukinggo.domain.model.Cat
 import com.khalied.cukinggo.util.ImageStorageHelper
+import com.khalied.cukinggo.util.blankToNull
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -57,6 +58,7 @@ class CatRepository(
 
     suspend fun addCat(
         photoPath: String,
+        name: String?,
         description: String?,
         latitude: Double,
         longitude: Double,
@@ -65,7 +67,8 @@ class CatRepository(
         val id = catDao.insertCat(
             CatEntity(
                 photoPath = photoPath,
-                description = description?.trim()?.takeIf { it.isNotEmpty() },
+                name = blankToNull(name),
+                description = blankToNull(description),
                 latitude = latitude,
                 longitude = longitude,
                 timestamp = timestamp

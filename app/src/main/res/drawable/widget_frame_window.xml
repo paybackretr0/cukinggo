@@ -1,0 +1,11 @@
+<!--
+  Bingkai bentuk jendela, mode terang: badan memakai warna latar app (CreamBg),
+  bukan warna permukaan seperti dua bentuk lain, dan tanpa garis tepi sama sekali.
+  Alasannya: di bentuk ini foto sudah jadi satu-satunya bidang bulat, jadi garis
+  tepi hanya menambah satu garis lagi yang tidak menjelaskan apa pun.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FFF8EE" />
+    <corners android:radius="28dp" />
+</shape>

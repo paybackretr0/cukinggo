@@ -8,6 +8,7 @@ import com.khalied.cukinggo.domain.model.Cat
 data class CatEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val photoPath: String,
+    val name: String?,
     val description: String?,
     val latitude: Double,
     val longitude: Double,
@@ -17,6 +18,7 @@ data class CatEntity(
 fun CatEntity.toDomain(): Cat = Cat(
     id = id,
     photoPath = photoPath,
+    name = name,
     description = description,
     latitude = latitude,
     longitude = longitude,
@@ -26,6 +28,7 @@ fun CatEntity.toDomain(): Cat = Cat(
 fun Cat.toEntity(): CatEntity = CatEntity(
     id = id,
     photoPath = photoPath,
+    name = name,
     description = description,
     latitude = latitude,
     longitude = longitude,

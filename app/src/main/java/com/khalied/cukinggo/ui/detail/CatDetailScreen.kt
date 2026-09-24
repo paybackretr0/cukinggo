@@ -54,6 +54,7 @@ import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.util.catShareIntent
+import com.khalied.cukinggo.util.blankToNull
 import com.khalied.cukinggo.util.distanceMeters
 import com.khalied.cukinggo.util.formatCoordinates
 import com.khalied.cukinggo.util.formatDistance
@@ -233,6 +234,13 @@ private fun DetailContent(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    if (cat.name != null) {
+                        Text(
+                            text = cat.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     Text(
                         text = "🐾 Catatan",
                         style = MaterialTheme.typography.titleMedium,
@@ -285,23 +293,35 @@ private fun DetailContent(
 }
 
 /**
- * Tombol bagikan: foto kucing dikirim bersama template chat berisi catatan
- * (kalau ada), koordinat, dan link Google Maps.
+ * Tombol bagikan: foto kucing dikirim bersama template chat berisi nama,
+ * catatan (kalau ada), koordinat, dan link Google Maps.
  *
  * Isi pesannya sengaja disusun dari string resource, bukan ditempel di kode,
- * supaya kalimatnya gampang diganti tanpa menyentuh logika intent-nya.
+ * supaya kalimatnya gampang diganti tanpa menyentuh logika intent-nya. Template
+ * dipilih dari dua hal yang boleh kosong, yaitu nama dan catatan.
  */
 @Composable
 private fun ShareCatButton(cat: Cat, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val note = cat.description?.trim()?.takeIf { it.isNotEmpty() }
+    val name = blankToNull(cat.name)
+    val note = blankToNull(cat.description)
     val coordinates = formatCoordinates(cat.latitude, cat.longitude)
     val mapsLink = mapsLinkFor(cat.latitude, cat.longitude)
 
-    val message = if (note != null) {
-        stringResource(R.string.share_message_with_note, note, coordinates, mapsLink)
-    } else {
-        stringResource(R.string.share_message, coordinates, mapsLink)
+    val message = when {
+        name != null && note != null -> stringResource(
+            R.string.share_message_named_with_note, name, note, coordinates, mapsLink
+        )
+
+        name != null -> stringResource(
+            R.string.share_message_named, name, coordinates, mapsLink
+        )
+
+        note != null -> stringResource(
+            R.string.share_message_with_note, note, coordinates, mapsLink
+        )
+
+        else -> stringResource(R.string.share_message, coordinates, mapsLink)
     }
     val chooserTitle = stringResource(R.string.share_chooser_title)
 

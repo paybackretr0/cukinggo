@@ -4,11 +4,11 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import com.khalied.cukinggo.appContainer
-import com.khalied.cukinggo.domain.model.Cat
 
 /**
- * Widget "Kucing terakhir": polaroid berisi foto kucing yang paling baru ditandai,
- * dengan catatannya (atau satu baris lucu kalau catatannya kosong).
+ * Widget "Cuking terakhir": satu kartu berisi foto cuking yang paling baru ditandai,
+ * dengan catatannya (atau satu baris lucu kalau catatannya kosong). Bingkainya
+ * bergilir tiap hari, lihat [WidgetSkin].
  *
  * Isi fotonya hanya berubah kalau app menambah atau menghapus kucing, dan saat itu
  * [CatWidgets.refreshAll] dipanggil dari repository. Yang tetap dipasang adalah
@@ -40,9 +40,9 @@ class CatWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        /** Kucing yang paling baru ditandai. */
-        val pickCat: suspend (Context) -> Cat? = { context ->
-            context.appContainer.catRepository.latestCat()
+        /** Cuking yang paling baru ditandai. */
+        internal val pickCat: suspend (Context) -> WidgetPick = { context ->
+            WidgetPick(context.appContainer.catRepository.latestCat())
         }
     }
 }

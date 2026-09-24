@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget "Cuking terdekat". Ukuran, kemampuan di-resize, dan pratinjaunya sama
+  dengan dua widget lain, karena yang membedakan cuma cuking mana yang dipilih.
+  Di layar pemilih, bedanya dikenali dari label dan deskripsi masing-masing.
+
+  updatePeriodMillis tetap 0. Isi widget ini memang bergantung pada posisi, tapi
+  memantau posisi tidak dikerjakan widget: perpindahan posisi yang tidak diikuti
+  pembukaan app tidak bisa diketahui tanpa geofence atau service yang jalan terus,
+  dan dua hal itu sudah punya tempatnya sendiri (lihat fitur kabar dekat cuking).
+  Jadi widget ini digambar ulang saat app dibuka, saat daftar cuking berubah, dan
+  tengah malam bersama dua widget lain.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:description="@string/widget_nearby_description"
+    android:initialLayout="@layout/widget_cat_photo"
+    android:maxResizeHeight="180dp"
+    android:maxResizeWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="180dp"
+    android:previewLayout="@layout/widget_cat_photo_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="3"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    tools:ignore="UnusedAttribute" />

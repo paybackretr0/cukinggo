@@ -1,0 +1,13 @@
+<!-- Varian gelap widget_frame_sticker.xml. Dipilih dari kode, bukan dari
+     kualifikasi values-night, karena tema app ditentukan pilihan pengguna. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="18dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#2C231E" />
+            <corners android:radius="20dp" />
+            <stroke
+                android:width="2dp"
+                android:color="#F3E7DC" />
+        </shape>
+    </item>
+</layer-list>

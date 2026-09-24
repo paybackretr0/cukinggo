@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,15 +46,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.data.local.NearbyAlertPreferences
@@ -62,23 +68,29 @@ import com.khalied.cukinggo.location.MAX_WATCH_AREAS
 import com.khalied.cukinggo.location.NearbyAlertState
 import com.khalied.cukinggo.location.NearbyAlerts
 import com.khalied.cukinggo.location.NearbyRadius
+import com.khalied.cukinggo.location.NearestCatResult
+import com.khalied.cukinggo.location.findNearestCat
 import com.khalied.cukinggo.location.nearbyAlertState
 import com.khalied.cukinggo.ui.components.CatListCard
 import com.khalied.cukinggo.ui.components.CatMapView
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.NearbyAlertDialog
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
-import com.khalied.cukinggo.ui.components.ThemePickerDialog
+import com.khalied.cukinggo.ui.components.AppearancePickerDialog
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.theme.InkSoft
 import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.widget.CatWidgets
+import com.khalied.cukinggo.widget.WidgetSkinMode
 import com.khalied.cukinggo.util.catStreak
+import com.khalied.cukinggo.util.formatDistance
 import com.khalied.cukinggo.util.hasBackgroundLocationPermission
 import com.khalied.cukinggo.util.hasNotificationPermission
 import com.khalied.cukinggo.util.openAppSettings
+import java.io.File
 import java.time.LocalDate
 
 @Composable
@@ -104,9 +116,10 @@ fun HomeScreen(
     val streakDays = remember(cats, today) {
         catStreak(timestamps = cats.map { cat -> cat.timestamp }, today = today)
     }
-    val themePreferences = container.themePreferences
-    val themeModeKey by themePreferences.themeModeKey.collectAsStateWithLifecycle()
-    var showThemeDialog by remember { mutableStateOf(false) }
+    val displayPreferences = container.displayPreferences
+    val themeModeKey by displayPreferences.themeModeKey.collectAsStateWithLifecycle()
+    val widgetSkinKey by displayPreferences.widgetSkinKey.collectAsStateWithLifecycle()
+    var showAppearanceDialog by remember { mutableStateOf(false) }
 
     val nearbyPreferences = remember(context) { NearbyAlertPreferences(context) }
     var showNearbyDialog by remember { mutableStateOf(false) }
@@ -120,6 +133,26 @@ fun HomeScreen(
     }
     var hasBackgroundLocation by remember {
         mutableStateOf(context.hasBackgroundLocationPermission())
+    }
+
+    // Cuking terdekat yang disorot di atas peta saat kamu memang sedang dekat
+    // dengannya. Dihitung ulang kalau daftar cukingnya berubah, kalau izin
+    // lokasinya baru diberikan, dan setiap kali layar ini dibuka lagi.
+    var locationRefreshKey by remember { mutableStateOf(0) }
+    var nearestCat by remember { mutableStateOf<NearestCatResult.Found?>(null) }
+    LaunchedEffect(cats, hasForegroundLocation, locationRefreshKey) {
+        nearestCat = if (cats.isEmpty() || !hasForegroundLocation) {
+            null
+        } else {
+            // Layar Home boleh menunggu sebentar kalau perangkat belum pernah
+            // mencatat posisi sama sekali; widget tidak boleh, karena ia digambar
+            // di latar belakang.
+            findNearestCat(
+                locationHelper = container.locationHelper,
+                cats = cats,
+                allowFreshFix = true
+            ) as? NearestCatResult.Found
+        }
     }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -150,6 +183,12 @@ fun HomeScreen(
                 // Rentetan dihitung per hari, jadi tanggalnya harus ikut diganti
                 // kalau halaman ini dibuka lagi besoknya.
                 today = LocalDate.now()
+                // Posisinya bisa berubah selagi app di background, dan widget
+                // "Cuking terdekat" membaca posisi saat digambar. Tanpa baris
+                // ini, kartunya baru ikut menyesuaikan kalau ada cuking baru
+                // yang ditandai.
+                locationRefreshKey++
+                CatWidgets.refreshAll(context)
                 NearbyAlerts.syncAsync(context)
             }
         }
@@ -230,7 +269,7 @@ fun HomeScreen(
                     active = nearbyState == NearbyAlertState.ACTIVE,
                     onClick = { showNearbyDialog = true }
                 )
-                ThemePill(onClick = { showThemeDialog = true })
+                AppearancePill(onClick = { showAppearanceDialog = true })
             }
 
             // Rentetan harian hanya muncul kalau sudah jalan. Widget pun begitu:
@@ -242,6 +281,20 @@ fun HomeScreen(
                     iconRes = R.drawable.ic_flame,
                     containerColor = PeachAccent,
                     contentColor = InkSoft
+                )
+            }
+
+            // Cuking terdekat disorot di atas peta, bukan diselipkan ke dalam
+            // daftar: begitu kamu masuk radiusnya, dia yang jadi hal pertama yang
+            // terlihat di layar ini. Kalau tidak ada yang dekat, kartunya hilang
+            // sama sekali dan peta tetap jadi isi utama seperti sebelumnya.
+            val nearest = nearestCat
+            if (nearest != null) {
+                Spacer(Modifier.height(10.dp))
+                NearestCatCard(
+                    cat = nearest.cat,
+                    distanceMeters = nearest.distanceMeters,
+                    onClick = { onCatClick(nearest.cat.id) }
                 )
             }
 
@@ -304,14 +357,24 @@ fun HomeScreen(
         }
     }
 
-    if (showThemeDialog) {
-        ThemePickerDialog(
-            currentMode = ThemeMode.fromKey(themeModeKey),
-            onModeSelected = { mode ->
-                themePreferences.setThemeModeKey(mode.storageKey)
-                showThemeDialog = false
+    if (showAppearanceDialog) {
+        AppearancePickerDialog(
+            currentThemeMode = ThemeMode.fromKey(themeModeKey),
+            currentWidgetSkin = WidgetSkinMode.fromKey(widgetSkinKey),
+            onThemeModeSelected = { mode ->
+                displayPreferences.setThemeModeKey(mode.storageKey)
+                // Widget membaca pilihan tema saat digambar, jadi ia digambar
+                // ulang sekarang juga; tanpa ini warnanya baru ikut setelah ada
+                // sesuatu yang memicu pembaruan lain.
+                CatWidgets.refreshAll(context)
+                showAppearanceDialog = false
             },
-            onDismiss = { showThemeDialog = false }
+            onWidgetSkinSelected = { skin ->
+                displayPreferences.setWidgetSkinKey(skin.storageKey)
+                CatWidgets.refreshAll(context)
+                showAppearanceDialog = false
+            },
+            onDismiss = { showAppearanceDialog = false }
         )
     }
 
@@ -396,6 +459,83 @@ private fun CatsErrorCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /**
+ * Cuking terdekat, ditampilkan begitu kamu masuk radiusnya.
+ *
+ * Latarnya `secondaryContainer` (MintPop di tema terang) dan bukan warna kartu
+ * biasa, karena makna kartu ini memang "dekat": warna yang sama sudah dipakai
+ * pil lonceng saat fitur kabarnya aktif dan chip jumlah di bagian daftar. Semua
+ * teks memakai `onSecondaryContainer` di atas latar itu, dan itu lolos WCAG AA di
+ * kedua tema (7,7:1 di terang, 4,9:1 di gelap), jadi judulnya tidak boleh memakai
+ * `primary` seperti kartu daftar: di atas MintPop warnanya cuma 3,2:1.
+ */
+@Composable
+private fun NearestCatCard(
+    cat: Cat,
+    distanceMeters: Double,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            // Satu kartu dibaca TalkBack sebagai satu simpul, sama seperti kartu di
+            // daftar: label, nama, dan jaraknya cukup sekali.
+            .semantics(mergeDescendants = true) {},
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Foto sengaja dekoratif, sama seperti di kartu daftar: teks di
+            // sebelahnya sudah menjelaskan kartunya.
+            AsyncImage(
+                model = File(cat.photoPath),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(MaterialTheme.shapes.large)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.home_nearest_label),
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    text = cat.name
+                        ?: cat.description
+                        ?: stringResource(R.string.detail_no_description),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontStyle = if (cat.name == null && cat.description == null) {
+                        FontStyle.Italic
+                    } else {
+                        FontStyle.Normal
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(
+                        R.string.detail_distance,
+                        formatDistance(distanceMeters)
+                    ),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+/**
  * Kontrol kabar "dekat kucing": bulat dan ikon saja supaya tidak menyempitkan
  * judul di sebelahnya. Warnanya berubah jadi MintPop waktu fiturnya aktif, jadi
  * statusnya kelihatan tanpa harus membuka dialog.
@@ -423,9 +563,12 @@ private fun NearbyPill(active: Boolean, onClick: () -> Unit, modifier: Modifier 
     }
 }
 
-/** Kontrol tema di header: satu-satunya setelan app, jadi cukup pill kecil. */
+/**
+ * Kontrol tampilan di header: satu-satunya setelan app, jadi cukup pill kecil.
+ * Isinya tema dan bentuk widget (lihat AppearancePickerDialog).
+ */
 @Composable
-private fun ThemePill(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun AppearancePill(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         shape = CircleShape,
@@ -440,7 +583,7 @@ private fun ThemePill(onClick: () -> Unit, modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = stringResource(R.string.theme_button),
+                text = stringResource(R.string.appearance_button),
                 style = MaterialTheme.typography.labelMedium
             )
         }

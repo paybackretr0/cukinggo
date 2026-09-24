@@ -1,0 +1,21 @@
+<!--
+  Bingkai bentuk stiker, mode terang: badan bergaris tepi tebal, dan badannya
+  sengaja dimasukkan 18dp dari tepi atas supaya ada pita kosong tempat dua telinga
+  cuking berdiri. Pita itu yang bikin telinganya benar-benar naik di atas garis
+  badan; versi pertama cuma menyisakan 12dp, dan telinganya jadi terlihat seperti
+  digambar di dalam kartu.
+
+  Garis tepi tebal (2dp) dipakai justru supaya bentuk ini terasa seperti stiker
+  tempel, berbeda dari dua bentuk lain yang garisnya tipis atau tidak ada.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="18dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFDF8" />
+            <corners android:radius="20dp" />
+            <stroke
+                android:width="2dp"
+                android:color="#3A2E26" />
+        </shape>
+    </item>
+</layer-list>

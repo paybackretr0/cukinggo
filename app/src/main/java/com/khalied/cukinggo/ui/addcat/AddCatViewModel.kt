@@ -40,7 +40,7 @@ class AddCatViewModel(
      * Ambil GPS saat simpan (tanpa input manual), pindahkan foto ke internal
      * storage, lalu simpan catatannya ke Room.
      */
-    fun saveCat(captureFile: File?, description: String) {
+    fun saveCat(captureFile: File?, name: String, description: String) {
         if (captureFile == null || !captureFile.exists()) {
             _uiState.value = AddCatUiState.Error(R.string.add_error_no_photo)
             return
@@ -62,6 +62,7 @@ class AddCatViewModel(
                 }
                 catRepository.addCat(
                     photoPath = photoPath,
+                    name = name,
                     description = description,
                     latitude = location.latitude,
                     longitude = location.longitude

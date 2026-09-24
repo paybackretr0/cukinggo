@@ -26,15 +26,19 @@ class MainActivity : ComponentActivity() {
     /** Kucing yang diminta dibuka, misalnya dari tap widget di layar utama. */
     private val pendingCatId = MutableStateFlow<Long?>(null)
 
+    /** Permintaan memotret dari tombol jepret di widget. */
+    private val pendingCapture = MutableStateFlow(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         pendingCatId.value = intent.requestedCatId()
-        val themePreferences = appContainer.themePreferences
+        pendingCapture.value = intent.wantsCapture()
+        val displayPreferences = appContainer.displayPreferences
 
         setContent {
-            val themeModeKey by themePreferences.themeModeKey.collectAsStateWithLifecycle()
+            val themeModeKey by displayPreferences.themeModeKey.collectAsStateWithLifecycle()
             val darkTheme = ThemeMode.fromKey(themeModeKey).isDark(isSystemInDarkTheme())
 
             // Latar window ikut pilihan tema, supaya tidak ada kedipan warna
@@ -48,9 +52,12 @@ class MainActivity : ComponentActivity() {
             CukingGoTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val openCatId by pendingCatId.collectAsStateWithLifecycle()
+                    val openCapture by pendingCapture.collectAsStateWithLifecycle()
                     CukingGoNavHost(
                         openCatId = openCatId,
-                        onOpenCatConsumed = { pendingCatId.value = null }
+                        onOpenCatConsumed = { pendingCatId.value = null },
+                        openCapture = openCapture,
+                        onOpenCaptureConsumed = { pendingCapture.value = false }
                     )
                 }
             }
@@ -63,10 +70,14 @@ class MainActivity : ComponentActivity() {
         // sini, bukan lewat onCreate.
         setIntent(intent)
         pendingCatId.value = intent.requestedCatId()
+        pendingCapture.value = intent.wantsCapture()
     }
 
     private fun Intent?.requestedCatId(): Long? =
         this?.getLongExtra(EXTRA_CAT_ID, NO_CAT_ID)?.takeIf { it > 0 }
+
+    private fun Intent?.wantsCapture(): Boolean =
+        this?.getBooleanExtra(EXTRA_CAPTURE_NOW, false) == true
 
     companion object {
         /** Extra dari widget, supaya tap-nya langsung mendarat di detail kucing. */
@@ -74,5 +85,8 @@ class MainActivity : ComponentActivity() {
 
         /** Widget tanpa data kucing mengirim ini, artinya cukup buka Home. */
         const val NO_CAT_ID = -1L
+
+        /** Extra dari tombol jepret di widget: langsung buka kamera dan jepret. */
+        const val EXTRA_CAPTURE_NOW = "extra_capture_now"
     }
 }

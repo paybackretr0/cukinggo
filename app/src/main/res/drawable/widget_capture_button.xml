@@ -1,0 +1,15 @@
+<!--
+  Latar tombol jepret di widget: lingkaran penuh PeachAccent.
+
+  Bentuk oval dipakai, bukan kotak bersudut seperti badge rentetan, karena ini
+  satu-satunya kontrol di widget: lingkaran membedakannya dari foto di belakangnya
+  tanpa perlu garis tepi, dan ukurannya tetap pas di sudut mana pun.
+
+  Warnanya sama dengan FAB dan tombol utama di dalam app, jadi "aksen utama =
+  tombol" tetap berlaku di layar utama. Punch PeachAccent tetap di kedua tema,
+  jadi satu varian cukup.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#FFB27A" />
+</shape>

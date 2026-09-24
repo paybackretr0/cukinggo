@@ -73,6 +73,7 @@ class CatOfDayTest {
     private fun cat(id: Long, description: String): Cat = Cat(
         id = id,
         photoPath = "cat_$id.jpg",
+        name = null,
         description = description,
         latitude = -6.2,
         longitude = 106.8,

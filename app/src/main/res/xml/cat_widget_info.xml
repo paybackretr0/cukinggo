@@ -1,32 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  2x2 sel, tidak bisa di-resize, hanya di layar utama.
+  Widget "Cuking terakhir": bawaan 3x2 sel, dan boleh ditarik sendiri oleh
+  pengguna antara 2x2 sampai 4x3.
+
+  Angka dp-nya mengikuti rumus resmi Android per sel: 2 sel = 110dp, 3 sel =
+  180dp, 4 sel = 250dp. minWidth/minHeight tetap ditulis sebagai ukuran terkecil
+  yang boleh dicapai, karena di Android 10 dan 11 keduanya sekaligus jadi ukuran
+  awal. maxResizeWidth/maxResizeHeight baru dibaca Android 12 ke atas, jadi
+  perangkat lama mengabaikannya (lihat tools:ignore di bawah).
 
   updatePeriodMillis 0: tidak ada bangun-bangun berkala. Widget ini isinya
-  "kucing terakhir", dan itu hanya berubah kalau app-nya sendiri menambah atau
-  menghapus kucing. Saat itu terjadi, CatWidgetProvider.refresh dipanggil dari
+  "cuking terakhir", dan itu hanya berubah kalau app-nya sendiri menambah atau
+  menghapus cuking. Saat itu terjadi, CatWidgetProvider.refresh dipanggil dari
   repository, jadi tidak perlu alarm harian yang membangunkan perangkat.
 
   initialLayout menunjuk ke layout widget yang sama, jadi sebelum data pertama
   masuk yang tampil adalah versi kosongnya (jejak kaki + ajakan), bukan kotak
   kosong atau pola bawaan sistem.
 
-  targetCellWidth/Height dan previewLayout baru dipakai Android 12 ke atas.
-  Keduanya tetap ditulis di sini (bukan di folder xml-v31) karena saran resmi
-  Android memang begitu: aplikasi menyediakan kedua bentuk sekaligus, dan
-  perangkat lama memakai minWidth/minHeight. Bawaan lama mengabaikan atribut
-  yang tidak dikenalnya, jadi tidak ada yang rusak di Android 10 dan 11.
+  targetCellWidth/Height dan previewLayout juga baru dipakai Android 12 ke atas,
+  tetapi tetap ditulis di sini (bukan di folder xml-v31) karena saran resmi
+  Android memang begitu: aplikasi menyediakan kedua bentuk sekaligus.
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:description="@string/widget_description"
     android:initialLayout="@layout/widget_cat_photo"
+    android:maxResizeHeight="180dp"
+    android:maxResizeWidth="250dp"
     android:minHeight="110dp"
-    android:minWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="180dp"
     android:previewLayout="@layout/widget_cat_photo_preview"
-    android:resizeMode="none"
+    android:resizeMode="horizontal|vertical"
     android:targetCellHeight="2"
-    android:targetCellWidth="2"
+    android:targetCellWidth="3"
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen"
     tools:ignore="UnusedAttribute" />

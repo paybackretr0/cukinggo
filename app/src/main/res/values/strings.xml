@@ -2,72 +2,78 @@
     <string name="app_name">CukingGo</string>
 
     <!-- Home -->
-    <string name="home_title">Kucing yang kutemui 🐾</string>
+    <string name="home_title">Cuking yang kutemui 🐾</string>
     <string name="home_subtitle">Tersimpan di HP kamu, nggak ke mana-mana</string>
-    <string name="home_counter">🐱 %1$d kucing ditemukan</string>
-    <string name="home_empty_title">Belum ada kucing yang ditandain, yuk jalan-jalan!</string>
-    <string name="home_empty_subtitle">Jepret kucing pertamamu, lokasinya kami tandai otomatis.</string>
+    <string name="home_counter">🐱 %1$d cuking ditemukan</string>
+    <string name="home_empty_title">Belum ada cuking yang ditandain, yuk jalan-jalan!</string>
+    <string name="home_empty_subtitle">Jepret cuking pertamamu, lokasinya kami tandai otomatis.</string>
     <string name="home_recent_title">Jejak terbaru</string>
-    <string name="home_loading">Lagi memuat catatan kucing…</string>
+    <string name="home_nearest_label">Cuking terdekat</string>
+    <string name="home_loading">Lagi memuat catatan cuking…</string>
     <string name="error_load_title">Catatannya belum kebaca 😿</string>
     <string name="home_error_message">Coba sekali lagi, biasanya langsung beres.</string>
-    <string name="home_delete_hint">Kucingnya dilepas 😿</string>
+    <string name="home_delete_hint">Cukingnya dilepas 😿</string>
     <string name="home_my_location">Ke lokasi kamu</string>
-    <string name="map_offline_notice">Peta butuh internet buat gambarnya. Catatan kucingmu tetap aman di HP.</string>
+    <string name="map_offline_notice">Peta butuh internet buat gambarnya. Catatan cukingmu tetap aman di HP.</string>
     <string name="map_tiles_failed_notice">Peta belum bisa dimuat. Coba lagi ya.</string>
     <string name="home_location_unknown">Lokasi kamu belum kebaca 😿 Coba lagi sebentar ya.</string>
     <string name="home_location_permission">Izin lokasi belum aktif. Buka Pengaturan → Izin untuk mengaktifkan.</string>
-    <string name="fab_add_cat">Tandai kucing</string>
+    <string name="fab_add_cat">Tandai cuking</string>
 
     <!-- Add cat -->
-    <string name="add_title">Tandai kucing baru</string>
-    <string name="add_camera_hint">Arahkan ke kucingnya, lalu jepret 📸</string>
+    <string name="add_title">Tandai cuking baru</string>
+    <string name="add_camera_hint">Arahkan ke cukingnya, lalu jepret 📸</string>
     <string name="add_capture">Jepret</string>
     <string name="add_retake">Ambil ulang</string>
-    <string name="add_description_hint">Kucingnya lagi ngapain nih? (opsional)</string>
+    <string name="add_name_label">Nama cuking</string>
+    <string name="add_name_hint">Misal: si Kumis, si Belang</string>
+    <string name="add_name_support">Opsional. Nggak harus nama asli, cukup dari ciri khasnya saja.</string>
+    <string name="add_description_hint">Cukingnya lagi ngapain nih? (opsional)</string>
     <string name="add_save">Simpan &amp; Tandain! 🐾</string>
     <string name="add_locating">Lagi nyari lokasi kamu…</string>
-    <string name="add_saving">Menyimpan kucing kamu…</string>
+    <string name="add_saving">Menyimpan cuking kamu…</string>
     <string name="add_error_location">Hmm, lokasi kamu belum kebaca. Coba keluar sebentar atau nyalakan GPS ya.</string>
     <string name="add_error_no_photo">Fotonya belum ada, jepret dulu ya 📸</string>
     <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
-    <string name="add_error_save">Kucingnya gagal disimpan. Coba sekali lagi ya.</string>
+    <string name="add_error_save">Cukingnya gagal disimpan. Coba sekali lagi ya.</string>
     <string name="add_retry">Coba lagi</string>
 
     <!-- Permission -->
-    <string name="permission_title">Izin dulu ya, biar bisa nandain kucing 🐾</string>
-    <string name="permission_camera">Kamera dipakai buat foto kucing yang kamu temui.</string>
-    <string name="permission_location">Lokasi dipakai buat nandain titik ketemu kucing di peta. Semuanya tetap di HP kamu.</string>
+    <string name="permission_title">Izin dulu ya, biar bisa nandain cuking 🐾</string>
+    <string name="permission_camera">Kamera dipakai buat foto cuking yang kamu temui.</string>
+    <string name="permission_location">Lokasi dipakai buat nandain titik ketemu cuking di peta. Semuanya tetap di HP kamu.</string>
     <string name="permission_grant">Izinkan</string>
     <string name="permission_denied">Izinnya masih mati. Buka pengaturan app untuk mengaktifkan manual.</string>
     <string name="permission_open_settings">Buka pengaturan</string>
 
     <!-- Detail -->
-    <string name="detail_title">Detail kucing</string>
-    <string name="detail_no_description">Belum ada catatan buat kucing ini.</string>
+    <string name="detail_title">Detail cuking</string>
+    <string name="detail_no_description">Belum ada catatan buat cuking ini.</string>
     <string name="detail_distance">≈ %1$s dari kamu</string>
-    <string name="detail_delete">Hapus kucing ini</string>
-    <string name="detail_delete_title">Hapus kucing ini?</string>
+    <string name="detail_delete">Hapus cuking ini</string>
+    <string name="detail_delete_title">Hapus cuking ini?</string>
     <string name="detail_delete_message">Foto &amp; catatannya bakal hilang permanen dari HP kamu.</string>
     <string name="detail_delete_confirm">Hapus</string>
-    <string name="detail_missing">Kucingnya sudah nggak ada di catatan.</string>
+    <string name="detail_missing">Cukingnya sudah nggak ada di catatan.</string>
     <string name="detail_loading">Lagi membuka catatannya…</string>
     <string name="detail_error_message">Coba sekali lagi ya.</string>
 
     <!-- Bagikan -->
-    <string name="share_button">Bagikan kucing ini</string>
+    <string name="share_button">Bagikan cuking ini</string>
     <string name="share_chooser_title">Bagikan lewat mana?</string>
-    <string name="share_message">Ketemu kucing di CukingGo 🐾\n\n📍 %1$s\nLihat di Google Maps:\n%2$s</string>
-    <string name="share_message_with_note">Ketemu kucing di CukingGo 🐾\n\n%1$s\n\n📍 %2$s\nLihat di Google Maps:\n%3$s</string>
+    <string name="share_message">Ketemu cuking di CukingGo 🐾\n\nDia nongkrong di:\n📍 %1$s\nLihat di Google Maps:\n%2$s</string>
+    <string name="share_message_with_note">Ketemu cuking di CukingGo 🐾\n\n%1$s\n\nDia nongkrong di:\n📍 %2$s\nLihat di Google Maps:\n%3$s</string>
+    <string name="share_message_named">Ketemu cuking di CukingGo 🐾\n\nNamanya %1$s.\n\nDia nongkrong di:\n📍 %2$s\nLihat di Google Maps:\n%3$s</string>
+    <string name="share_message_named_with_note">Ketemu cuking di CukingGo 🐾\n\nNamanya %1$s.\n\n%2$s\n\nDia nongkrong di:\n📍 %3$s\nLihat di Google Maps:\n%4$s</string>
 
     <!-- Rentetan harian -->
     <string name="streak_chip">%1$d hari beruntun</string>
     <string name="streak_badge_description">Rentetan %1$d hari</string>
 
-    <!-- Kabar dekat kucing -->
-    <string name="nearby_pill_description">Kabar kalau dekat kucing</string>
-    <string name="nearby_dialog_title">Ingatkan kalau aku lewat dekat kucing</string>
-    <string name="nearby_dialog_off">App cek kucing yang pernah kamu tandai di sekitar sini, lalu kasih kabar kalau kamu masuk radius %1$d m. Pengecekannya jalan di HP kamu sendiri, tidak ada lokasi yang dikirim ke mana pun.</string>
+    <!-- Kabar dekat cuking -->
+    <string name="nearby_pill_description">Kabar kalau dekat cuking</string>
+    <string name="nearby_dialog_title">Ingatkan kalau aku lewat dekat cuking</string>
+    <string name="nearby_dialog_off">App cek cuking yang pernah kamu tandai di sekitar sini, lalu kasih kabar kalau kamu masuk radius %1$d m. Pengecekannya jalan di HP kamu sendiri, tidak ada lokasi yang dikirim ke mana pun.</string>
     <string name="nearby_radius_title">Radius</string>
     <string name="nearby_radius_100">100 m</string>
     <string name="nearby_radius_200">200 m</string>
@@ -78,7 +84,7 @@
     <string name="nearby_dialog_need_notification">Biar kabarnya bisa muncul, app butuh izin notifikasi.</string>
     <string name="nearby_dialog_need_foreground">Sebelum bisa dapat izin lokasi latar belakang, app perlu izin lokasi biasa dulu.</string>
     <string name="nearby_dialog_need_background">Biar kabarnya tetap muncul walau app sedang tertutup, izinkan lokasi dipakai sepanjang waktu: Pengaturan → Izin → Lokasi → pilih %1$s.</string>
-    <string name="nearby_dialog_active">Aktif. %1$d kucing dipantau, radius %2$d m.</string>
+    <string name="nearby_dialog_active">Aktif. %1$d cuking dipantau, radius %2$d m.</string>
     <string name="nearby_action_turn_on">Nyalakan</string>
     <string name="nearby_action_turn_off">Matikan</string>
     <string name="nearby_action_notification">Izinkan notifikasi</string>
@@ -86,14 +92,26 @@
     <string name="nearby_action_background">Buka pengaturan izin</string>
     <string name="nearby_action_decline">Jangan aktifkan</string>
     <string name="nearby_background_option_fallback">Izinkan sepanjang waktu</string>
-    <string name="nearby_channel_name">Kucing di dekatmu</string>
-    <string name="nearby_channel_description">Kabar waktu kamu masuk radius kucing yang pernah kamu tandai.</string>
-    <string name="nearby_alert_title">Kucing di dekat sini 🐱</string>
-    <string name="nearby_alert_body">Kamu pernah nandain kucing di sekitar sini.</string>
+    <string name="nearby_channel_name">Cuking di dekatmu</string>
+    <string name="nearby_channel_description">Kabar waktu kamu masuk radius cuking yang pernah kamu tandai.</string>
+    <string name="nearby_alert_title">Cuking di dekat sini 🐱</string>
+    <string name="nearby_alert_title_named">%1$s di dekat sini 🐱</string>
+    <string name="nearby_alert_body">Kamu pernah nandain cuking di sekitar sini.</string>
 
-    <!-- Tema -->
-    <string name="theme_button">Tema</string>
-    <string name="theme_title">Pilih tema</string>
+    <!-- Tampilan: tema + bentuk widget -->
+    <string name="appearance_button">Tampilan</string>
+    <string name="appearance_title">Tampilan</string>
+    <string name="appearance_section_theme">Tema</string>
+    <string name="appearance_section_widget">Bentuk widget</string>
+    <string name="appearance_widget_note">Berlaku untuk semua widget di layar utama.</string>
+    <string name="widget_skin_auto">Otomatis</string>
+    <string name="widget_skin_auto_desc">Bentuknya berganti sendiri tiap hari.</string>
+    <string name="widget_skin_sticker">Stiker tempel</string>
+    <string name="widget_skin_sticker_desc">Bingkai bergaris tebal dengan dua telinga cuking.</string>
+    <string name="widget_skin_speech">Balon bicara</string>
+    <string name="widget_skin_speech_desc">Bingkai membulat dengan ekor kecil di kiri bawah.</string>
+    <string name="widget_skin_window">Jendela bulat</string>
+    <string name="widget_skin_window_desc">Fotonya dipotong bulat, dengan kumis di kiri dan kanan.</string>
     <string name="theme_system">Ikut sistem</string>
     <string name="theme_system_desc">Ganti otomatis mengikuti pengaturan HP kamu.</string>
     <string name="theme_light">Terang</string>
@@ -102,13 +120,25 @@
     <string name="theme_dark_desc">Selalu gelap, nyaman buat malam.</string>
 
     <!-- Widget -->
-    <string name="widget_label">Kucing terakhir</string>
-    <string name="widget_description">Polaroid kucing terakhir yang kamu tandai.</string>
-    <string name="widget_of_day_label">Kucing hari ini</string>
-    <string name="widget_of_day_description">Satu kucing dari koleksimu, berganti sendiri tiap hari.</string>
-    <string name="widget_empty">Belum ada kucing di sini 🐾</string>
-    <string name="widget_preview_caption">Kucing ini nggak suka basa-basi.</string>
-    <string name="cd_widget_photo">Foto kucing terakhir</string>
+    <string name="widget_label">Cuking terakhir</string>
+    <string name="widget_description">Cuking terakhir yang kamu tandai, bingkainya berganti tiap hari.</string>
+    <string name="widget_of_day_label">Cuking hari ini</string>
+    <string name="widget_of_day_description">Satu cuking dari koleksimu, berganti sendiri tiap hari bersama bingkainya.</string>
+    <string name="widget_nearby_label">Cuking terdekat</string>
+    <string name="widget_nearby_description">Cuking paling dekat dari posisimu, bingkainya berganti tiap hari.</string>
+    <!--
+      Kalimat pengganti widget "Cuking terdekat". Widget ini bisa kosong karena
+      dua sebab yang berbeda, jadi kalimatnya juga dua: satu untuk posisi yang
+      belum diketahui, satu untuk posisi yang diketahui tapi tidak ada cukingnya
+      di dalam radius. Radiusnya dimasukkan sebagai angka supaya tidak ada angka
+      yang ditulis dua kali di sini dan di NEARBY_CAT_RADIUS_METERS.
+    -->
+    <string name="widget_nearby_need_location">Biar tahu cuking terdekat, izinkan lokasi dulu.</string>
+    <string name="widget_nearby_empty">Nggak ada cuking dalam %1$d m dari posisimu.</string>
+    <string name="widget_capture_description">Jepret cuking di depanku sekarang</string>
+    <string name="widget_empty">Belum ada cuking di sini 🐾</string>
+    <string name="widget_preview_caption">Cuking ini nggak suka basa-basi.</string>
+    <string name="cd_widget_photo">Foto cuking terakhir</string>
 
     <!--
       Dipakai widget kalau kucing terakhir belum punya catatan. Semuanya sengaja
@@ -118,17 +148,17 @@
     -->
     <string-array name="widget_funny_lines">
         <item>Catatannya kosong, misterinya penuh.</item>
-        <item>Nggak ada catatan, ada kucing.</item>
+        <item>Nggak ada catatan, ada cuking.</item>
         <item>Foto dulu, cerita belakangan.</item>
-        <item>Kucing ini nggak suka basa-basi.</item>
+        <item>Cuking ini nggak suka basa-basi.</item>
         <item>Dia lolos dari sesi tanya jawab.</item>
         <item>Belum sempat diceritain, tapi manis.</item>
         <item>Catatan menyusul, janji.</item>
         <item>Dia cuma lewat, aku sempat jepret.</item>
-        <item>Kucing mode senyap.</item>
+        <item>Cuking mode senyap.</item>
         <item>Belum ada ceritanya, buktinya ada.</item>
         <item>Ada yang lebih penting: makan.</item>
-        <item>Nggak semua kucing mau diwawancarai.</item>
+        <item>Nggak semua cuking mau diwawancarai.</item>
         <item>Dia pergi sebelum sempat diceritakan.</item>
         <item>Cukup fotonya saja.</item>
         <item>Yang penting kelihatan manis.</item>
@@ -138,7 +168,7 @@
     <string name="action_cancel">Batal</string>
     <string name="action_close">Tutup</string>
     <string name="action_back">Kembali</string>
-    <string name="cd_cat_photo">Foto kucing</string>
+    <string name="cd_cat_photo">Foto cuking</string>
     <string name="day_today">Hari ini</string>
     <string name="day_yesterday">Kemarin</string>
 </resources>

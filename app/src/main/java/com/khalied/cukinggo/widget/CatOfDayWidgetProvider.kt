@@ -4,11 +4,11 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import com.khalied.cukinggo.appContainer
-import com.khalied.cukinggo.domain.model.Cat
 import java.time.LocalDate
 
 /**
- * Widget "Kucing hari ini": polaroid yang isinya berganti sendiri tiap hari.
+ * Widget "Cuking hari ini": satu kartu yang isinya berganti sendiri tiap hari,
+ * dengan bingkai yang juga bergilir tiap hari (lihat [WidgetSkin]).
  *
  * Beda dari widget "Kucing terakhir", widget ini perlu tahu kapan hari berganti,
  * jadi ia memasang alarm tengah malam lewat [CatWidgets.scheduleMidnightRefresh].
@@ -16,7 +16,7 @@ import java.time.LocalDate
  * dinyalakan ulang, karena host mengirim update ke widget begitu sistem siap).
  *
  * Sejak ada lencana rentetan, alarm yang sama juga dipakai widget "Kucing
- * terakhir", karena lencananya perlu dihitung ulang tiap hari di kedua varian.
+ * terakhir", karena lencananya perlu dihitung ulang tiap hari di ketiga varian.
  */
 class CatOfDayWidgetProvider : AppWidgetProvider() {
 
@@ -42,11 +42,13 @@ class CatOfDayWidgetProvider : AppWidgetProvider() {
 
     companion object {
 
-        /** Satu kucing dipilih dari seluruh koleksi, bergilir satu langkah per hari. */
-        val pickCat: suspend (Context) -> Cat? = { context ->
-            catOfDay(
-                cats = context.appContainer.catRepository.getAllCatsOnce(),
-                epochDay = LocalDate.now().toEpochDay()
+        /** Satu cuking dipilih dari seluruh koleksi, bergilir satu langkah per hari. */
+        internal val pickCat: suspend (Context) -> WidgetPick = { context ->
+            WidgetPick(
+                catOfDay(
+                    cats = context.appContainer.catRepository.getAllCatsOnce(),
+                    epochDay = LocalDate.now().toEpochDay()
+                )
             )
         }
     }

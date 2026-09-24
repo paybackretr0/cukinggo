@@ -22,8 +22,14 @@ import com.khalied.cukinggo.ui.home.HomeViewModel
 
 object Routes {
     const val HOME = "home"
-    const val ADD_CAT = "add_cat"
+
+    /** Nama argumennya dipakai juga saat membaca nilainya dari back stack entry. */
+    const val ARG_CAPTURE = "capture"
+    const val ADD_CAT = "add_cat?$ARG_CAPTURE={$ARG_CAPTURE}"
     const val CAT_DETAIL = "cat_detail/{catId}"
+
+    /** [capture] true berarti kamera langsung menjepret sendiri begitu siap. */
+    fun addCat(capture: Boolean = false) = "add_cat?$ARG_CAPTURE=$capture"
 
     fun catDetail(catId: Long) = "cat_detail/$catId"
 }
@@ -33,7 +39,9 @@ fun CukingGoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     openCatId: Long? = null,
-    onOpenCatConsumed: () -> Unit = {}
+    onOpenCatConsumed: () -> Unit = {},
+    openCapture: Boolean = false,
+    onOpenCaptureConsumed: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
@@ -43,6 +51,15 @@ fun CukingGoNavHost(
         if (openCatId != null) {
             navController.navigate(Routes.catDetail(openCatId))
             onOpenCatConsumed()
+        }
+    }
+
+    // Tombol jepret di widget membuka layar kamera tanpa mampir ke Home dulu,
+    // lalu kameranya menjepret sendiri (lihat AddCatScreen).
+    LaunchedEffect(openCapture) {
+        if (openCapture) {
+            navController.navigate(Routes.addCat(capture = true))
+            onOpenCaptureConsumed()
         }
     }
 
@@ -57,19 +74,30 @@ fun CukingGoNavHost(
             )
             HomeScreen(
                 viewModel = viewModel,
-                onAddCat = { navController.navigate(Routes.ADD_CAT) },
+                onAddCat = { navController.navigate(Routes.addCat()) },
                 onCatClick = { catId -> navController.navigate(Routes.catDetail(catId)) }
             )
         }
 
-        composable(Routes.ADD_CAT) {
+        composable(
+            route = Routes.ADD_CAT,
+            arguments = listOf(
+                navArgument(Routes.ARG_CAPTURE) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
+        ) { backStackEntry ->
             val viewModel: AddCatViewModel = viewModel(
                 factory = AddCatViewModel.factory(container)
             )
             AddCatScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onSaved = { navController.popBackStack() }
+                onSaved = { navController.popBackStack() },
+                autoCapture = backStackEntry.arguments
+                    ?.getBoolean(Routes.ARG_CAPTURE)
+                    ?: false
             )
         }
 

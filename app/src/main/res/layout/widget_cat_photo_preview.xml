@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Pratinjau statis untuk pemilih widget (dipakai Android 12+ lewat previewLayout
-  di cat_widget_info.xml). Bentuknya sengaja persis mengikuti widget_cat_photo.xml
-  pada ukuran 2 sel, hanya saja fotonya diganti jejak kaki karena di layar pemilih
-  belum ada data kucing.
+  di cat_widget_info.xml). Ukurannya 180 x 110dp, sama dengan ukuran bawaan
+  widget setelah diperbesar dari 2 sel menjadi 3 sel.
+
+  Yang ditampilkan di sini bentuk stiker, karena cuma satu bentuk yang bisa
+  dijanjikan oleh pratinjau, sedangkan bentuk aslinya bergilir tiap hari. Isi
+  lain mengikuti widget sebenarnya: hiasan telinga, jejak kaki sebagai pengganti
+  foto (di layar pemilih belum ada data cuking), lencana rentetan contoh, dan
+  satu baris catatan.
 
   Ini layout biasa, bukan RemoteViews, jadi di sini boleh ada ukuran tetap.
   Angka "3" pada lencana rentetan juga contoh, bukan data nyata, jadi sengaja
@@ -11,16 +16,17 @@
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="110dp"
+    android:layout_width="180dp"
     android:layout_height="110dp"
-    android:background="@drawable/widget_polaroid_frame"
+    android:background="@drawable/widget_frame_sticker"
     android:orientation="vertical"
     android:padding="6dp">
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipChildren="false">
 
         <ImageView
             android:layout_width="38dp"
@@ -29,13 +35,21 @@
             android:importantForAccessibility="no"
             android:src="@drawable/widget_paw_light" />
 
+        <ImageView
+            android:layout_width="54dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|center_horizontal"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ears" />
+
         <!-- Badge rentetan ditampilkan di pratinjau dengan contoh angka, supaya
              bentuk widget yang dijanjikan ke pemilih widget sama dengan aslinya. -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|end"
-            android:layout_margin="4dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="4dp"
             android:background="@drawable/widget_streak_badge"
             android:gravity="center_vertical"
             android:importantForAccessibility="no"
@@ -54,14 +68,32 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/nunito"
                 android:layout_marginStart="3dp"
+                android:fontFamily="@font/nunito"
                 android:text="3"
                 android:textColor="#3A2E26"
-                tools:ignore="HardcodedText"
                 android:textSize="11sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:ignore="HardcodedText" />
         </LinearLayout>
+
+        <!-- Tombol jepretnya ikut ditampilkan di pratinjau supaya yang dijanjikan
+             ke pemilih widget sama dengan yang benar-benar terpasang. -->
+        <FrameLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|end"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:background="@drawable/widget_capture_button"
+                android:importantForAccessibility="no"
+                android:padding="8dp"
+                android:src="@drawable/widget_paw_ink" />
+        </FrameLayout>
     </FrameLayout>
 
     <TextView
@@ -76,5 +108,5 @@
         android:paddingBottom="1dp"
         android:text="@string/widget_preview_caption"
         android:textColor="#3A2E26"
-        android:textSize="11sp" />
+        android:textSize="12sp" />
 </LinearLayout>
