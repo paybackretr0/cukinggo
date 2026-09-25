@@ -33,16 +33,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.ui.theme.BlushPink
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.util.formatDayLabel
 import com.khalied.cukinggo.util.formatTime
 import java.io.File
 
+/**
+ * Satu kartu mewakili satu penemuan, bukan satu cuking: daftar di Home tetap
+ * berjalan menurut waktu, jadi ketemu tiga kali berarti tiga baris.
+ */
 @Composable
 fun CatListCard(
-    cat: Cat,
+    sighting: CatSighting,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -118,21 +122,21 @@ fun CatListCard(
                 // (lihat sharedCatPhoto), jadi potongan membulatnya dipasang lewat
                 // helper itu, bukan lewat clip sendiri.
                 AsyncImage(
-                    model = File(cat.photoPath),
+                    model = File(sighting.photoPath),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(64.dp)
-                        .sharedCatPhoto(catId = cat.id, clip = RoundedCornerShape(18.dp))
+                        .sharedCatPhoto(sightingId = sighting.id, clip = RoundedCornerShape(18.dp))
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = cat.name
-                            ?: cat.description
+                        text = sighting.catName
+                            ?: sighting.description
                             ?: stringResource(R.string.detail_no_description),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        fontStyle = if (cat.name == null && cat.description == null) {
+                        fontStyle = if (sighting.catName == null && sighting.description == null) {
                             FontStyle.Italic
                         } else {
                             FontStyle.Normal
@@ -142,9 +146,9 @@ fun CatListCard(
                     )
                     // Catatan tetap ikut ditampilkan saat namanya ada, tapi dipotong
                     // satu baris supaya tingginya tidak mendorong kartu jadi gemuk.
-                    if (cat.name != null && cat.description != null) {
+                    if (sighting.catName != null && sighting.description != null) {
                         Text(
-                            text = cat.description,
+                            text = sighting.description,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
@@ -154,11 +158,11 @@ fun CatListCard(
                     Text(
                         text = "${
                             formatDayLabel(
-                                cat.timestamp,
+                                sighting.timestamp,
                                 stringResource(R.string.day_today),
                                 stringResource(R.string.day_yesterday)
                             )
-                        } · ${formatTime(cat.timestamp)}",
+                        } · ${formatTime(sighting.timestamp)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

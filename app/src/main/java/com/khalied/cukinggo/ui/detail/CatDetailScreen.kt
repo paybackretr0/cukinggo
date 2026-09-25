@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -22,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,22 +35,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.ui.components.CatGoodbyeCelebration
+import com.khalied.cukinggo.ui.components.CatMapView
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
+import com.khalied.cukinggo.ui.components.buildTrails
 import com.khalied.cukinggo.ui.components.sharedCatPhoto
 import com.khalied.cukinggo.ui.theme.BlushPink
 import com.khalied.cukinggo.ui.theme.InkSoft
@@ -58,8 +66,10 @@ import com.khalied.cukinggo.util.catShareIntent
 import com.khalied.cukinggo.util.blankToNull
 import com.khalied.cukinggo.util.distanceMeters
 import com.khalied.cukinggo.util.formatCoordinates
+import com.khalied.cukinggo.util.formatDayLabel
 import com.khalied.cukinggo.util.formatDistance
 import com.khalied.cukinggo.util.formatFullDateTime
+import com.khalied.cukinggo.util.formatTime
 import com.khalied.cukinggo.util.mapsLinkFor
 import java.io.File
 import kotlinx.coroutines.delay
@@ -75,9 +85,22 @@ private const val DETAIL_LOCATION_TIMEOUT_MILLIS = 5_000L
  */
 private const val FAREWELL_DURATION_MILLIS = 1_400L
 
+/** Tinggi baris riwayat: 56dp foto plus jarak, jadi lebih dari tap target minimum. */
+private const val HISTORY_THUMB_SIZE_DP = 56
+
+/**
+ * Tinggi kartu peta lokasi cukingnya.
+ *
+ * Dua ratus dua puluh dp: cukup untuk membaca arah garis jejaknya atau mengenali
+ * areanya, tanpa membuat layar ini jadi halaman peta, karena yang jadi isi utama
+ * di sini tetap fotonya.
+ */
+private const val LOCATION_MAP_HEIGHT_DP = 220
+
 @Composable
 fun CatDetailScreen(
     viewModel: CatDetailViewModel,
+    onAddSighting: (Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -108,11 +131,19 @@ fun CatDetailScreen(
 
     val currentCat = (uiState as? CatDetailUiState.Content)?.cat
 
-    // Jarak dihitung sekali saat catatannya siap. Kalau lokasi user tidak tersedia,
-    // chip jaraknya cukup tidak muncul (bukan error).
-    LaunchedEffect(currentCat?.id) {
+    // Penemuan yang sedang dipamerkan di atas: yang dibuka dari daftar, atau yang
+    // dipilih pengguna dari riwayatnya. Kalau pilihannya sudah tidak ada (misalnya
+    // barusan dihapus dari layar lain), yang terbaru yang dipakai.
+    var selectedSightingId by remember { mutableStateOf(viewModel.sightingId) }
+    val selectedSighting = currentCat?.let { cat ->
+        cat.sightings.firstOrNull { it.id == selectedSightingId } ?: cat.latest
+    }
+
+    // Jarak dihitung untuk penemuan yang sedang ditampilkan. Kalau lokasi user
+    // tidak tersedia, chip jaraknya cukup tidak muncul (bukan error).
+    LaunchedEffect(selectedSighting?.id) {
         distanceFromUser = null
-        val cat = currentCat ?: return@LaunchedEffect
+        val sighting = selectedSighting ?: return@LaunchedEffect
         if (!container.locationHelper.hasLocationPermission()) return@LaunchedEffect
 
         val location = container.locationHelper.lastKnownLocation()
@@ -122,8 +153,8 @@ fun CatDetailScreen(
         distanceFromUser = distanceMeters(
             location.latitude,
             location.longitude,
-            cat.latitude,
-            cat.longitude
+            sighting.latitude,
+            sighting.longitude
         )
     }
 
@@ -153,12 +184,17 @@ fun CatDetailScreen(
                         onAction = viewModel::retry
                     )
 
-                    is CatDetailUiState.Content -> DetailContent(
-                        cat = state.cat,
-                        distanceFromUser = distanceFromUser,
-                        onDeleteRequest = { showDeleteDialog = true },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    is CatDetailUiState.Content -> if (selectedSighting != null) {
+                        DetailContent(
+                            cat = state.cat,
+                            selectedSighting = selectedSighting,
+                            distanceFromUser = distanceFromUser,
+                            onSelectSighting = { sighting -> selectedSightingId = sighting.id },
+                            onAddSighting = { onAddSighting(state.cat.id) },
+                            onDeleteRequest = { showDeleteDialog = true },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
@@ -173,6 +209,7 @@ fun CatDetailScreen(
     }
 
     if (showDeleteDialog) {
+        val sightingCount = currentCat?.sightings?.size ?: 1
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             shape = MaterialTheme.shapes.extraLarge,
@@ -185,8 +222,15 @@ fun CatDetailScreen(
                 )
             },
             text = {
+                // Cuking yang punya beberapa penemuan: yang dihapus di sini semua
+                // penemuannya, jadi jumlahnya disebut supaya tidak ada yang
+                // terhapus tanpa pengguna tahu.
                 Text(
-                    text = stringResource(R.string.detail_delete_message),
+                    text = if (sightingCount > 1) {
+                        stringResource(R.string.detail_delete_message_history, sightingCount)
+                    } else {
+                        stringResource(R.string.detail_delete_message)
+                    },
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -217,7 +261,10 @@ fun CatDetailScreen(
 @Composable
 private fun DetailContent(
     cat: Cat,
+    selectedSighting: CatSighting,
     distanceFromUser: Double?,
+    onSelectSighting: (CatSighting) -> Unit,
+    onAddSighting: () -> Unit,
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -228,29 +275,36 @@ private fun DetailContent(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            // Foto yang sama dengan foto di kartu daftar: begitu kartunya disentuh,
-            // yang bergerak ke sini cuma fotonya (lihat sharedCatPhoto).
+            // Foto penemuan yang sedang ditampilkan. Kartu di daftar memakai kunci
+            // yang sama, jadi begitu kartunya disentuh, yang bergerak ke sini cuma
+            // fotonya (lihat sharedCatPhoto).
             AsyncImage(
-                model = File(cat.photoPath),
+                model = File(selectedSighting.photoPath),
                 contentDescription = stringResource(R.string.cd_cat_photo),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .sharedCatPhoto(catId = cat.id, clip = MaterialTheme.shapes.extraLarge)
+                    .sharedCatPhoto(
+                        sightingId = selectedSighting.id,
+                        clip = MaterialTheme.shapes.extraLarge
+                    )
             )
         }
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoChip(
-                    text = formatFullDateTime(cat.timestamp),
+                    text = formatFullDateTime(selectedSighting.timestamp),
                     iconRes = R.drawable.ic_calendar,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 InfoChip(
-                    text = formatCoordinates(cat.latitude, cat.longitude),
+                    text = formatCoordinates(
+                        selectedSighting.latitude,
+                        selectedSighting.longitude
+                    ),
                     iconRes = R.drawable.ic_location,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -267,6 +321,10 @@ private fun DetailContent(
                     )
                 }
             }
+        }
+
+        item {
+            CatLocationMap(cat = cat, onSightingClick = onSelectSighting)
         }
 
         item {
@@ -295,21 +353,76 @@ private fun DetailContent(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = cat.description
+                        text = selectedSighting.description
                             ?: stringResource(R.string.detail_no_description),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontStyle = if (cat.description == null) {
+                        fontStyle = if (selectedSighting.description == null) {
                             FontStyle.Italic
                         } else {
                             FontStyle.Normal
                         }
                     )
+                    Spacer(Modifier.height(2.dp))
+                    // Angka ini yang menjelaskan kenapa ada riwayat di bawah, jadi
+                    // ia muncul bahkan saat cukingnya baru ketemu sekali.
+                    InfoChip(
+                        text = stringResource(R.string.detail_seen_count, cat.sightings.size)
+                    )
                 }
             }
         }
 
-        item { ShareCatButton(cat = cat) }
+        item {
+            Button(
+                onClick = onAddSighting,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PeachAccent,
+                    contentColor = InkSoft
+                )
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_paw),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = stringResource(R.string.detail_again),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+
+        item { ShareCatButton(sighting = selectedSighting) }
+
+        // Riwayat cuma ditampilkan kalau memang ada lebih dari satu penemuan:
+        // dengan satu penemuan, isinya sama persis dengan foto di atas, dan
+        // mengulangnya cuma menambah panjang layar.
+        if (cat.sightings.size > 1) {
+            item {
+                Text(
+                    text = stringResource(R.string.detail_history_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            itemsIndexed(
+                items = cat.sightings,
+                key = { _, sighting -> sighting.id }
+            ) { _, sighting ->
+                SightingHistoryRow(
+                    sighting = sighting,
+                    selected = sighting.id == selectedSighting.id,
+                    onClick = { onSelectSighting(sighting) }
+                )
+            }
+        }
 
         item {
             Button(
@@ -341,20 +454,171 @@ private fun DetailContent(
 }
 
 /**
- * Tombol bagikan: foto kucing dikirim bersama template chat berisi nama,
- * catatan (kalau ada), koordinat, dan link Google Maps.
+ * Peta cukingnya: tempat dia ketemu, dan garis perjalanannya kalau memang ada.
+ *
+ * Kartunya selalu ada, bukan cuma saat cukingnya punya jejak: dengan satu tempat
+ * pun, koordinat di chip atas tidak menjelaskan dia di mana, sedangkan peta
+ * menjelaskannya sekilas, termasuk saat dibandingkan dengan posisi pengguna.
+ *
+ * Judul dan keterangannya ikut menyesuaikan. Satu tempat tidak punya garis apa pun
+ * untuk dijelaskan, jadi menyebutnya "jejak" justru menjanjikan sesuatu yang tidak
+ * ada; dan keterangan tentang garis yang makin terang cuma masuk akal kalau
+ * garisnya memang ada. Karena itu kartunya tanpa keterangan saat tempatnya cuma
+ * satu, bukan dengan keterangan yang menjelaskan ketiadaan.
+ *
+ * Kartunya sengaja sama seperti kartu peta di Home, termasuk shadow-nya, karena
+ * keduanya permukaan yang sama-sama "duduk di atas" halaman. Yang berbeda cuma
+ * tombol lokasi yang disembunyikan: di sini yang dilihat tempat cukingnya, bukan
+ * posisi pengguna.
+ */
+@Composable
+private fun CatLocationMap(
+    cat: Cat,
+    onSightingClick: (CatSighting) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Satu tempat bukan perjalanan, jadi tidak ada garis yang perlu dijelaskan.
+    val hasTrail = remember(cat.sightings) { buildTrails(cat.sightings).isNotEmpty() }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(
+                if (hasTrail) R.string.detail_trail_title else R.string.detail_location_title
+            ),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(LOCATION_MAP_HEIGHT_DP.dp)
+                .clip(MaterialTheme.shapes.extraLarge),
+            color = MaterialTheme.colorScheme.surface,
+            shape = MaterialTheme.shapes.extraLarge,
+            shadowElevation = 6.dp
+        ) {
+            CatMapView(
+                sightings = cat.sightings,
+                // Menyentuh satu titik di sini memilih catatan itu di riwayat bawah,
+                // bukan membuka layar baru: layar ini memang sudah layar cukingnya.
+                onSightingClick = { sightingId ->
+                    cat.sightings.firstOrNull { it.id == sightingId }?.let(onSightingClick)
+                },
+                modifier = Modifier.fillMaxSize(),
+                showLocateButton = false,
+                // Seluruh perjalanannya yang mau dilihat di kartu ini, jadi petanya
+                // dipaskan ke bentangnya, bukan ke tempat terakhir saja.
+                fitToContent = true
+            )
+        }
+        if (hasTrail) {
+            Text(
+                text = stringResource(R.string.detail_trail_caption),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * Satu baris riwayat: satu penemuan yang pernah tercatat.
+ *
+ * Warnanya yang menandai pilihan, bukan hiasan tambahan: baris yang sedang
+ * dipamerkan di atas memakai `secondaryContainer` (MintPop di tema terang),
+ * warna yang sama dengan chip "dekat" di kartu Home. Semua teks memakai
+ * `onSecondaryContainer` di atas latar itu supaya tetap lolos WCAG AA.
+ *
+ * `selectable` dipakai, bukan `clickable`, karena baris ini memang memilih:
+ * TalkBack membacakannya sebagai baris yang terpilih atau tidak.
+ */
+@Composable
+private fun SightingHistoryRow(
+    sighting: CatSighting,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        border = appCardOutline()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Foto di sini dekoratif: tanggal dan catatan di sebelahnya sudah
+            // menjelaskan barisnya, jadi label foto berulang tidak menambah makna.
+            AsyncImage(
+                model = File(sighting.photoPath),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(HISTORY_THUMB_SIZE_DP.dp)
+                    .clip(MaterialTheme.shapes.large)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${
+                        formatDayLabel(
+                            sighting.timestamp,
+                            stringResource(R.string.day_today),
+                            stringResource(R.string.day_yesterday)
+                        )
+                    } · ${formatTime(sighting.timestamp)}",
+                    style = MaterialTheme.typography.labelMedium
+                )
+                Text(
+                    text = sighting.description
+                        ?: stringResource(R.string.detail_no_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontStyle = if (sighting.description == null) {
+                        FontStyle.Italic
+                    } else {
+                        FontStyle.Normal
+                    },
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Tombol bagikan: foto satu penemuan dikirim bersama template chat berisi nama
+ * cuking, catatan (kalau ada), koordinat, dan link Google Maps.
  *
  * Isi pesannya sengaja disusun dari string resource, bukan ditempel di kode,
  * supaya kalimatnya gampang diganti tanpa menyentuh logika intent-nya. Template
  * dipilih dari dua hal yang boleh kosong, yaitu nama dan catatan.
  */
 @Composable
-private fun ShareCatButton(cat: Cat, modifier: Modifier = Modifier) {
+private fun ShareCatButton(sighting: CatSighting, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val name = blankToNull(cat.name)
-    val note = blankToNull(cat.description)
-    val coordinates = formatCoordinates(cat.latitude, cat.longitude)
-    val mapsLink = mapsLinkFor(cat.latitude, cat.longitude)
+    val name = blankToNull(sighting.catName)
+    val note = blankToNull(sighting.description)
+    val coordinates = formatCoordinates(sighting.latitude, sighting.longitude)
+    val mapsLink = mapsLinkFor(sighting.latitude, sighting.longitude)
 
     val message = when {
         name != null && note != null -> stringResource(
@@ -376,7 +640,10 @@ private fun ShareCatButton(cat: Cat, modifier: Modifier = Modifier) {
     Button(
         onClick = {
             context.startActivity(
-                Intent.createChooser(catShareIntent(context, cat.photoPath, message), chooserTitle)
+                Intent.createChooser(
+                    catShareIntent(context, sighting.photoPath, message),
+                    chooserTitle
+                )
             )
         },
         modifier = modifier

@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.data.repository.CatRepository
 import com.khalied.cukinggo.di.AppContainer
+import com.khalied.cukinggo.domain.model.Cat
 import com.khalied.cukinggo.location.LocationHelper
 import com.khalied.cukinggo.util.ImageStorageHelper
 import com.khalied.cukinggo.util.catStreak
@@ -17,10 +18,18 @@ import java.io.File
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/**
+ * Id cuking yang berarti "bikin cuking baru", bukan menambah penemuan ke cuking
+ * yang sudah ada. Nol dipakai karena Room memang tidak pernah memberi id nol.
+ */
+const val NEW_CAT_ID = 0L
 
 sealed interface AddCatUiState {
     data object Idle : AddCatUiState
@@ -38,11 +47,30 @@ sealed interface AddCatUiState {
     data class Error(@StringRes val messageRes: Int) : AddCatUiState
 }
 
+/**
+ * Layar kamera melayani dua hal: menandai cuking baru, dan menambah penemuan
+ * untuk cuking yang sudah ada. Yang membedakan cuma [catId], dan yang berbeda di
+ * alurnya cuma nama: nama cuma ditanyakan saat cukingnya memang baru.
+ */
 class AddCatViewModel(
     private val catRepository: CatRepository,
     private val locationHelper: LocationHelper,
-    private val imageStorageHelper: ImageStorageHelper
+    private val imageStorageHelper: ImageStorageHelper,
+    private val catId: Long = NEW_CAT_ID
 ) : ViewModel() {
+
+    val isNewCat: Boolean = catId == NEW_CAT_ID
+
+    /**
+     * Cuking yang sedang ditambahi penemuan, dipakai layar untuk menyebut namanya
+     * supaya jelas penemuan ini masuk ke cuking yang mana. Null untuk cuking baru.
+     */
+    val targetCat: StateFlow<Cat?> = if (isNewCat) {
+        MutableStateFlow(null)
+    } else {
+        catRepository.observeCat(catId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    }
 
     private val _uiState = MutableStateFlow<AddCatUiState>(AddCatUiState.Idle)
     val uiState: StateFlow<AddCatUiState> = _uiState.asStateFlow()
@@ -66,6 +94,13 @@ class AddCatViewModel(
                 return@launch
             }
 
+            // Cukingnya bisa saja sudah dihapus dari layar lain selagi layar ini
+            // terbuka. Tanpa pemeriksaan ini, penemuannya jadi penemuan yatim.
+            if (!isNewCat && catRepository.getCat(catId) == null) {
+                _uiState.value = AddCatUiState.Error(R.string.add_error_cat_missing)
+                return@launch
+            }
+
             _uiState.value = AddCatUiState.Saving
 
             // Rentetan dihitung sebelum dan sesudah menyimpan, dari waktu
@@ -79,13 +114,23 @@ class AddCatViewModel(
                 val photoPath = withContext(Dispatchers.IO) {
                     imageStorageHelper.moveCaptureToInternalStorage(captureFile)
                 }
-                catRepository.addCat(
-                    photoPath = photoPath,
-                    name = name,
-                    description = description,
-                    latitude = location.latitude,
-                    longitude = location.longitude
-                )
+                if (isNewCat) {
+                    catRepository.addCat(
+                        photoPath = photoPath,
+                        name = name,
+                        description = description,
+                        latitude = location.latitude,
+                        longitude = location.longitude
+                    )
+                } else {
+                    catRepository.addSighting(
+                        catId = catId,
+                        photoPath = photoPath,
+                        description = description,
+                        latitude = location.latitude,
+                        longitude = location.longitude
+                    )
+                }
             }.onSuccess {
                 val streakAfter = catStreak(catRepository.getAllTimestamps(), today)
                 _uiState.value = AddCatUiState.Saved(
@@ -104,14 +149,16 @@ class AddCatViewModel(
     }
 
     companion object {
-        fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                AddCatViewModel(
-                    catRepository = container.catRepository,
-                    locationHelper = container.locationHelper,
-                    imageStorageHelper = container.imageStorageHelper
-                )
+        fun factory(container: AppContainer, catId: Long = NEW_CAT_ID): ViewModelProvider.Factory =
+            viewModelFactory {
+                initializer {
+                    AddCatViewModel(
+                        catRepository = container.catRepository,
+                        locationHelper = container.locationHelper,
+                        imageStorageHelper = container.imageStorageHelper,
+                        catId = catId
+                    )
+                }
             }
-        }
     }
 }

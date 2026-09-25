@@ -7,7 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.khalied.cukinggo.data.repository.CatRepository
 import com.khalied.cukinggo.di.AppContainer
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +24,10 @@ import kotlinx.coroutines.launch
  */
 sealed interface HomeUiState {
     data object Loading : HomeUiState
-    data class Content(val cats: List<Cat>) : HomeUiState
+
+    /** Seluruh penemuan, urut terbaru dulu. */
+    data class Content(val sightings: List<CatSighting>) : HomeUiState
+
     data object Failed : HomeUiState
 }
 
@@ -37,8 +40,10 @@ class HomeViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<HomeUiState> = refreshTrigger
         .flatMapLatest {
-            catRepository.getAllCats()
-                .map<List<Cat>, HomeUiState> { cats -> HomeUiState.Content(cats) }
+            catRepository.observeSightings()
+                .map<List<CatSighting>, HomeUiState> { sightings ->
+                    HomeUiState.Content(sightings)
+                }
                 .catch { emit(HomeUiState.Failed) }
         }
         .stateIn(
@@ -47,8 +52,13 @@ class HomeViewModel(
             initialValue = HomeUiState.Loading
         )
 
-    fun deleteCat(cat: Cat) {
-        viewModelScope.launch { catRepository.deleteCat(cat) }
+    /**
+     * Yang dihapus dari kartu di Home adalah penemuannya, bukan cukingnya: yang
+     * disentuh pengguna memang satu catatan. Kalau itu penemuan terakhir cuking
+     * itu, profilnya ikut terhapus di lapisan data.
+     */
+    fun deleteSighting(sighting: CatSighting) {
+        viewModelScope.launch { catRepository.deleteSighting(sighting) }
     }
 
     fun retry() {

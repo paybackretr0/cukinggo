@@ -13,7 +13,7 @@ import android.widget.RemoteViews
 import com.khalied.cukinggo.MainActivity
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.util.catStreak
 import java.time.LocalDate
@@ -161,7 +161,7 @@ internal object CatWidgets {
 
         // Membaca data bisa gagal (misalnya DB-nya sedang sibuk), dan kartu kosong
         // masih lebih baik daripada widget yang tidak pernah digambar.
-        val pick = runCatching { pickCat(context) }.getOrNull() ?: WidgetPick(cat = null)
+        val pick = runCatching { pickCat(context) }.getOrNull() ?: WidgetPick(sighting = null)
 
         // Rentetan harian itu milik seluruh catatan, bukan milik satu kucing, jadi
         // dihitung sekali untuk semua widget dan ketiga varian widget menampilkan
@@ -187,7 +187,7 @@ internal object CatWidgets {
         widgetId: Int,
         streakDays: Int
     ): RemoteViews {
-        val cat = pick.cat
+        val sighting = pick.sighting
         val views = RemoteViews(context.packageName, R.layout.widget_cat_photo)
 
         val isDark = ThemeMode.fromKey(context.appContainer.displayPreferences.currentThemeModeKey())
@@ -210,20 +210,21 @@ internal object CatWidgets {
         views.setViewPadding(R.id.widget_photo, 0, topPadding, 0, bottomPadding)
         views.setViewPadding(R.id.widget_photo_window, 0, topPadding, 0, bottomPadding)
 
-        val caption = if (cat == null) {
+        val caption = if (sighting == null) {
             // Kalimat kosongnya boleh dibawa pemilihnya sendiri, karena cuma dia
             // yang tahu kenapa kosong. Bawaannya kalimat "belum ada cuking".
             pick.emptyCaption ?: context.getString(R.string.widget_empty)
         } else {
             widgetCaption(
-                description = cat.description,
-                catId = cat.id,
+                description = sighting.description,
+                catId = sighting.id,
                 funnyLines = context.resources.getStringArray(R.array.widget_funny_lines).toList()
             )
         }
         views.setTextViewText(R.id.widget_caption, caption)
 
-        val hasPhoto = cat != null && WidgetPhoto(context).applyTo(views, cat.photoPath, style)
+        val hasPhoto = sighting != null &&
+            WidgetPhoto(context).applyTo(views, sighting.photoPath, style)
         val circlePhoto = hasPhoto && style.photoShape == WidgetPhotoShape.CIRCLE
         views.setViewVisibility(R.id.widget_photo, if (hasPhoto && !circlePhoto) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widget_photo_window, if (circlePhoto) View.VISIBLE else View.GONE)
@@ -233,7 +234,7 @@ internal object CatWidgets {
 
         views.setOnClickPendingIntent(
             R.id.widget_root,
-            openCatIntent(context, cat?.id, widgetId)
+            openSightingIntent(context, sighting?.id, widgetId)
         )
         // Tombol jepret punya PendingIntent sendiri, dan yang tersentuh duluan
         // tetap tombolnya karena ia view anak di atas badan widget.
@@ -281,16 +282,23 @@ internal object CatWidgets {
     }
 
     /**
-     * Tap widget membuka detail kucing yang sedang tampil.
+     * Tap widget membuka detail penemuan yang sedang tampil.
      *
      * Request code-nya id widget, bukan satu angka untuk semua. PendingIntent
      * dibedakan tanpa melihat isi extra, jadi kalau request code-nya sama, widget
      * yang dibangun belakangan akan menimpa extra milik widget lain, dan tap-nya
-     * mendarat di kucing yang salah.
+     * mendarat di penemuan yang salah.
      */
-    private fun openCatIntent(context: Context, catId: Long?, widgetId: Int): PendingIntent {
+    private fun openSightingIntent(
+        context: Context,
+        sightingId: Long?,
+        widgetId: Int
+    ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
-            .putExtra(MainActivity.EXTRA_CAT_ID, catId ?: MainActivity.NO_CAT_ID)
+            .putExtra(
+                MainActivity.EXTRA_SIGHTING_ID,
+                sightingId ?: MainActivity.NO_SIGHTING_ID
+            )
 
         return PendingIntent.getActivity(
             context,
@@ -330,16 +338,17 @@ internal object CatWidgets {
 }
 
 /**
- * Isi satu kartu widget: kucing yang ditampilkan, plus kalimat penggantinya kalau
- * tidak ada kucing.
+ * Isi satu kartu widget: penemuan yang ditampilkan, plus kalimat penggantinya
+ * kalau tidak ada.
  *
- * Kalimatnya dibawa bersama pilihannya karena cuma pemilihnya yang tahu kenapa
- * kosong. Widget "Cuking terdekat" bisa kosong karena posisinya belum diketahui
- * atau karena memang tidak ada cuking di radiusnya, sedangkan dua widget lain
- * hanya kosong kalau belum ada catatan sama sekali.
+ * Yang ditampilkan hanyalah satu penemuan, karena widget cuma punya satu foto
+ * dan satu baris caption. Kalimat kosongnya dibawa bersama pilihannya karena cuma
+ * pemilihnya yang tahu kenapa kosong: widget "Cuking terdekat" bisa kosong karena
+ * posisinya belum diketahui atau karena memang tidak ada cuking di radiusnya,
+ * sedangkan dua widget lain hanya kosong kalau belum ada catatan sama sekali.
  */
 internal data class WidgetPick(
-    val cat: Cat?,
+    val sighting: CatSighting?,
     val emptyCaption: String? = null
 )
 

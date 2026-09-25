@@ -1,6 +1,6 @@
 package com.khalied.cukinggo.location
 
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,15 +8,16 @@ import org.junit.Test
 
 class NearbyAlertTest {
 
-    private val cats = listOf(
-        cat(id = 3, latitude = -6.2, longitude = 106.8),
-        cat(id = 2, latitude = -6.3, longitude = 106.9),
-        cat(id = 1, latitude = -6.4, longitude = 107.0)
+    // Masukannya penemuan terbaru tiap cuking, urut terbaru dulu.
+    private val sightings = listOf(
+        sighting(catId = 3, latitude = -6.2, longitude = 106.8),
+        sighting(catId = 2, latitude = -6.3, longitude = 106.9),
+        sighting(catId = 1, latitude = -6.4, longitude = 107.0)
     )
 
     @Test
     fun `semua kucing jadi area pantauan`() {
-        val areas = catWatchAreas(cats)
+        val areas = catWatchAreas(sightings)
 
         assertEquals(listOf(3L, 2L, 1L), areas.map { it.catId })
         assertEquals(-6.3, areas[1].latitude, 0.000001)
@@ -25,7 +26,7 @@ class NearbyAlertTest {
 
     @Test
     fun `area pantauan dibatasi jumlahnya`() {
-        val banyak = (1L..150L).map { id -> cat(id = id, latitude = -6.2, longitude = 106.8) }
+        val banyak = (1L..150L).map { id -> sighting(catId = id, latitude = -6.2, longitude = 106.8) }
 
         val areas = catWatchAreas(banyak)
 
@@ -85,13 +86,15 @@ class NearbyAlertTest {
         )
     }
 
-    private fun cat(id: Long, latitude: Double, longitude: Double): Cat = Cat(
-        id = id,
-        photoPath = "cat_$id.jpg",
-        name = null,
-        description = null,
-        latitude = latitude,
-        longitude = longitude,
-        timestamp = id * 1_000L
-    )
+    private fun sighting(catId: Long, latitude: Double, longitude: Double): CatSighting =
+        CatSighting(
+            id = catId,
+            catId = catId,
+            catName = null,
+            photoPath = "cat_$catId.jpg",
+            description = null,
+            latitude = latitude,
+            longitude = longitude,
+            timestamp = catId * 1_000L
+        )
 }

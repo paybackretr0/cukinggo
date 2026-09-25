@@ -71,7 +71,7 @@ internal object NearbyAlerts {
         // Tanpa izin lokasi latar belakang, geofence tidak akan pernah terpicu
         // saat app tertutup, jadi tidak ada gunanya dipasang.
         val areas = if (preferences.isEnabled() && context.hasBackgroundLocationPermission()) {
-            catWatchAreas(context.appContainer.catRepository.getAllCatsOnce())
+            catWatchAreas(context.appContainer.catRepository.latestSightingsPerCat())
         } else {
             emptyList()
         }

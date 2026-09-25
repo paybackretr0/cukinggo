@@ -45,15 +45,19 @@ class NearbyAlertReceiver : BroadcastReceiver() {
         val preferences = NearbyAlertPreferences(context)
         if (!preferences.isEnabled()) return
 
-        val cats = context.appContainer.catRepository.getCatsByIds(catIds)
+        // Yang dibaca penemuan terbaru tiap cuking: id dari geofence itu id cuking,
+        // dan yang mau dikabarkan memang tempat cukingnya sekarang.
+        val sightings = context.appContainer.catRepository.getLatestSightingsForCats(catIds)
         val now = System.currentTimeMillis()
 
         // Satu kabar per kejadian. Kalau beberapa radius terpicu bersamaan,
         // yang dikabarkan cukup satu, yaitu yang sedang tidak dalam masa jeda.
-        val cat = cats.firstOrNull { shouldAlert(preferences.lastAlertedAt(it.id), now) } ?: return
+        val sighting = sightings
+            .firstOrNull { shouldAlert(preferences.lastAlertedAt(it.catId), now) }
+            ?: return
 
-        NearbyAlertNotifier.post(context, cat)
-        preferences.setLastAlertedAt(cat.id, now)
+        NearbyAlertNotifier.post(context, sighting)
+        preferences.setLastAlertedAt(sighting.catId, now)
     }
 
     private companion object {

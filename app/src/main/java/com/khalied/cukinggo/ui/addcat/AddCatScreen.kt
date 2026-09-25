@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -61,10 +60,12 @@ import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.ui.components.CatSaveCelebration
+import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PermissionCard
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.theme.InkSoft
+import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.util.hasCameraPermission
@@ -95,6 +96,11 @@ private const val CELEBRATION_DURATION_MILLIS = 1500L
  * [autoCapture] dipakai tombol jepret di widget: kameranya langsung menjepret
  * sendiri begitu siap, jadi dari layar utama cukup satu ketukan. Tombol "Tandai
  * cuking" di Home membiarkannya false dan tetap menunggu jepretan dari pengguna.
+ *
+ * Layar yang sama melayani dua hal, dan yang membedakannya cuma [catId]: nol
+ * berarti cuking baru, selain itu berarti menambah penemuan ke cuking yang sudah
+ * ada. Saat menambah penemuan, nama tidak ditanyakan lagi karena satu cuking
+ * cuma punya satu nama.
  */
 @Composable
 fun AddCatScreen(
@@ -107,6 +113,7 @@ fun AddCatScreen(
     val context = LocalContext.current
     val container = remember { context.appContainer }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val targetCat by viewModel.targetCat.collectAsStateWithLifecycle()
 
     var cameraGranted by remember { mutableStateOf(context.hasCameraPermission()) }
     var locationGranted by remember {
@@ -212,7 +219,12 @@ fun AddCatScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PlayfulTopBar(title = stringResource(R.string.add_title), onBack = onBack)
+            PlayfulTopBar(
+                title = stringResource(
+                    if (viewModel.isNewCat) R.string.add_title else R.string.add_again_title
+                ),
+                onBack = onBack
+            )
 
             Column(
                 modifier = Modifier
@@ -250,6 +262,14 @@ fun AddCatScreen(
                         photoFile = captureFile!!,
                         name = name,
                         onNameChange = { name = it },
+                        showNameField = viewModel.isNewCat,
+                        contextLabel = if (viewModel.isNewCat) {
+                            null
+                        } else {
+                            targetCat?.name?.let { catName ->
+                                stringResource(R.string.add_again_whose, catName)
+                            } ?: stringResource(R.string.add_again_whose_unnamed)
+                        },
                         description = description,
                         onDescriptionChange = { description = it },
                         onRetake = {
@@ -279,7 +299,13 @@ fun AddCatScreen(
                             )
                         ) {
                             Text(
-                                text = stringResource(R.string.add_save),
+                                text = stringResource(
+                                    if (viewModel.isNewCat) {
+                                        R.string.add_save
+                                    } else {
+                                        R.string.add_again_save
+                                    }
+                                ),
                                 style = MaterialTheme.typography.labelLarge
                             )
                         }
@@ -309,10 +335,10 @@ fun AddCatScreen(
         if (saved != null) {
             CatSaveCelebration(
                 message = stringResource(
-                    if (saved.streakDays != null) {
-                        R.string.add_saved_streak
-                    } else {
-                        R.string.add_saved_celebration
+                    when {
+                        saved.streakDays != null -> R.string.add_saved_streak
+                        viewModel.isNewCat -> R.string.add_saved_celebration
+                        else -> R.string.add_saved_sighting
                     }
                 ),
                 hint = stringResource(R.string.celebration_tap_hint),
@@ -394,6 +420,10 @@ private fun PhotoReview(
     photoFile: File,
     name: String,
     onNameChange: (String) -> Unit,
+    /** Cuma ditanyakan untuk cuking baru: nama milik cukingnya, bukan penemuannya. */
+    showNameField: Boolean,
+    /** Sebutan cuking yang sedang ditambahi penemuan, null untuk cuking baru. */
+    contextLabel: String?,
     description: String,
     onDescriptionChange: (String) -> Unit,
     onRetake: () -> Unit,
@@ -405,7 +435,12 @@ private fun PhotoReview(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = appCardOutline()
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        // Jarak diatur sekali di sini, bukan pakai Spacer satu-satu: dulu cuma ada
+        // satu Spacer setelah foto, jadi chip nama cuking nempel ke field kegiatan.
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             AsyncImage(
                 model = photoFile,
                 contentDescription = stringResource(R.string.cd_cat_photo),
@@ -415,32 +450,42 @@ private fun PhotoReview(
                     .aspectRatio(1f)
                     .clip(MaterialTheme.shapes.large)
             )
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = onNameChange,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = {
-                    Text(
-                        text = stringResource(R.string.add_name_label),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                placeholder = {
-                    Text(
-                        text = stringResource(R.string.add_name_hint),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                },
-                supportingText = {
-                    Text(
-                        text = stringResource(R.string.add_name_support),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                },
-                shape = MaterialTheme.shapes.large
-            )
+            if (showNameField) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = {
+                        Text(
+                            text = stringResource(R.string.add_name_label),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.add_name_hint),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    supportingText = {
+                        Text(
+                            text = stringResource(R.string.add_name_support),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    },
+                    shape = MaterialTheme.shapes.large
+                )
+            } else if (contextLabel != null) {
+                // Nama tidak bisa diisi di sini, jadi yang ditampilkan justru nama
+                // cukingnya: pengguna harus tahu penemuan ini masuk ke yang mana.
+                InfoChip(
+                    text = contextLabel,
+                    iconRes = R.drawable.ic_paw,
+                    containerColor = MintPop,
+                    contentColor = InkSoft
+                )
+            }
             OutlinedTextField(
                 value = description,
                 onValueChange = onDescriptionChange,

@@ -28,6 +28,7 @@ import androidx.navigation.navArgument
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.ui.addcat.AddCatScreen
 import com.khalied.cukinggo.ui.addcat.AddCatViewModel
+import com.khalied.cukinggo.ui.addcat.NEW_CAT_ID
 import com.khalied.cukinggo.ui.catlist.CatListScreen
 import com.khalied.cukinggo.ui.catlist.CatListViewModel
 import com.khalied.cukinggo.ui.components.LocalAnimatedVisibilityScope
@@ -45,13 +46,27 @@ object Routes {
 
     /** Nama argumennya dipakai juga saat membaca nilainya dari back stack entry. */
     const val ARG_CAPTURE = "capture"
-    const val ADD_CAT = "add_cat?$ARG_CAPTURE={$ARG_CAPTURE}"
-    const val CAT_DETAIL = "cat_detail/{catId}"
+
+    /**
+     * Cuking yang ditambahi penemuan. Nol (lihat `NEW_CAT_ID`) berarti bikin
+     * cuking baru, dan itu yang dipakai tombol "Tandai cuking" di Home.
+     */
+    const val ARG_CAT = "cat"
+    const val ADD_CAT = "add_cat?$ARG_CAPTURE={$ARG_CAPTURE}&$ARG_CAT={$ARG_CAT}"
+
+    /**
+     * Layar detail dibuka dengan id penemuan, bukan id cuking: semua yang bisa
+     * disentuh pengguna (kartu di daftar, penanda di peta, widget, kabar dekat)
+     * mewakili satu momen ketemu, dan dari situ cukingnya dicari.
+     */
+    const val ARG_SIGHTING_ID = "sightingId"
+    const val CAT_DETAIL = "cat_detail/{$ARG_SIGHTING_ID}"
 
     /** [capture] true berarti kamera langsung menjepret sendiri begitu siap. */
-    fun addCat(capture: Boolean = false) = "add_cat?$ARG_CAPTURE=$capture"
+    fun addCat(capture: Boolean = false, catId: Long = NEW_CAT_ID) =
+        "add_cat?$ARG_CAPTURE=$capture&$ARG_CAT=$catId"
 
-    fun catDetail(catId: Long) = "cat_detail/$catId"
+    fun catDetail(sightingId: Long) = "cat_detail/$sightingId"
 }
 
 /**
@@ -76,19 +91,19 @@ private const val NAV_CAMERA_SLIDE_MILLIS = 380
 fun CukingGoNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    openCatId: Long? = null,
-    onOpenCatConsumed: () -> Unit = {},
+    openSightingId: Long? = null,
+    onOpenSightingConsumed: () -> Unit = {},
     openCapture: Boolean = false,
     onOpenCaptureConsumed: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
 
-    // Tap widget di layar utama membawa id kucing, dan itu langsung dibuka.
-    LaunchedEffect(openCatId) {
-        if (openCatId != null) {
-            navController.navigate(Routes.catDetail(openCatId))
-            onOpenCatConsumed()
+    // Tap widget di layar utama membawa id penemuan, dan itu langsung dibuka.
+    LaunchedEffect(openSightingId) {
+        if (openSightingId != null) {
+            navController.navigate(Routes.catDetail(openSightingId))
+            onOpenSightingConsumed()
         }
     }
 
@@ -171,7 +186,9 @@ fun CukingGoNavHost(
                     HomeScreen(
                         viewModel = viewModel,
                         onAddCat = { navController.navigate(Routes.addCat()) },
-                        onCatClick = { catId -> navController.navigate(Routes.catDetail(catId)) },
+                        onSightingClick = { sightingId ->
+                            navController.navigate(Routes.catDetail(sightingId))
+                        },
                         onSeeAllCats = { navController.navigate(Routes.CAT_LIST) }
                     )
                 }
@@ -187,7 +204,9 @@ fun CukingGoNavHost(
                     )
                     CatListScreen(
                         viewModel = viewModel,
-                        onCatClick = { catId -> navController.navigate(Routes.catDetail(catId)) },
+                        onSightingClick = { sightingId ->
+                            navController.navigate(Routes.catDetail(sightingId))
+                        },
                         onBack = { navController.popBackStack() }
                     )
                 }
@@ -199,6 +218,10 @@ fun CukingGoNavHost(
                     navArgument(Routes.ARG_CAPTURE) {
                         type = NavType.BoolType
                         defaultValue = false
+                    },
+                    navArgument(Routes.ARG_CAT) {
+                        type = NavType.LongType
+                        defaultValue = NEW_CAT_ID
                     }
                 ),
                 // Layar kamera bukan tempat yang ditelusuri, tapi satu tugas yang
@@ -225,8 +248,9 @@ fun CukingGoNavHost(
                     ) + fadeOut(tween(NAV_FADE_MILLIS))
                 }
             ) { backStackEntry ->
+                val catId = backStackEntry.arguments?.getLong(Routes.ARG_CAT) ?: NEW_CAT_ID
                 val viewModel: AddCatViewModel = viewModel(
-                    factory = AddCatViewModel.factory(container)
+                    factory = AddCatViewModel.factory(container, catId)
                 )
                 AddCatScreen(
                     viewModel = viewModel,
@@ -240,18 +264,25 @@ fun CukingGoNavHost(
 
             composable(
                 route = Routes.CAT_DETAIL,
-                arguments = listOf(navArgument("catId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument(Routes.ARG_SIGHTING_ID) { type = NavType.LongType }
+                )
             ) { backStackEntry ->
-                val catId = backStackEntry.arguments?.getLong("catId") ?: return@composable
+                val sightingId = backStackEntry.arguments
+                    ?.getLong(Routes.ARG_SIGHTING_ID)
+                    ?: return@composable
                 SharedTransitionScopes(
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this
                 ) {
                     val viewModel: CatDetailViewModel = viewModel(
-                        factory = CatDetailViewModel.factory(catId, container)
+                        factory = CatDetailViewModel.factory(sightingId, container)
                     )
                     CatDetailScreen(
                         viewModel = viewModel,
+                        onAddSighting = { catId ->
+                            navController.navigate(Routes.addCat(catId = catId))
+                        },
                         onBack = { navController.popBackStack() }
                     )
                 }

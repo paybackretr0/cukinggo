@@ -380,6 +380,95 @@ yang sama. Yang belum terbukti: apakah geseran mendatar di layar Home terasa mul
 saat jarinya menyusuri peta yang berat, dan apakah gesture kembali dari layar kamera
 (transisi tegak) ikut terasa menyambung.
 
+## Jejak perjalanan cuking di peta (permintaan pemilik, sesi 2026-09-25)
+
+Peta sekarang menyambung catatan-catatan satu cuking jadi satu garis, jadi
+terlihat kalau si cuking pindah dari tempat A ke tempat B. Dial app tetap dipakai
+(**ENERGY 2 / RHYTHM 2 / MOTION 2**), dan tidak ada kosakata gerak baru.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Garisnya lurus antar catatan, bukan mengikuti jalan:** app ini offline-first (foto lokal, Room, osmdroid), jadi rute yang mengikuti jalan menuntut layanan routing pihak ketiga plus internet; selain itu yang tercatat memang cuma titik penemuannya, bukan rute perjalanannya, jadi garis lurus juga yang paling jujur. Dikonfirmasi pemilik lewat pilihan "garis lurus antar titik".
+- **Dua konstanta `false` di `Polyline(mapView, false, false)` diperiksa langsung di bytecode AAR osmdroid 6.1.20, bukan ditebak:** yang kedua berarti tidak geodesik, dan itulah yang membuat ruasnya lurus; kalau salah, garisnya melengkung mengikuti permukaan bumi tanpa terlihat jelas salahnya di layar kecil.
+- **Jejak hanya digambar di zoom dekat, sama seperti marker foto:** di zoom jauh penemuan sudah diganti gelembung angka, dan garis yang menghubungkan titik-titik yang tidak lagi terlihat justru menyesatkan.
+- **Arah jejak dibaca dari kekuatan warna ruasnya, bukan dari panah atau nomor urut:** ruas tertua paling pudar dan ruas terbaru paling pekat, jadi tidak perlu marker tambahan yang menutupi foto cukingnya, dan tidak ada panah dekoratif yang harus dipertanggungjawabkan (R-08).
+- **Warna jejak diambil dari id cuking dan tetap:** kalau warnanya diambil dari urutan di daftar, daftar yang berubah setiap ada catatan baru akan membuat jejak yang sama berpindah warna dan terbaca seperti jejak cuking lain.
+- **Empat warna jejak dipekatkan dari palet dan disimpan sebagai angka di `MapTrails.kt`, bukan ditambahkan ke `ui/theme`:** tile peta selalu terang (tidak ikut mode gelap app), jadi pastel mentahnya seperti PeachAccent dan MintPop terlalu pudar di sana; karena warna di situ penanda data, ia tidak dipakai di permukaan UI mana pun dan tidak dihitung sebagai palet tema (R-29).
+- **Catatan yang ketemu di tempat yang sama persis tidak menambah titik, dengan toleransi lima angka di belakang koma (sekitar satu meter):** dua pembacaan GPS di titik yang sama tidak pernah persis sama angkanya, dan tanpa toleransi itu jejaknya akan terbaca seperti cuking yang mondar-mandir di satu halaman.
+- **Kembali ke tempat lama tetap dihitung sebagai gerakan:** yang dibuang hanya pengulangan yang berurutan, karena perjalanan A ke B lalu kembali ke A memang perjalanan.
+- **Kartu petanya selalu ada di layar Detail, juga saat cukingnya baru ketemu di satu tempat (dikoreksi pemilik; awalnya kartunya cuma muncul kalau ada jejak):** batasan awal itu keliru karena menyamakan "ada jejak" dengan "ada yang berguna di peta". Koordinat di chip atas tidak menjelaskan dia di mana, sedangkan peta menjelaskannya sekilas, termasuk saat dibandingkan dengan posisi pengguna.
+- **Judul dan keterangannya menyesuaikan: "Jejak di peta" saat ada garis, "Lokasinya di peta" saat tempatnya cuma satu, dan keterangan tentang garis yang makin terang hanya muncul kalau garisnya memang ada:** menyebut satu titik sebagai "jejak" menjanjikan sesuatu yang tidak ada, dan keterangan yang isinya menjelaskan ketiadaan lebih buruk daripada tidak ada keterangan.
+- **Kartunya dipaskan ke bentang jejaknya (`fitToContent`), bukan berpusat di tempat terakhir ketemu:** justru jejak panjang yang perlu dilihat utuh, dan di kartu 220dp titik terakhir saja akan memotong sisa perjalanannya. Zoomnya dihitung dari bentang dengan rumus tile peta (`trailFocus`), lalu dibatasi 12 sampai 16 supaya jejak beberapa meter tidak di-zoom sampai petanya tidak terbaca lagi.
+- **Pembingkaian pertama dipasang langsung (`setCenter`), bukan dianimasikan:** peta dibuat di titik bawaannya (Jakarta), jadi menganimasikannya berarti peta terbang dulu dari Jakarta ke lokasi cukingnya setiap kali layar dibuka, atau dibuka lagi setelah kembali dari layar lain. Animasi tetap dipakai untuk perubahan berikutnya, yaitu saat sorotan di Home berganti selagi petanya sudah terlihat, karena lompatan mendadak di situ terbaca seperti peta yang digambar ulang.
+- **Tinggi kartunya 220dp:** cukup untuk membaca arah garisnya tanpa menggeser fokus halaman, yang tetap fotonya.
+- **Shadow 6dp di kartunya sama dengan kartu peta di Home:** keduanya permukaan yang sama-sama "duduk di atas" halaman, jadi tingginya satu bahasa (R-12).
+- **Tombol "ke lokasi kamu" disembunyikan di kartu ini (`showLocateButton`):** di kartu sempit ia memakan ruang dan menyesatkan fokus, karena yang dilihat jejak cukingnya, bukan posisi pengguna.
+- **Menyentuh satu titik di kartu memilih catatan itu di riwayat, bukan membuka layar baru:** halaman ini memang sudah halaman cukingnya, jadi petanya berfungsi sebagai pemilih riwayat, sama seperti baris riwayat di bawahnya.
+- **Tidak ada animasi baru:** MOTION 2 dipakai apa adanya lewat animasi pop-in marker yang sudah ada, karena garis jejak memang bukan sesuatu yang perlu masuk sendiri.
+
+Batas yang diketahui: belum pernah dilihat di perangkat. Empat yang paling berisiko:
+apakah empat warna jejak cukup terbedakan di atas gambar peta yang sibuk (warnanya
+dipilih untuk kontras terhadap tile yang terang, tapi rasionya tidak diukur terhadap
+piksel tile yang sesungguhnya, karena tile-nya gambar); apakah toleransi satu meter
+terasa pas di lapangan, atau perlu dinaikkan kalau GPS-nya lebih berisik; apakah peta
+di dalam `LazyColumn` layar Detail tidak berkedip saat digulir, karena item yang keluar
+layar akan melepas lalu membuat ulang `MapView`-nya; dan apakah pembingkaian pertama
+yang tidak lagi dianimasikan terasa lebih baik daripada terbangnya peta dari Jakarta
+sebelumnya. Perubahan itu ikut menghapus animasi pembingkaian pertama di peta Home,
+jadi kalau ternyata justru terasa kaku, yang perlu dikembalikan cuma satu cabang di
+`CatMapView`: animasi khusus untuk peta yang dibingkai pertama kali.
+
+## Pemilih cuking di peta Home (permintaan pemilik, sesi 2026-09-25)
+
+Jejak satu cuking sekarang bisa disorot dari Home, tanpa membuka halaman
+detailnya dulu. Dial tetap **ENERGY 2 / RHYTHM 2 / MOTION 2**, dan tidak ada
+animasi baru.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Baris chip di atas peta, bukan dialog atau bottom sheet:** pilihannya sedikit dan hasilnya harus langsung terlihat di peta, sedangkan dialog justru menutupi peta yang jadi tempat melihat akibat pilihannya.
+- **Yang bisa dipilih cuma cuking yang punya jejak (minimal dua tempat berbeda):** cuking dengan satu tempat tidak punya garis untuk disorot, dan kalau ia ikut masuk ke baris ini, memilihnya akan terbaca seperti tombol yang tidak bekerja (R-26).
+- **Barisnya hilang sendiri saat yang bisa dipilih kurang dari dua:** dengan nol atau satu pilihan, baris itu tidak menambah kemampuan apa pun, jadi lebih jujur tidak ada daripada selalu memakan tinggi layar.
+- **Menekan chip yang sedang menyala melepas sorotannya, di samping chip "Semua jejak":** melepas sorotan jadi satu ketukan dari keadaan terpilih, dan chip "Semua jejak" tetap tersedia sebagai penanda keadaan "tidak ada yang disorot".
+- **Chipnya membawa foto cuking 26dp:** cuking sering belum dinamai, dan fotonya satu-satunya pembeda; karena itu chip berfoto dan chip "Semua jejak" (tanpa foto) tetap satu komponen yang sama supaya tingginya sejajar.
+- **Labelnya nama panggilan, lalu catatan, lalu "tanpa nama":** memakai urutan yang sama dengan kartu di daftar, jadi cuking yang sudah dikenal di daftar terbaca dengan sebutan yang sama di sini.
+- **Label dibatasi 160dp:** catatan adalah teks bebas, dan satu chip yang memanjang hampir selebar layar membuat sisa barisnya tidak terbaca, padahal gunanya membandingkan beberapa cuking sekaligus.
+- **Urutan chip mengikuti urutan jejak, yaitu paling baru dilihat lebih dulu:** urutan itu sudah dipakai daftar di bawah peta, jadi tidak ada urutan kedua yang harus dipahami pengguna.
+- **Warna "terpilih" meminjam `secondaryContainer`, sama dengan baris riwayat di layar Detail:** satu bahasa untuk "yang ini sedang dipamerkan", dan pasangan warnanya sudah dipakai di app ini sehingga kontrasnya bukan angka baru.
+- **`selectable`, bukan `clickable`:** chip ini memilih, jadi TalkBack perlu membacakan mana yang sedang terpilih, sama seperti baris riwayat.
+- **Tinggi chip minimal 44dp, dan barisnya digulir mendatar:** tap target (R-03), dan gulir mendatar berarti barisnya tidak bisa meluberkan lebar layar berapa pun jumlah cukingnya.
+- **Jejak cuking lain diredupkan (alpha 0x33), bukan disembunyikan:** yang dilihat pengguna jadi "yang ini di antara yang lain", bukan satu jejak yang berdiri sendiri tanpa konteks.
+- **Jejak terpilih dibuat 2dp lebih tebal, bukan dua kali lipat:** bedanya harus terbaca tanpa membuat lebar garis di layar terasa berganti bahasa.
+- **Kamera diantar ke jejak yang dipilih (`trailFocus`):** menyorot jejak yang ada di luar layar tidak ada gunanya, dan ini memakai fungsi yang sama dengan pemaskaan di layar Detail.
+- **Melepas sorotan tidak menggeser peta:** yang dilihat setelah itu adalah semua jejak di area yang sedang dilihat pengguna, sedangkan mengembalikan kamera ke tempat terakhir cuma membuat peta melompat tanpa dia minta.
+- **Cuking yang dihapus otomatis melepas sorotannya:** kalau tidak, chip-nya hilang sementara peta tetap membingkai jejak yang sudah tidak ada.
+
+Batas yang diketahui: belum pernah dilihat di perangkat, dan tidak ada unit test baru
+untuk bagian ini karena seluruhnya hidup di dalam `AndroidView` (peta) dan di pohon
+Compose; yang bisa dibuktikan tanpa perangkat cuma aturan "cuking mana yang punya
+jejak", dan itu sudah diuji di `MapTrailsTest`. Tiga yang paling berisiko: apakah
+empat warna jejak cukup terbedakan saat satu di antaranya disorot (yang lain
+diredupkan tetapi tetap terlihat); apakah baris chip tetap nyaman saat cuking yang punya
+jejak sudah belasan (belum ada batas jumlah, dan kalau ternyata terlalu panjang,
+yang paling murah adalah membatasinya ke beberapa yang paling baru dilihat); dan
+apakah foto di marker cuking lain juga perlu diredupkan saat sorotannya menyala,
+karena untuk sekarang hanya garis jejaknya yang berubah.
+
+## Jarak di kartu ulasan foto (laporan pemilik, sesi 2026-09-25)
+
+Di halaman "Tandai ketemu lagi", chip "Masuk ke catatan cuking ..." dan field
+kegiatan saling menempel. Dial tetap **ENERGY 2 / RHYTHM 2 / MOTION 2**.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Jarak diatur lewat `verticalArrangement = Arrangement.spacedBy(12.dp)` di kolomnya, bukan `Spacer` satu-satu:** isi kartu ini bercabang (nama untuk cuking baru, chip untuk penemuan baru), jadi jarak yang dihitung per elemen selalu kelewat satu setiap kali ada isi baru; ini persis yang terjadi pada chip dan field kegiatan.
+- **`Spacer` setelah foto dihapus, bukan dibiarkan:** kalau dibiarkan, jarak setelah foto jadi 24dp sementara jarak lain 12dp, yaitu masalah baru yang kelihatan.
+- **Angkanya 12dp, sama dengan padding kartunya:** jarak antarisi jadi sebentuk dengan jarak isi ke tepi kartu, jadi tidak ada dua irama jarak di satu kartu.
+
+Batas yang diketahui: belum pernah dilihat di perangkat, dan tidak ada unit test
+untuk jarak Compose. Yang membuktikan tanpa perangkat cuma perubahan satu tempat
+(lebar kolom tidak berubah, jadi tidak ada risiko layout baru).
+
 ## Override yang perlu keputusan pemilik produk
 
 - **R-11 (variasi border radius) vs spec 14.1:** spec minta semua elemen membulat tanpa sudut tajam, sedangkan R-11 melarang semua elemen berbentuk pill tanpa variasi radius.

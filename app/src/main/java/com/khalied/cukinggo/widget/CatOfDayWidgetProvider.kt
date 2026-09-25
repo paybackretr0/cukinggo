@@ -42,11 +42,11 @@ class CatOfDayWidgetProvider : AppWidgetProvider() {
 
     companion object {
 
-        /** Satu cuking dipilih dari seluruh koleksi, bergilir satu langkah per hari. */
+        /** Satu catatan dipilih dari seluruh koleksi, bergilir satu langkah per hari. */
         internal val pickCat: suspend (Context) -> WidgetPick = { context ->
             WidgetPick(
                 catOfDay(
-                    cats = context.appContainer.catRepository.getAllCatsOnce(),
+                    sightings = context.appContainer.catRepository.getAllSightingsOnce(),
                     epochDay = LocalDate.now().toEpochDay()
                 )
             )

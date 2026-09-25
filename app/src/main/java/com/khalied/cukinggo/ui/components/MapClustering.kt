@@ -1,14 +1,18 @@
 package com.khalied.cukinggo.ui.components
 
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import kotlin.math.floor
 import kotlin.math.pow
 
 /**
- * Pengelompokan marker untuk mode zoom jauh: kucing yang berdekatan digabung jadi
- * satu gelembung angka supaya marker tidak saling menumpuk.
+ * Pengelompokan marker untuk mode zoom jauh: penemuan yang berdekatan digabung
+ * jadi satu gelembung angka supaya marker tidak saling menumpuk.
+ *
+ * Yang dikelompokkan adalah penemuannya, bukan cukingnya, karena peta di Home
+ * menampilkan satu titik per penemuan: cuking yang sudah ketemu di tiga tempat
+ * memang layak terlihat di tiga tempat.
  */
-internal data class CatCluster(
+internal data class SightingCluster(
     val cellLatitude: Int,
     val cellLongitude: Int,
     val latitude: Double,
@@ -22,19 +26,22 @@ internal fun clusterCellSizeDegrees(zoomLevel: Int): Double {
     return (tileDegrees * 0.75).coerceAtLeast(0.0005)
 }
 
-internal fun clusterCats(cats: List<Cat>, zoomLevel: Int): List<CatCluster> {
-    if (cats.isEmpty()) return emptyList()
+internal fun clusterSightings(
+    sightings: List<CatSighting>,
+    zoomLevel: Int
+): List<SightingCluster> {
+    if (sightings.isEmpty()) return emptyList()
 
     val cellSize = clusterCellSizeDegrees(zoomLevel)
-    val bins = LinkedHashMap<Pair<Int, Int>, MutableList<Cat>>()
-    cats.forEach { cat ->
-        val binKey = floor(cat.latitude / cellSize).toInt() to
-            floor(cat.longitude / cellSize).toInt()
-        bins.getOrPut(binKey) { mutableListOf() }.add(cat)
+    val bins = LinkedHashMap<Pair<Int, Int>, MutableList<CatSighting>>()
+    sightings.forEach { sighting ->
+        val binKey = floor(sighting.latitude / cellSize).toInt() to
+            floor(sighting.longitude / cellSize).toInt()
+        bins.getOrPut(binKey) { mutableListOf() }.add(sighting)
     }
 
     return bins.map { (binKey, members) ->
-        CatCluster(
+        SightingCluster(
             cellLatitude = binKey.first,
             cellLongitude = binKey.second,
             latitude = members.sumOf { it.latitude } / members.size,

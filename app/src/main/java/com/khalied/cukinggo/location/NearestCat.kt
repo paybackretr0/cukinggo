@@ -1,7 +1,7 @@
 package com.khalied.cukinggo.location
 
 import android.annotation.SuppressLint
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.util.distanceMeters
 
 /**
@@ -23,7 +23,7 @@ private const val FRESH_FIX_TIMEOUT_MILLIS = 5_000L
  * "posisimu belum diketahui" itu dua hal berbeda yang perlu dikatakan berbeda. */
 sealed interface NearestCatResult {
 
-    data class Found(val cat: Cat, val distanceMeters: Double) : NearestCatResult
+    data class Found(val sighting: CatSighting, val distanceMeters: Double) : NearestCatResult
 
     /** Izin lokasi belum ada, atau perangkat tidak punya posisi yang bisa dipakai. */
     data object NoLocation : NearestCatResult
@@ -35,13 +35,15 @@ sealed interface NearestCatResult {
 /**
  * Cuking terdekat di dalam [maxMeters], atau null kalau tidak ada yang masuk radius.
  *
- * Murni matematika, jadi aturannya bisa diuji tanpa perangkat. Kalau dua cuking
- * jaraknya sama persis, yang menang adalah yang lebih dulu ada di [cats], dan
- * daftar dari Room urutannya terbaru dulu, jadi pada seri yang menang adalah
- * catatan yang paling baru.
+ * Murni matematika, jadi aturannya bisa diuji tanpa perangkat. Daftar masukannya
+ * sebaiknya sudah satu penemuan per cuking (lihat `latestPerCat`), karena yang
+ * ditanya di sini "cuking mana", bukan "penemuan mana". Kalau dua cuking jaraknya
+ * sama persis, yang menang adalah yang lebih dulu ada di [sightings], dan daftar
+ * dari Room urutannya terbaru dulu, jadi pada seri yang menang adalah yang paling
+ * baru ketemu.
  */
 fun nearestCat(
-    cats: List<Cat>,
+    sightings: List<CatSighting>,
     latitude: Double,
     longitude: Double,
     maxMeters: Double = NEARBY_CAT_RADIUS_METERS
@@ -49,10 +51,15 @@ fun nearestCat(
     var best: NearestCatResult.Found? = null
     var bestDistance = Double.MAX_VALUE
 
-    cats.forEach { cat ->
-        val distance = distanceMeters(latitude, longitude, cat.latitude, cat.longitude)
+    sightings.forEach { sighting ->
+        val distance = distanceMeters(
+            latitude,
+            longitude,
+            sighting.latitude,
+            sighting.longitude
+        )
         if (distance <= maxMeters && distance < bestDistance) {
-            best = NearestCatResult.Found(cat, distance)
+            best = NearestCatResult.Found(sighting, distance)
             bestDistance = distance
         }
     }
@@ -72,7 +79,7 @@ fun nearestCat(
 @SuppressLint("MissingPermission")
 suspend fun findNearestCat(
     locationHelper: LocationHelper,
-    cats: List<Cat>,
+    sightings: List<CatSighting>,
     maxMeters: Double = NEARBY_CAT_RADIUS_METERS,
     allowFreshFix: Boolean = false
 ): NearestCatResult {
@@ -86,8 +93,8 @@ suspend fun findNearestCat(
     }
     if (location == null) return NearestCatResult.NoLocation
 
-    val found = nearestCat(cats, location.latitude, location.longitude, maxMeters)
+    val found = nearestCat(sightings, location.latitude, location.longitude, maxMeters)
     return found
-        ?.let { NearestCatResult.Found(it.cat, it.distanceMeters) }
+        ?.let { NearestCatResult.Found(it.sighting, it.distanceMeters) }
         ?: NearestCatResult.NoneNearby
 }

@@ -1,18 +1,28 @@
 package com.khalied.cukinggo.data.repository
 
-import com.khalied.cukinggo.data.local.CatDao
-import com.khalied.cukinggo.data.local.CatEntity
-import com.khalied.cukinggo.data.local.toDomain
-import com.khalied.cukinggo.domain.model.Cat
-import com.khalied.cukinggo.util.ImageStorageHelper
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import com.khalied.cukinggo.data.local.CatDao
+import com.khalied.cukinggo.data.local.CatEntity
+import com.khalied.cukinggo.data.local.CatSightingDao
+import com.khalied.cukinggo.data.local.CatSightingEntity
+import com.khalied.cukinggo.data.local.CatSightingRow
+import com.khalied.cukinggo.data.local.CatWithSightings
+import com.khalied.cukinggo.data.local.toDomain
+import com.khalied.cukinggo.data.local.toDomainOrNull
+import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
+import com.khalied.cukinggo.domain.model.latestPerCat
+import com.khalied.cukinggo.util.ImageStorageHelper
 import com.khalied.cukinggo.util.blankToNull
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -25,29 +35,37 @@ import kotlinx.coroutines.withContext
 const val CAT_PAGE_SIZE = 20
 
 /**
- * Satu-satunya pintu masuk ke data kucing: Room DB + file foto lokal.
+ * Satu-satunya pintu masuk ke data cuking: Room DB + file foto lokal.
+ *
+ * Dua istilah yang dipakai konsisten di sini: satu cuking punya satu profil
+ * ([Cat]) dan banyak penemuan ([CatSighting]). Yang ditambah tiap kali pengguna
+ * ketemu cuking lagi adalah penemuannya, dan yang ditambah tiap kali pengguna
+ * menemukan cuking baru adalah profilnya sekaligus penemuan pertamanya.
  */
 class CatRepository(
     private val catDao: CatDao,
+    private val catSightingDao: CatSightingDao,
     private val imageStorageHelper: ImageStorageHelper,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     /**
-     * Dijalankan setiap daftar kucing berubah. Repository sendiri tidak tahu
+     * Dijalankan setiap daftar catatan berubah. Repository sendiri tidak tahu
      * siapa yang mendengarkan, jadi urusan widget tetap di luar lapisan data.
      */
     private val onCatsChanged: () -> Unit = {}
 ) {
 
-    fun getAllCats(): Flow<List<Cat>> =
-        catDao.getAllCats().map { entities -> entities.map(CatEntity::toDomain) }
+    /** Seluruh penemuan, urut terbaru dulu: isi daftar di Home dan penanda peta. */
+    fun observeSightings(): Flow<List<CatSighting>> =
+        catSightingDao.observeAllSightings()
+            .map { rows -> rows.map(CatSightingRow::toDomain) }
 
     /**
-     * Seluruh koleksi sebagai halaman-halaman untuk halaman daftar.
+     * Seluruh penemuan sebagai halaman-halaman untuk halaman daftar.
      *
      * Halaman pertamanya baru dimuat saat flow-nya dikumpulkan, jadi layar yang
      * tidak dibuka tidak membaca apa-apa.
      */
-    fun pagingAllCats(): Flow<PagingData<Cat>> =
+    fun pagingSightings(): Flow<PagingData<CatSighting>> =
         Pager(
             config = PagingConfig(
                 pageSize = CAT_PAGE_SIZE,
@@ -59,39 +77,80 @@ class CatRepository(
                 // foto terbaca seperti catatan yang gagal dimuat.
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { catDao.pagingSourceAllCats() }
-        ).flow.map { pagingData -> pagingData.map { entity -> entity.toDomain() } }
+            pagingSourceFactory = { catSightingDao.pagingSourceAllSightings() }
+        ).flow.map { pagingData -> pagingData.map { row -> row.toDomain() } }
 
-    /** Jumlah seluruh catatan, dipakai chip jumlah di halaman daftar. */
-    fun observeCatCount(): Flow<Int> = catDao.observeCatCount()
+    /** Jumlah seluruh penemuan, dipakai chip jumlah. */
+    fun observeSightingCount(): Flow<Int> = catSightingDao.observeSightingCount()
 
-    /** Kucing terbaru, dipakai widget "Kucing terakhir". */
-    suspend fun latestCat(): Cat? = withContext(ioDispatcher) {
-        catDao.getLatestCat()?.toDomain()
+    /** Penemuan terbaru, dipakai widget "Cuking terakhir". */
+    suspend fun latestSighting(): CatSighting? = withContext(ioDispatcher) {
+        catSightingDao.getLatestSighting()?.toDomain()
     }
 
-    /** Seluruh kucing sekali baca, dipakai widget "Kucing hari ini" dan area pantauan. */
-    suspend fun getAllCatsOnce(): List<Cat> = withContext(ioDispatcher) {
-        catDao.getCatsOnce().map(CatEntity::toDomain)
+    /** Seluruh penemuan sekali baca, dipakai widget "Cuking hari ini". */
+    suspend fun getAllSightingsOnce(): List<CatSighting> = withContext(ioDispatcher) {
+        catSightingDao.getAllSightings().map(CatSightingRow::toDomain)
     }
 
-    /** Waktu semua catatan, dipakai menghitung rentetan harian di widget. */
+    /**
+     * Satu penemuan terbaru per cuking: "cuking ini sekarang di mana".
+     *
+     * Dipakai widget "Cuking terdekat" dan pemasangan area pantauan kabar dekat,
+     * keduanya karena yang ditanyakan memang cukingnya, bukan tiap penemuannya.
+     */
+    suspend fun latestSightingsPerCat(): List<CatSighting> = withContext(ioDispatcher) {
+        catSightingDao.getAllSightings()
+            .map(CatSightingRow::toDomain)
+            .latestPerCat()
+    }
+
+    /** Waktu semua penemuan, dipakai menghitung rentetan harian di widget. */
     suspend fun getAllTimestamps(): List<Long> = withContext(ioDispatcher) {
-        catDao.getAllTimestamps()
+        catSightingDao.getAllTimestamps()
     }
 
-    /** Sekumpulan kucing berdasarkan id, dipakai kabar "dekat kucing". */
-    suspend fun getCatsByIds(ids: List<Long>): List<Cat> = withContext(ioDispatcher) {
-        catDao.getCatsByIds(ids).map(CatEntity::toDomain)
+    /**
+     * Penemuan terbaru dari cuking-cuking yang disebutkan, dipakai kabar "dekat
+     * cuking" yang cuma tahu id cuking dari request ID geofence.
+     */
+    suspend fun getLatestSightingsForCats(catIds: List<Long>): List<CatSighting> =
+        withContext(ioDispatcher) {
+            catSightingDao.getSightingsByCatIds(catIds)
+                .map(CatSightingRow::toDomain)
+                .latestPerCat()
+        }
+
+    /** Satu cuking beserta seluruh penemuannya, dipakai layar detail. */
+    fun observeCat(catId: Long): Flow<Cat?> =
+        catDao.observeCatWithSightings(catId).map { it?.toDomainOrNull() }
+
+    /**
+     * Cuking yang punya penemuan ini, beserta riwayat penemuannya.
+     *
+     * Semua tempat yang bisa disentuh pengguna menunjuk ke satu penemuan, bukan
+     * ke cukingnya: kartu di daftar, penanda di peta, widget, dan kabar dekat
+     * semuanya mewakili satu momen ketemu. Jadi id penemuan yang dipakai untuk
+     * membuka layar detail, dan dari situ cukingnya dicari.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeCatOfSighting(sightingId: Long): Flow<Cat?> =
+        catSightingDao.observeSightingCatId(sightingId)
+            .flatMapLatest { catId ->
+                if (catId == null) flowOf(null) else observeCat(catId)
+            }
+
+    suspend fun getCat(catId: Long): Cat? = withContext(ioDispatcher) {
+        catDao.getCatWithSightings(catId)?.toDomainOrNull()
     }
 
-    fun observeCat(id: Long): Flow<Cat?> =
-        catDao.observeCatById(id).map { it?.toDomain() }
-
-    suspend fun getCat(id: Long): Cat? = withContext(ioDispatcher) {
-        catDao.getCatById(id)?.toDomain()
-    }
-
+    /**
+     * Cuking baru: profilnya dibuat, lalu penemuan pertamanya langsung ikut
+     * tersimpan dengan waktu yang sama.
+     *
+     * Yang dikembalikan adalah id cukingnya, karena itu identitas yang dipakai
+     * layar lain.
+     */
     suspend fun addCat(
         photoPath: String,
         name: String?,
@@ -100,10 +159,16 @@ class CatRepository(
         longitude: Double,
         timestamp: Long = System.currentTimeMillis()
     ): Long = withContext(ioDispatcher) {
-        val id = catDao.insertCat(
+        val catId = catDao.insertCat(
             CatEntity(
-                photoPath = photoPath,
                 name = blankToNull(name),
+                createdAt = timestamp
+            )
+        )
+        catSightingDao.insertSighting(
+            CatSightingEntity(
+                catId = catId,
+                photoPath = photoPath,
                 description = blankToNull(description),
                 latitude = latitude,
                 longitude = longitude,
@@ -111,12 +176,61 @@ class CatRepository(
             )
         )
         onCatsChanged()
-        id
+        catId
     }
 
+    /**
+     * Penemuan baru untuk cuking yang sudah ada. Namanya tidak ikut ditulis,
+     * karena satu cuking cuma punya satu nama dan itu tinggal di profilnya.
+     *
+     * Yang dikembalikan adalah id penemuannya.
+     */
+    suspend fun addSighting(
+        catId: Long,
+        photoPath: String,
+        description: String?,
+        latitude: Double,
+        longitude: Double,
+        timestamp: Long = System.currentTimeMillis()
+    ): Long = withContext(ioDispatcher) {
+        val sightingId = catSightingDao.insertSighting(
+            CatSightingEntity(
+                catId = catId,
+                photoPath = photoPath,
+                description = blankToNull(description),
+                latitude = latitude,
+                longitude = longitude,
+                timestamp = timestamp
+            )
+        )
+        onCatsChanged()
+        sightingId
+    }
+
+    /**
+     * Menghapus satu penemuan.
+     *
+     * Kalau itu penemuan terakhir cukingnya, profilnya ikut terhapus: profil
+     * tanpa penemuan tidak punya apa pun untuk ditampilkan.
+     */
+    suspend fun deleteSighting(sighting: CatSighting) = withContext(ioDispatcher) {
+        catSightingDao.deleteSightingById(sighting.id)
+        imageStorageHelper.deletePhoto(sighting.photoPath)
+        if (catSightingDao.countSightingsForCat(sighting.catId) == 0) {
+            catDao.deleteCatById(sighting.catId)
+        }
+        onCatsChanged()
+    }
+
+    /** Menghapus satu cuking beserta seluruh penemuannya dan fotonya. */
     suspend fun deleteCat(cat: Cat) = withContext(ioDispatcher) {
+        cat.sightings.forEach { sighting ->
+            imageStorageHelper.deletePhoto(sighting.photoPath)
+        }
+        // Penemuannya dihapus lebih dulu, bukan mengandalkan CASCADE: urutannya
+        // jadi benar walau penegakan foreign key di SQLite sedang tidak aktif.
+        catSightingDao.deleteSightingsForCat(cat.id)
         catDao.deleteCatById(cat.id)
-        imageStorageHelper.deletePhoto(cat.photoPath)
         onCatsChanged()
     }
 }

@@ -6,11 +6,11 @@ import android.content.Context
 import com.khalied.cukinggo.appContainer
 
 /**
- * Widget "Cuking terakhir": satu kartu berisi foto cuking yang paling baru ditandai,
- * dengan catatannya (atau satu baris lucu kalau catatannya kosong). Bingkainya
- * bergilir tiap hari, lihat [WidgetSkin].
+ * Widget "Cuking terakhir": satu kartu berisi foto penemuan yang paling baru
+ * dicatat, dengan catatannya (atau satu baris lucu kalau catatannya kosong).
+ * Bingkainya bergilir tiap hari, lihat [WidgetSkin].
  *
- * Isi fotonya hanya berubah kalau app menambah atau menghapus kucing, dan saat itu
+ * Isi fotonya hanya berubah kalau app menambah atau menghapus catatan, dan saat itu
  * [CatWidgets.refreshAll] dipanggil dari repository. Yang tetap dipasang adalah
  * alarm tengah malam, karena lencana rentetan di sudut foto harus dihitung ulang
  * tiap hari supaya angkanya tidak memutih saat rentetannya putus.
@@ -40,9 +40,9 @@ class CatWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        /** Cuking yang paling baru ditandai. */
+        /** Penemuan yang paling baru dicatat. */
         internal val pickCat: suspend (Context) -> WidgetPick = { context ->
-            WidgetPick(context.appContainer.catRepository.latestCat())
+            WidgetPick(context.appContainer.catRepository.latestSighting())
         }
     }
 }

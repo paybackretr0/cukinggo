@@ -1,6 +1,6 @@
 package com.khalied.cukinggo.ui.components
 
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -8,10 +8,11 @@ import org.junit.Test
 
 class MapClusteringTest {
 
-    private fun cat(id: Long, latitude: Double, longitude: Double) = Cat(
+    private fun sighting(id: Long, latitude: Double, longitude: Double) = CatSighting(
         id = id,
+        catId = id,
+        catName = null,
         photoPath = "/tmp/cat_$id.jpg",
-        name = null,
         description = null,
         latitude = latitude,
         longitude = longitude,
@@ -19,28 +20,28 @@ class MapClusteringTest {
     )
 
     @Test
-    fun `kucing yang berdekatan digabung jadi satu cluster`() {
-        val cats = listOf(
-            cat(1, -6.20000, 106.80000),
-            cat(2, -6.20010, 106.80010),
-            cat(3, -6.20020, 106.80005)
+    fun `penemuan yang berdekatan digabung jadi satu cluster`() {
+        val sightings = listOf(
+            sighting(1, -6.20000, 106.80000),
+            sighting(2, -6.20010, 106.80010),
+            sighting(3, -6.20020, 106.80005)
         )
 
-        val clusters = clusterCats(cats, zoomLevel = 10)
+        val clusters = clusterSightings(sightings, zoomLevel = 10)
 
         assertEquals(1, clusters.size)
         assertEquals(3, clusters.single().count)
     }
 
     @Test
-    fun `kucing yang berjauhan tetap terpisah`() {
-        val cats = listOf(
-            cat(1, -6.2, 106.8),   // Jakarta
-            cat(2, -7.8, 110.4),   // Yogyakarta
-            cat(3, -8.65, 115.2)   // Bali
+    fun `penemuan yang berjauhan tetap terpisah`() {
+        val sightings = listOf(
+            sighting(1, -6.2, 106.8), // Jakarta
+            sighting(2, -7.8, 110.4), // Yogyakarta
+            sighting(3, -8.65, 115.2) // Bali
         )
 
-        val clusters = clusterCats(cats, zoomLevel = 6)
+        val clusters = clusterSightings(sightings, zoomLevel = 6)
 
         assertEquals(3, clusters.size)
         assertEquals(3, clusters.sumOf { it.count })
@@ -48,13 +49,13 @@ class MapClusteringTest {
 
     @Test
     fun `titik cluster memakai rata-rata anggotanya`() {
-        val cats = listOf(
-            cat(1, -6.0, 106.0),
-            cat(2, -6.2, 106.2)
+        val sightings = listOf(
+            sighting(1, -6.0, 106.0),
+            sighting(2, -6.2, 106.2)
         )
 
         // Pada zoom 6 ukuran sel ~4.2°, kedua titik pasti jatuh di sel yang sama.
-        val cluster = clusterCats(cats, zoomLevel = 6).single()
+        val cluster = clusterSightings(sightings, zoomLevel = 6).single()
 
         assertTrue(abs(cluster.latitude - (-6.1)) < 0.0001)
         assertTrue(abs(cluster.longitude - 106.1) < 0.0001)
@@ -68,6 +69,6 @@ class MapClusteringTest {
 
     @Test
     fun `daftar kosong tidak menghasilkan cluster`() {
-        assertTrue(clusterCats(emptyList(), zoomLevel = 10).isEmpty())
+        assertTrue(clusterSightings(emptyList(), zoomLevel = 10).isEmpty())
     }
 }

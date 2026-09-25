@@ -12,13 +12,13 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.khalied.cukinggo.MainActivity
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.util.blankToNull
 
 /**
  * Kabar di bilah notifikasi saat kamu masuk radius kucing yang pernah ditandai.
  *
- * Tap-nya memakai jalur yang sama dengan widget: id kucing dikirim ke
+ * Tap-nya memakai jalur yang sama dengan widget: id penemuannya dikirim ke
  * [MainActivity], lalu langsung mendarat di halaman detailnya.
  */
 internal object NearbyAlertNotifier {
@@ -36,7 +36,7 @@ internal object NearbyAlertNotifier {
         NotificationManagerCompat.from(context).createNotificationChannel(channel)
     }
 
-    fun post(context: Context, cat: Cat) {
+    fun post(context: Context, sighting: CatSighting) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
         ) {
@@ -45,8 +45,8 @@ internal object NearbyAlertNotifier {
 
         ensureChannel(context)
 
-        val name = blankToNull(cat.name)
-        val note = blankToNull(cat.description)
+        val name = blankToNull(sighting.catName)
+        val note = blankToNull(sighting.description)
         val body = note ?: context.getString(R.string.nearby_alert_body)
         // Nama cuking dipakai sebagai judul kalau ada, supaya kabarnya bisa dikenali
         // dari bilah notifikasi tanpa membuka app dulu.
@@ -61,22 +61,22 @@ internal object NearbyAlertNotifier {
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setContentIntent(openCatIntent(context, cat.id))
+            .setContentIntent(openCatIntent(context, sighting.id))
             .setAutoCancel(true)
             .build()
 
-        // Id notifikasi memakai id kucing: kabar untuk kucing yang sama menimpa
+        // Id notifikasi memakai id cukingnya: kabar untuk cuking yang sama menimpa
         // kabar sebelumnya, jadi tidak menumpuk di bilah notifikasi.
-        NotificationManagerCompat.from(context).notify(cat.id.toInt(), notification)
+        NotificationManagerCompat.from(context).notify(sighting.catId.toInt(), notification)
     }
 
-    private fun openCatIntent(context: Context, catId: Long): PendingIntent {
+    private fun openCatIntent(context: Context, sightingId: Long): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)
-            .putExtra(MainActivity.EXTRA_CAT_ID, catId)
+            .putExtra(MainActivity.EXTRA_SIGHTING_ID, sightingId)
 
         return PendingIntent.getActivity(
             context,
-            catId.toInt(),
+            sightingId.toInt(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -52,6 +52,9 @@ class NearbyCatWidgetProvider : AppWidgetProvider() {
         /**
          * Cuking paling dekat dari posisi perangkat.
          *
+         * Yang dibaca cuma penemuan terbaru tiap cuking, karena yang ditanya di
+         * sini tempat cukingnya sekarang, bukan semua tempat dia pernah terlihat.
+         *
          * Yang kosong dibedakan: izin/posisi yang belum ada dan radius yang kosong
          * adalah dua hal berbeda, dan kalimat kartunya harus mengatakan yang benar.
          */
@@ -59,18 +62,18 @@ class NearbyCatWidgetProvider : AppWidgetProvider() {
             when (
                 val result = findNearestCat(
                     locationHelper = context.appContainer.locationHelper,
-                    cats = context.appContainer.catRepository.getAllCatsOnce()
+                    sightings = context.appContainer.catRepository.latestSightingsPerCat()
                 )
             ) {
-                is NearestCatResult.Found -> WidgetPick(result.cat)
+                is NearestCatResult.Found -> WidgetPick(result.sighting)
 
                 NearestCatResult.NoLocation -> WidgetPick(
-                    cat = null,
+                    sighting = null,
                     emptyCaption = context.getString(R.string.widget_nearby_need_location)
                 )
 
                 NearestCatResult.NoneNearby -> WidgetPick(
-                    cat = null,
+                    sighting = null,
                     emptyCaption = context.getString(
                         R.string.widget_nearby_empty,
                         NEARBY_CAT_RADIUS_METERS.roundToInt()

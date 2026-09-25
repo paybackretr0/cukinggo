@@ -4,6 +4,7 @@ import android.Manifest
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Paint
 import android.graphics.drawable.BitmapDrawable
 import android.location.Location
 import android.os.Handler
@@ -52,7 +53,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.location.LocationHelper
 import com.khalied.cukinggo.ui.theme.BlushPink
 import com.khalied.cukinggo.ui.theme.InkSoft
@@ -70,6 +71,7 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 
 private const val DEFAULT_LAT = -6.2
 private const val DEFAULT_LNG = 106.816666
@@ -81,6 +83,9 @@ private const val PHOTO_ZOOM_THRESHOLD = 14.0
 /** Zoom minimal saat peta "diantar" ke lokasi user. */
 private const val MY_LOCATION_ZOOM = 16.0
 
+/** Zoom saat peta diantar ke satu titik saja, misalnya satu catatan cuking. */
+private const val POINT_ZOOM = 16.0
+
 private const val POP_IN_START_SCALE = 0.05f
 
 /** Tombol target: boleh menunggu agak lama karena user memang minta dicarikan. */
@@ -91,38 +96,85 @@ private const val AUTO_LOCATION_TIMEOUT_MILLIS = 5_000L
 
 private const val MESSAGE_VISIBLE_MILLIS = 3_500L
 
+/** Lebar garis jejak dalam dp: cukup untuk terbaca di atas gambar peta. */
+private const val TRAIL_WIDTH_DP = 5f
+
+/**
+ * Lebar jejak yang sedang disorot: sedikit lebih tebal dari yang lain.
+ *
+ * Bezanya harus cukup untuk terbaca tanpa membuat jejak lain terlihat rusak,
+ * jadi 2dp saja, bukan dua kali lipat.
+ */
+private const val TRAIL_HIGHLIGHT_WIDTH_DP = 7f
+
+/**
+ * Kekuatan warna jejak yang sedang tidak disorot.
+ *
+ * Jejak lain tetap digambar, bukan disembunyikan: yang dilihat pengguna jadi
+ * "yang ini di antara yang lain", bukan jejak yang berdiri sendiri tanpa konteks.
+ */
+private const val TRAIL_ALPHA_DIMMED = 0x33
+
+/**
+ * Kekuatan warna tiap ruas jejak, 0 sampai 255.
+ *
+ * Ruas paling lama dipudarkan dan ruas paling baru dibuat penuh, jadi arah
+ * jejaknya terbaca tanpa panah atau nomor urut di tiap titik, dan tanpa marker
+ * tambahan yang menutupi foto cukingnya.
+ */
+private const val TRAIL_ALPHA_OLDEST = 0x66
+private const val TRAIL_ALPHA_NEWEST = 0xFF
+
 /**
  * Satu dua tile gagal itu wajar (misal tile di tepi area), jadi kabar peta baru
  * muncul kalau kegagalannya menumpuk tanpa satu pun tile berhasil dimuat.
  */
 private const val TILE_FAILURE_THRESHOLD = 3
 
-/** Satu marker di peta: foto satu kucing, atau gelembung angka berisi beberapa kucing. */
+/** Satu marker di peta: foto satu penemuan, atau gelembung angka berisi beberapa penemuan. */
 private data class MarkerSpec(
     val key: String,
     val point: GeoPoint,
-    val cat: Cat?,
+    val sighting: CatSighting?,
     val count: Int
 )
 
 /**
  * Peta OpenStreetMap (osmdroid).
  *
- * Zoom dekat  -> marker berupa foto kucing.
- * Zoom jauh   -> kucing dikelompokkan per grid dan ditampilkan sebagai angka jumlahnya.
+ * Zoom dekat  -> marker berupa foto penemuan, disambung garis jejak tiap cuking.
+ * Zoom jauh   -> penemuan dikelompokkan per grid dan ditampilkan sebagai angka jumlahnya.
  * Titik mint  -> lokasi user, muncul otomatis begitu izin lokasi aktif.
  * Tombol target di kanan bawah -> peta loncat ke lokasi user saat ini.
+ *
+ * Yang digambar adalah penemuannya, satu titik per penemuan: cuking yang pernah
+ * ketemu di dua tempat memang layak terlihat di dua tempat. [onSightingClick]
+ * menerima id penemuannya, karena itu yang dibuka layar detail.
+ *
+ * [showLocateButton] dipakai layar yang menaruh peta ini di dalam kartu sempit:
+ * tombol "ke lokasi kamu" di sana memakan ruang tanpa menambah makna, karena yang
+ * dilihat memang jejak cukingnya, bukan posisi pengguna.
+ *
+ * [fitToContent] dipakai tempat yang isinya jejak satu cuking saja: peta dipaskan
+ * supaya seluruh jejaknya masuk layar, bukan berpusat di tempat terakhir dia ketemu.
+ *
+ * [highlightCatId] menyorot satu cuking: jejaknya jadi pekat dan sedikit lebih
+ * tebal, jejak cuking lain tetap ada tapi diredupkan, dan kamera diantar ke
+ * jejaknya. Null berarti tidak ada yang disorot.
  */
 @Composable
 fun CatMapView(
-    cats: List<Cat>,
-    onCatClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    sightings: List<CatSighting>,
+    onSightingClick: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    showLocateButton: Boolean = true,
+    fitToContent: Boolean = false,
+    highlightCatId: Long? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val container = remember(context) { context.appContainer }
-    val currentOnCatClick by rememberUpdatedState(onCatClick)
+    val currentOnSightingClick by rememberUpdatedState(onSightingClick)
     val density = context.resources.displayMetrics.density
     val markerSizePx = remember(density) { (MARKER_SIZE_DP * density).toInt().coerceAtLeast(32) }
 
@@ -308,14 +360,18 @@ fun CatMapView(
 
     val showPhotos = zoomLevel >= PHOTO_ZOOM_THRESHOLD
     val zoomBucket = zoomLevel.roundToInt()
-    val specs = remember(cats, showPhotos, zoomBucket) {
-        buildMarkerSpecs(cats = cats, showPhotos = showPhotos, zoomLevel = zoomBucket)
+    val specs = remember(sightings, showPhotos, zoomBucket) {
+        buildMarkerSpecs(
+            sightings = sightings,
+            showPhotos = showPhotos,
+            zoomLevel = zoomBucket
+        )
     }
     val thumbnails = remember(markerSizePx) { PhotoThumbnailCache(markerSizePx) }
 
     val markers = remember { mutableMapOf<String, Marker>() }
     val animatedKeys = remember { mutableSetOf<String>() }
-    var hasCenteredOnce by remember { mutableStateOf(false) }
+    var hasFramedOnce by remember { mutableStateOf(false) }
 
     LaunchedEffect(specs, mapView) {
         val currentKeys = specs.map { it.key }.toSet()
@@ -329,10 +385,10 @@ fun CatMapView(
             val marker = Marker(mapView).apply {
                 position = spec.point
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                val cat = spec.cat
-                if (cat != null) {
+                val sighting = spec.sighting
+                if (sighting != null) {
                     setOnMarkerClickListener { _, _ ->
-                        currentOnCatClick(cat.id)
+                        currentOnSightingClick(sighting.id)
                         true
                     }
                 } else {
@@ -354,8 +410,8 @@ fun CatMapView(
             launch {
                 val marker = markers[spec.key] ?: return@launch
                 val render = rendererFor(spec, context, thumbnails, markerSizePx) ?: return@launch
-                // Marker foto kucing baru tetap jadi "momen bintang": pop-in bertahap.
-                val shouldAnimate = spec.cat != null && animatedKeys.add(spec.key)
+                // Marker foto penemuan baru tetap jadi "momen bintang": pop-in bertahap.
+                val shouldAnimate = spec.sighting != null && animatedKeys.add(spec.key)
                 if (shouldAnimate) {
                     marker.icon = BitmapDrawable(mapView.resources, render(POP_IN_START_SCALE))
                     delay(index * 70L)
@@ -366,11 +422,108 @@ fun CatMapView(
             }
         }
 
-        if (!hasCenteredOnce && cats.isNotEmpty()) {
-            hasCenteredOnce = true
-            val newest = cats.first()
-            mapView.controller.setZoom(16.0)
-            mapView.controller.animateTo(GeoPoint(newest.latitude, newest.longitude))
+        mapView.invalidate()
+    }
+
+    // --- kamera: diantar sekali saat peta dibuka, lalu tiap kali sorotannya berganti ---
+    // Daftar catatannya juga jadi kunci, bukan cuma sorotannya, karena frame
+    // pertama datang saat datanya masih kosong. Efek sampingnya: kalau ada catatan
+    // baru sewaktu sorotannya menyala, petanya dipaskan ulang ke jejak itu, dan itu
+    // memang yang diharapkan karena jejaknya barusan bertambah.
+    LaunchedEffect(highlightCatId, sightings) {
+        if (sightings.isEmpty()) return@LaunchedEffect
+
+        // Melepas sorotan sengaja tidak menggeser peta: yang dilihat pengguna setelah
+        // itu adalah semua jejak di area yang sedang dia lihat, sedangkan
+        // mengembalikan kamera ke tempat terakhir cuma membuat peta melompat tanpa
+        // dia minta.
+        if (highlightCatId == null && hasFramedOnce) return@LaunchedEffect
+
+        val targets = if (highlightCatId == null) {
+            sightings
+        } else {
+            sightings.filter { sighting -> sighting.catId == highlightCatId }
+        }
+        if (targets.isEmpty()) return@LaunchedEffect
+
+        val isFirstFraming = !hasFramedOnce
+        hasFramedOnce = true
+
+        // Intinya ada dua: saat sorotan atau pemaskaan aktif, yang dibingkai adalah
+        // bentang seluruh catatannya; kalau tidak, tempat yang paling akhir dicatat.
+        val focus = if (highlightCatId != null || fitToContent) trailFocus(targets) else null
+        val point = if (focus != null) {
+            GeoPoint(focus.latitude, focus.longitude)
+        } else {
+            val newest = sightings.first()
+            GeoPoint(newest.latitude, newest.longitude)
+        }
+
+        // Zoom dulu, baru titiknya, supaya peta tidak sempat melompat dua kali.
+        mapView.controller.setZoom(focus?.zoom ?: POINT_ZOOM)
+        if (isFirstFraming) {
+            // Pembingkaian pertama dipasang langsung, bukan dianimasikan: peta baru
+            // dibuat di titik bawaannya (Jakarta), jadi menganimasikannya berarti
+            // petanya terbang dulu dari Jakarta ke lokasi cukingnya tiap kali layar
+            // ini dibuka. Gerakan itu tidak menjelaskan apa pun, sedangkan yang
+            // dibutuhkan justru petanya sudah berada di tempat yang benar.
+            mapView.controller.setCenter(point)
+        } else {
+            // Perubahan berikutnya memang perlu dianimasikan: sorotannya berganti
+            // saat petanya sudah terlihat, dan lompatan mendadak di situ terbaca
+            // seperti peta yang digambar ulang.
+            mapView.controller.animateTo(point)
+        }
+    }
+
+    // --- garis jejak: perjalanan satu cuking dari tempat ke tempat ---
+    // Hanya muncul di zoom dekat, sama seperti marker foto. Di zoom jauh penemuan
+    // diganti gelembung angka, dan garis yang menghubungkan titik-titik yang tidak
+    // lagi terlihat justru menyesatkan.
+    val trails = remember(sightings, showPhotos) {
+        if (showPhotos) buildTrails(sightings) else emptyList()
+    }
+    val trailOverlays = remember { mutableListOf<Polyline>() }
+
+    LaunchedEffect(trails, mapView, highlightCatId) {
+        trailOverlays.forEach { overlay -> mapView.overlays.remove(overlay) }
+        trailOverlays.clear()
+
+        // Disisipkan tepat di atas lapisan latar tapi di bawah semua marker: garis
+        // jejak itu konteks buat titik-titiknya, bukan sebaliknya.
+        var insertAt = 1
+        trails.forEach { trail ->
+            val isEmphasised = highlightCatId == null || trail.catId == highlightCatId
+            val color = trailColorFor(trail.catId)
+            val segmentCount = trail.points.size - 1
+            trail.points.zipWithNext().forEachIndexed { index, (from, to) ->
+                val strength = if (isEmphasised) {
+                    TRAIL_ALPHA_OLDEST +
+                        (TRAIL_ALPHA_NEWEST - TRAIL_ALPHA_OLDEST) * (index + 1) / segmentCount
+                } else {
+                    TRAIL_ALPHA_DIMMED
+                }
+                val polyline = Polyline(mapView, false, false).apply {
+                    // Dua angka false di atas: tidak menutup lingkaran, dan tidak
+                    // geodesik. Yang kedua itu yang bikin ruasnya garis lurus antara
+                    // dua catatan, bukan lengkung mengikuti permukaan bumi.
+                    setPoints(
+                        listOf(
+                            GeoPoint(from.latitude, from.longitude),
+                            GeoPoint(to.latitude, to.longitude)
+                        )
+                    )
+                    outlinePaint.color = (strength shl 24) or (color and 0x00FFFFFF)
+                    outlinePaint.strokeWidth = if (highlightCatId != null && isEmphasised) {
+                        TRAIL_HIGHLIGHT_WIDTH_DP * density
+                    } else {
+                        TRAIL_WIDTH_DP * density
+                    }
+                    outlinePaint.strokeCap = Paint.Cap.ROUND
+                }
+                mapView.overlays.add(insertAt++, polyline)
+                trailOverlays.add(polyline)
+            }
         }
         mapView.invalidate()
     }
@@ -380,27 +533,29 @@ fun CatMapView(
 
         // FAB ukuran standar (56dp): satu-satunya kontrol di peta, harus nyaman
         // dijangkau jempol satu tangan dan memenuhi tap target minimum (R-03).
-        FloatingActionButton(
-            onClick = locateMyPosition,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(14.dp),
-            shape = CircleShape,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            if (isLocating) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                Icon(
-                    painter = painterResource(R.drawable.ic_my_location),
-                    contentDescription = stringResource(R.string.home_my_location),
-                    modifier = Modifier.size(22.dp)
-                )
+        if (showLocateButton) {
+            FloatingActionButton(
+                onClick = locateMyPosition,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(14.dp),
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                if (isLocating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_my_location),
+                        contentDescription = stringResource(R.string.home_my_location),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
 
@@ -482,16 +637,16 @@ private suspend fun findUserLocation(locationHelper: LocationHelper): Location? 
     locationHelper.lastKnownLocation()
         ?: locationHelper.getCurrentLocation(BUTTON_LOCATION_TIMEOUT_MILLIS)
 
-/** Renderer marker sesuai isi spec: foto kucing, atau gelembung angka. */
+/** Renderer marker sesuai isi spec: foto penemuan, atau gelembung angka. */
 private suspend fun rendererFor(
     spec: MarkerSpec,
     context: Context,
     thumbnails: PhotoThumbnailCache,
     sizePx: Int
 ): ((Float) -> Bitmap)? {
-    val cat = spec.cat
-    if (cat != null) {
-        val photo = thumbnails.thumbnail(cat.photoPath)
+    val sighting = spec.sighting
+    if (sighting != null) {
+        val photo = thumbnails.thumbnail(sighting.photoPath)
         if (photo != null) {
             return { scale -> CatMarkerRenderer.photoMarker(photo, sizePx, scale) }
         }
@@ -502,26 +657,26 @@ private suspend fun rendererFor(
 }
 
 private fun buildMarkerSpecs(
-    cats: List<Cat>,
+    sightings: List<CatSighting>,
     showPhotos: Boolean,
     zoomLevel: Int
 ): List<MarkerSpec> {
-    if (showPhotos || cats.isEmpty()) {
-        return cats.map { cat ->
+    if (showPhotos || sightings.isEmpty()) {
+        return sightings.map { sighting ->
             MarkerSpec(
-                key = "cat_${cat.id}",
-                point = GeoPoint(cat.latitude, cat.longitude),
-                cat = cat,
+                key = "sighting_${sighting.id}",
+                point = GeoPoint(sighting.latitude, sighting.longitude),
+                sighting = sighting,
                 count = 1
             )
         }
     }
 
-    return clusterCats(cats, zoomLevel).map { cluster ->
+    return clusterSightings(sightings, zoomLevel).map { cluster ->
         MarkerSpec(
             key = "cluster_${cluster.cellLatitude}_${cluster.cellLongitude}_$zoomLevel",
             point = GeoPoint(cluster.latitude, cluster.longitude),
-            cat = null,
+            sighting = null,
             count = cluster.count
         )
     }

@@ -23,8 +23,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
 
-    /** Kucing yang diminta dibuka, misalnya dari tap widget di layar utama. */
-    private val pendingCatId = MutableStateFlow<Long?>(null)
+    /** Penemuan yang diminta dibuka, misalnya dari tap widget di layar utama. */
+    private val pendingSightingId = MutableStateFlow<Long?>(null)
 
     /** Permintaan memotret dari tombol jepret di widget. */
     private val pendingCapture = MutableStateFlow(false)
@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        pendingCatId.value = intent.requestedCatId()
+        pendingSightingId.value = intent.requestedSightingId()
         pendingCapture.value = intent.wantsCapture()
         val displayPreferences = appContainer.displayPreferences
 
@@ -51,11 +51,11 @@ class MainActivity : ComponentActivity() {
 
             CukingGoTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val openCatId by pendingCatId.collectAsStateWithLifecycle()
+                    val openSightingId by pendingSightingId.collectAsStateWithLifecycle()
                     val openCapture by pendingCapture.collectAsStateWithLifecycle()
                     CukingGoNavHost(
-                        openCatId = openCatId,
-                        onOpenCatConsumed = { pendingCatId.value = null },
+                        openSightingId = openSightingId,
+                        onOpenSightingConsumed = { pendingSightingId.value = null },
                         openCapture = openCapture,
                         onOpenCaptureConsumed = { pendingCapture.value = false }
                     )
@@ -69,22 +69,25 @@ class MainActivity : ComponentActivity() {
         // launchMode singleTop: app yang sudah terbuka menerima intent baru di
         // sini, bukan lewat onCreate.
         setIntent(intent)
-        pendingCatId.value = intent.requestedCatId()
+        pendingSightingId.value = intent.requestedSightingId()
         pendingCapture.value = intent.wantsCapture()
     }
 
-    private fun Intent?.requestedCatId(): Long? =
-        this?.getLongExtra(EXTRA_CAT_ID, NO_CAT_ID)?.takeIf { it > 0 }
+    private fun Intent?.requestedSightingId(): Long? =
+        this?.getLongExtra(EXTRA_SIGHTING_ID, NO_SIGHTING_ID)?.takeIf { it > 0 }
 
     private fun Intent?.wantsCapture(): Boolean =
         this?.getBooleanExtra(EXTRA_CAPTURE_NOW, false) == true
 
     companion object {
-        /** Extra dari widget, supaya tap-nya langsung mendarat di detail kucing. */
-        const val EXTRA_CAT_ID = "extra_cat_id"
+        /**
+         * Extra dari widget dan kabar dekat, supaya tap-nya langsung mendarat di
+         * detail penemuan yang sedang ditampilkan.
+         */
+        const val EXTRA_SIGHTING_ID = "extra_sighting_id"
 
-        /** Widget tanpa data kucing mengirim ini, artinya cukup buka Home. */
-        const val NO_CAT_ID = -1L
+        /** Widget tanpa data cuking mengirim ini, artinya cukup buka Home. */
+        const val NO_SIGHTING_ID = -1L
 
         /** Extra dari tombol jepret di widget: langsung buka kamera dan jepret. */
         const val EXTRA_CAPTURE_NOW = "extra_capture_now"

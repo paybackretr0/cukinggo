@@ -22,6 +22,7 @@ class AppContainer(context: Context) {
     val locationHelper = LocationHelper(appContext)
     val catRepository = CatRepository(
         catDao = database.catDao(),
+        catSightingDao = database.catSightingDao(),
         imageStorageHelper = imageStorageHelper,
         onCatsChanged = {
             // Dua hal yang harus ikut menyesuaikan saat daftar kucing berubah:

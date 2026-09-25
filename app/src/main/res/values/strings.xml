@@ -9,6 +9,9 @@
     <string name="home_empty_subtitle">Jepret cuking pertamamu, lokasinya kami tandai otomatis.</string>
     <string name="home_recent_title">Jejak terbaru</string>
     <string name="home_see_all">Lihat semua cuking</string>
+    <string name="home_trail_picker_label">Sorot jejak satu cuking</string>
+    <string name="home_trail_picker_all">Semua jejak</string>
+    <string name="home_trail_picker_unnamed">Tanpa nama</string>
     <string name="cat_list_title">Semua cuking</string>
     <string name="cat_list_loading_more">Lagi nyusul yang lain…</string>
     <string name="cat_list_end">Udah semua, nih 🐾</string>
@@ -26,6 +29,7 @@
 
     <!-- Add cat -->
     <string name="add_title">Tandai cuking baru</string>
+    <string name="add_again_title">Tandai ketemu lagi</string>
     <string name="add_camera_hint">Arahkan ke cukingnya, lalu jepret 📸</string>
     <string name="add_capture">Jepret</string>
     <string name="add_retake">Ambil ulang</string>
@@ -34,14 +38,19 @@
     <string name="add_name_support">Opsional. Nggak harus nama asli, cukup dari ciri khasnya saja.</string>
     <string name="add_description_hint">Cukingnya lagi ngapain nih? (opsional)</string>
     <string name="add_save">Simpan &amp; Tandain! 🐾</string>
+    <string name="add_again_save">Simpan ketemu lagi 🐾</string>
+    <string name="add_again_whose">Masuk ke catatan %1$s</string>
+    <string name="add_again_whose_unnamed">Masuk ke catatan cuking yang belum dinamai</string>
     <string name="add_locating">Lagi nyari lokasi kamu…</string>
     <string name="add_saving">Menyimpan cuking kamu…</string>
     <string name="add_error_location">Hmm, lokasi kamu belum kebaca. Coba keluar sebentar atau nyalakan GPS ya.</string>
     <string name="add_error_no_photo">Fotonya belum ada, jepret dulu ya 📸</string>
+    <string name="add_error_cat_missing">Cukingnya sudah nggak ada di catatan. Coba tandai ulang ya.</string>
     <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
     <string name="add_error_save">Cukingnya gagal disimpan. Coba sekali lagi ya.</string>
     <string name="add_retry">Coba lagi</string>
     <string name="add_saved_celebration">Cukingnya udah ditandain! 🐾</string>
+    <string name="add_saved_sighting">Ketemu dia lagi! 🐾</string>
     <string name="add_saved_streak">Rentetanmu makin panjang!</string>
     <string name="celebration_tap_hint">Ketuk buat lanjut</string>
 
@@ -56,13 +65,20 @@
     <!-- Detail -->
     <string name="detail_title">Detail cuking</string>
     <string name="detail_no_description">Belum ada catatan buat cuking ini.</string>
+    <string name="detail_seen_count">Ketemu %1$d kali</string>
+    <string name="detail_again">Ketemu lagi</string>
+    <string name="detail_history_title">Riwayat ketemu</string>
     <string name="detail_distance">≈ %1$s dari kamu</string>
     <string name="detail_delete">Hapus cuking ini</string>
     <string name="detail_delete_title">Hapus cuking ini?</string>
     <string name="detail_delete_message">Foto &amp; catatannya bakal hilang permanen dari HP kamu.</string>
+    <string name="detail_delete_message_history">Foto &amp; %1$d catatan ketemunya bakal hilang permanen dari HP kamu.</string>
     <string name="detail_delete_confirm">Hapus</string>
     <string name="detail_goodbye_message">Cukingnya melambai pamit. Sampai ketemu lagi ya 🐾</string>
     <string name="detail_missing">Cukingnya sudah nggak ada di catatan.</string>
+    <string name="detail_location_title">Lokasinya di peta</string>
+    <string name="detail_trail_title">Jejak di peta</string>
+    <string name="detail_trail_caption">Garis menghubungkan tiap tempat dia ketemu. Yang lebih terang berarti lebih baru.</string>
     <string name="detail_loading">Lagi membuka catatannya…</string>
     <string name="detail_error_message">Coba sekali lagi ya.</string>
 

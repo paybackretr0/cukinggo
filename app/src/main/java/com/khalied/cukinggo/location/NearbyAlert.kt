@@ -1,6 +1,6 @@
 package com.khalied.cukinggo.location
 
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 
 /**
  * Pilihan radius "dekat".
@@ -47,14 +47,22 @@ data class CatWatchArea(
 /**
  * Memilih kucing mana yang dipantau.
  *
- * Daftar dari Room sudah terbaru dulu, dan yang diambil adalah [limit] terbaru
- * karena Play Services membatasi 100 geofence per app. Dipisah jadi fungsi murni
- * supaya aturan ini bisa diuji tanpa perangkat.
+ * Masukannya adalah penemuan terbaru tiap kucing (lihat `latestPerCat`), jadi
+ * yang dipantau adalah tempat kucing itu terakhir terlihat, bukan setiap tempat
+ * dia pernah terlihat. Daftarnya sudah terbaru dulu, dan yang diambil adalah
+ * [limit] terbaru karena Play Services membatasi 100 geofence per app. Dipisah
+ * jadi fungsi murni supaya aturan ini bisa diuji tanpa perangkat.
  */
-fun catWatchAreas(cats: List<Cat>, limit: Int = MAX_WATCH_AREAS): List<CatWatchArea> =
-    cats.take(limit).map { cat ->
-        CatWatchArea(catId = cat.id, latitude = cat.latitude, longitude = cat.longitude)
-    }
+fun catWatchAreas(
+    sightings: List<CatSighting>,
+    limit: Int = MAX_WATCH_AREAS
+): List<CatWatchArea> = sightings.take(limit).map { sighting ->
+    CatWatchArea(
+        catId = sighting.catId,
+        latitude = sighting.latitude,
+        longitude = sighting.longitude
+    )
+}
 
 /** Apakah kucing ini boleh dikabarkan lagi, atau masih dalam masa jeda? */
 fun shouldAlert(

@@ -1,65 +1,31 @@
 package com.khalied.cukinggo.data.local
 
 import androidx.room.Dao
-import androidx.paging.PagingSource
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Profil cuking. Penemuannya ada di [CatSightingDao], dan pembacaan yang
+ * membutuhkan keduanya (profil beserta seluruh penemuannya) ada di sini karena
+ * yang ditanyakan hasilnya adalah cukingnya.
+ */
 @Dao
 interface CatDao {
 
     @Insert
     suspend fun insertCat(cat: CatEntity): Long
 
-    @Query("SELECT * FROM cats ORDER BY timestamp DESC")
-    fun getAllCats(): Flow<List<CatEntity>>
-
-    /** Dipakai widget "Kucing terakhir", yang cuma butuh satu kucing terbaru. */
-    @Query("SELECT * FROM cats ORDER BY timestamp DESC LIMIT 1")
-    suspend fun getLatestCat(): CatEntity?
-
-    /**
-     * Dipakai widget "Kucing hari ini", yang perlu seluruh koleksi untuk memilih
-     * kucing harinya. Sekali baca, bukan flow, karena widget digambar per permintaan.
-     */
-    @Query("SELECT * FROM cats ORDER BY timestamp DESC")
-    suspend fun getCatsOnce(): List<CatEntity>
-
-    /**
-     * Seluruh koleksi untuk halaman "Semua cuking", sehalaman per permintaan.
-     *
-     * Room yang mengurus batas barisnya, dan PagingSource ini ditandai basi
-     * sendiri saat isi tabelnya berubah, jadi catatan yang baru ditambah atau
-     * dihapus tidak perlu diberitahukan dari luar.
-     */
-    @Query("SELECT * FROM cats ORDER BY timestamp DESC")
-    fun pagingSourceAllCats(): PagingSource<Int, CatEntity>
-
-    /** Jumlah seluruh catatan, dipakai chip jumlah di halaman daftar. */
-    @Query("SELECT COUNT(*) FROM cats")
-    fun observeCatCount(): Flow<Int>
-
-    /**
-     * Hanya waktu catatan, dipakai menghitung rentetan harian. Kolomnya dipilih
-     * satu saja karena yang dibutuhkan cuma tanggalnya, bukan isi catatannya.
-     */
-    @Query("SELECT timestamp FROM cats")
-    suspend fun getAllTimestamps(): List<Long>
-
-    /** Dipakai kabar "dekat kucing", yang cuma tahu id dari request ID geofence. */
-    @Query("SELECT * FROM cats WHERE id IN (:ids)")
-    suspend fun getCatsByIds(ids: List<Long>): List<CatEntity>
-
+    /** Profil satu cuking beserta seluruh penemuannya, untuk layar detail. */
+    @Transaction
     @Query("SELECT * FROM cats WHERE id = :id")
-    suspend fun getCatById(id: Long): CatEntity?
+    fun observeCatWithSightings(id: Long): Flow<CatWithSightings?>
 
+    /** Versi sekali baca dari query di atas. */
+    @Transaction
     @Query("SELECT * FROM cats WHERE id = :id")
-    fun observeCatById(id: Long): Flow<CatEntity?>
-
-    @Delete
-    suspend fun deleteCat(cat: CatEntity)
+    suspend fun getCatWithSightings(id: Long): CatWithSightings?
 
     @Query("DELETE FROM cats WHERE id = :id")
     suspend fun deleteCatById(id: Long)

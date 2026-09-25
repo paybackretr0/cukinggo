@@ -38,9 +38,13 @@ val LocalAnimatedVisibilityScope = compositionLocalOf<AnimatedVisibilityScope?> 
 private const val SHARED_PHOTO_MILLIS = 320
 
 /**
- * Foto satu cuking yang menyambung antara kartu di daftar dan fotonya di layar
+ * Foto satu penemuan yang menyambung antara kartu di daftar dan fotonya di layar
  * detail: yang berpindah cuma satu benda, jadi mata tidak perlu mencari lagi
- * cuking mana yang barusan dibuka.
+ * penemuan mana yang barusan dibuka.
+ *
+ * Kuncinya id penemuan, bukan id cuking, karena kartu di daftar mewakili satu
+ * penemuan. Cuking yang punya beberapa penemuan punya beberapa kartu, dan yang
+ * menyambung adalah foto kartu yang benar-benar disentuh.
  *
  * Dipasang menggantikan `clip` yang sebelumnya ada di posisi itu, supaya bentuk
  * membulatnya tetap ikut saat fotonya terbang: potongan yang dipasang di luar
@@ -49,14 +53,14 @@ private const val SHARED_PHOTO_MILLIS = 320
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun Modifier.sharedCatPhoto(catId: Long, clip: Shape): Modifier {
+fun Modifier.sharedCatPhoto(sightingId: Long, clip: Shape): Modifier {
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
     val shared = if (sharedTransitionScope != null && animatedVisibilityScope != null) {
         with(sharedTransitionScope) {
             Modifier.sharedElement(
-                sharedContentState = rememberSharedContentState(key = "foto-cuking-$catId"),
+                sharedContentState = rememberSharedContentState(key = "foto-penemuan-$sightingId"),
                 animatedVisibilityScope = animatedVisibilityScope,
                 boundsTransform = { _, _ ->
                     tween(durationMillis = SHARED_PHOTO_MILLIS, easing = FastOutSlowInEasing)

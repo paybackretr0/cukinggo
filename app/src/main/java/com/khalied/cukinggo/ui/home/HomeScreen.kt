@@ -20,10 +20,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,7 +66,8 @@ import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.data.local.NearbyAlertPreferences
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
+import com.khalied.cukinggo.domain.model.latestPerCat
 import com.khalied.cukinggo.location.MAX_WATCH_AREAS
 import com.khalied.cukinggo.location.NearbyAlertState
 import com.khalied.cukinggo.location.NearbyAlerts
@@ -73,11 +77,13 @@ import com.khalied.cukinggo.location.findNearestCat
 import com.khalied.cukinggo.location.nearbyAlertState
 import com.khalied.cukinggo.ui.components.CatListCard
 import com.khalied.cukinggo.ui.components.CatMapView
+import com.khalied.cukinggo.ui.components.CatTrail
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.NearbyAlertDialog
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
 import com.khalied.cukinggo.ui.components.AppearancePickerDialog
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
+import com.khalied.cukinggo.ui.components.buildTrails
 import com.khalied.cukinggo.ui.theme.InkSoft
 import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.PeachAccent
@@ -102,17 +108,46 @@ import java.time.LocalDate
  */
 private const val RECENT_CAT_LIMIT = 5
 
+/**
+ * Diameter foto di dalam chip pemilih jejak.
+ *
+ * Cukup kecil supaya chipnya tetap pendek dan sederet bisa dilihat sekaligus,
+ * tapi foto tetap jadi pembeda utama antara cuking yang belum dinamai.
+ */
+private const val TRAIL_CHIP_PHOTO_DP = 26
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
     onAddCat: () -> Unit,
-    onCatClick: (Long) -> Unit,
+    onSightingClick: (Long) -> Unit,
     onSeeAllCats: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // Peta tetap digambar walau data belum siap, marker-nya menyusul sendiri.
-    val cats = (uiState as? HomeUiState.Content)?.cats.orEmpty()
+    val sightings = (uiState as? HomeUiState.Content)?.sightings.orEmpty()
+    // Satu penemuan terbaru per cuking, dipakai tempat yang menanyakan cuking:
+    // kartu "terdekat" dan jumlah cuking yang dipantau kabar dekat.
+    val latestSightings = remember(sightings) { sightings.latestPerCat() }
+
+    // Cuking mana saja yang punya jejak, dipakai pemilih di atas peta: yang bisa
+    // dipilih cuma yang jejaknya benar-benar bisa digambar.
+    val trails = remember(sightings) { buildTrails(sightings) }
+    val latestByCat = remember(latestSightings) {
+        latestSightings.associateBy { sighting -> sighting.catId }
+    }
+    var highlightedCatId by remember { mutableStateOf<Long?>(null) }
+
+    // Cuking yang disorot bisa terhapus dari layar lain, dan sorotannya tidak boleh
+    // tertinggal menunjuk ke cuking yang sudah tidak ada.
+    LaunchedEffect(trails) {
+        val highlighted = highlightedCatId
+        if (highlighted != null && trails.none { trail -> trail.catId == highlighted }) {
+            highlightedCatId = null
+        }
+    }
+
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
 
@@ -123,8 +158,8 @@ fun HomeScreen(
     // LocalDate.now() di dalam remember, supaya angkanya ikut segar kalau app
     // dibuka lagi setelah melewati tengah malam (lihat ON_RESUME di bawah).
     var today by remember { mutableStateOf(LocalDate.now()) }
-    val streakDays = remember(cats, today) {
-        catStreak(timestamps = cats.map { cat -> cat.timestamp }, today = today)
+    val streakDays = remember(sightings, today) {
+        catStreak(timestamps = sightings.map { sighting -> sighting.timestamp }, today = today)
     }
     val displayPreferences = container.displayPreferences
     val themeModeKey by displayPreferences.themeModeKey.collectAsStateWithLifecycle()
@@ -150,8 +185,8 @@ fun HomeScreen(
     // lokasinya baru diberikan, dan setiap kali layar ini dibuka lagi.
     var locationRefreshKey by remember { mutableStateOf(0) }
     var nearestCat by remember { mutableStateOf<NearestCatResult.Found?>(null) }
-    LaunchedEffect(cats, hasForegroundLocation, locationRefreshKey) {
-        nearestCat = if (cats.isEmpty() || !hasForegroundLocation) {
+    LaunchedEffect(latestSightings, hasForegroundLocation, locationRefreshKey) {
+        nearestCat = if (latestSightings.isEmpty() || !hasForegroundLocation) {
             null
         } else {
             // Layar Home boleh menunggu sebentar kalau perangkat belum pernah
@@ -159,7 +194,7 @@ fun HomeScreen(
             // di latar belakang.
             findNearestCat(
                 locationHelper = container.locationHelper,
-                cats = cats,
+                sightings = latestSightings,
                 allowFreshFix = true
             ) as? NearestCatResult.Found
         }
@@ -302,9 +337,22 @@ fun HomeScreen(
             if (nearest != null) {
                 Spacer(Modifier.height(10.dp))
                 NearestCatCard(
-                    cat = nearest.cat,
+                    sighting = nearest.sighting,
                     distanceMeters = nearest.distanceMeters,
-                    onClick = { onCatClick(nearest.cat.id) }
+                    onClick = { onSightingClick(nearest.sighting.id) }
+                )
+            }
+
+            // Pemilih jejak cuma muncul kalau memang ada yang bisa dipilih, yaitu
+            // saat minimal dua cuking punya jejak. Dengan nol atau satu, baris ini
+            // tidak menambah kemampuan apa pun, jadi lebih jujur tidak ada.
+            if (trails.size > 1) {
+                Spacer(Modifier.height(10.dp))
+                TrailCatPicker(
+                    trails = trails,
+                    latestByCat = latestByCat,
+                    highlightedCatId = highlightedCatId,
+                    onSelect = { catId -> highlightedCatId = catId }
                 )
             }
 
@@ -323,9 +371,10 @@ fun HomeScreen(
                 shadowElevation = 6.dp
             ) {
                 CatMapView(
-                    cats = cats,
-                    onCatClick = onCatClick,
-                    modifier = Modifier.fillMaxSize()
+                    sightings = sightings,
+                    onSightingClick = onSightingClick,
+                    modifier = Modifier.fillMaxSize(),
+                    highlightCatId = highlightedCatId
                 )
             }
 
@@ -347,7 +396,7 @@ fun HomeScreen(
                         .weight(1f)
                 )
 
-                is HomeUiState.Content -> if (state.cats.isEmpty()) {
+                is HomeUiState.Content -> if (state.sightings.isEmpty()) {
                     EmptyCatsCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -362,16 +411,16 @@ fun HomeScreen(
                         // Baris ini cuma muncul kalau memang masih ada sisa: kalau
                         // koleksinya belum lebih dari lima, halaman daftarnya isinya
                         // sama persis dengan yang sudah ada di layar ini.
-                        if (state.cats.size > RECENT_CAT_LIMIT) {
+                        if (state.sightings.size > RECENT_CAT_LIMIT) {
                             SeeAllCatsRow(onClick = onSeeAllCats)
                             Spacer(Modifier.height(10.dp))
                         }
 
-                        RecentCatsSection(
-                            cats = state.cats.take(RECENT_CAT_LIMIT),
-                            totalCount = state.cats.size,
-                            onCatClick = onCatClick,
-                            onDelete = viewModel::deleteCat,
+                        RecentSightingsSection(
+                            sightings = state.sightings.take(RECENT_CAT_LIMIT),
+                            totalCount = state.sightings.size,
+                            onSightingClick = onSightingClick,
+                            onDelete = viewModel::deleteSighting,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -405,7 +454,7 @@ fun HomeScreen(
         NearbyAlertDialog(
             state = nearbyState,
             radius = nearbyRadius,
-            watchedCount = cats.size.coerceAtMost(MAX_WATCH_AREAS),
+            watchedCount = latestSightings.size.coerceAtMost(MAX_WATCH_AREAS),
             onRadiusChange = { radius ->
                 nearbyRadius = radius
                 NearbyAlerts.setRadius(context, radius)
@@ -493,7 +542,7 @@ private fun CatsErrorCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun NearestCatCard(
-    cat: Cat,
+    sighting: CatSighting,
     distanceMeters: Double,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -521,7 +570,7 @@ private fun NearestCatCard(
             // Foto sengaja dekoratif, sama seperti di kartu daftar: teks di
             // sebelahnya sudah menjelaskan kartunya.
             AsyncImage(
-                model = File(cat.photoPath),
+                model = File(sighting.photoPath),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -534,11 +583,11 @@ private fun NearestCatCard(
                     style = MaterialTheme.typography.labelMedium
                 )
                 Text(
-                    text = cat.name
-                        ?: cat.description
+                    text = sighting.catName
+                        ?: sighting.description
                         ?: stringResource(R.string.detail_no_description),
                     style = MaterialTheme.typography.titleMedium,
-                    fontStyle = if (cat.name == null && cat.description == null) {
+                    fontStyle = if (sighting.catName == null && sighting.description == null) {
                         FontStyle.Italic
                     } else {
                         FontStyle.Normal
@@ -645,12 +694,141 @@ private fun SeeAllCatsRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Pemilih cuking untuk menyorot satu jejak di peta.
+ *
+ * Yang masuk baris ini cuma cuking yang memang punya jejak, yaitu yang pernah
+ * tercatat di minimal dua tempat berbeda. Cuking dengan satu tempat tidak punya
+ * garis untuk disorot, dan kalau ia ikut masuk, memilihnya akan terbaca seperti
+ * tombol yang tidak bekerja. Pemanggilnya juga sudah menyembunyikan baris ini saat
+ * yang bisa dipilih kurang dari dua, jadi tidak ada baris yang cuma berisi satu
+ * pilihan.
+ */
 @Composable
-private fun RecentCatsSection(
-    cats: List<Cat>,
+private fun TrailCatPicker(
+    trails: List<CatTrail>,
+    latestByCat: Map<Long, CatSighting>,
+    highlightedCatId: Long?,
+    onSelect: (Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // Labelnya pendek karena barisnya sendiri sudah menjelaskan diri: chip pertama
+        // membawa semua jejak, sisanya satu cuking masing-masing.
+        Text(
+            text = stringResource(R.string.home_trail_picker_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                TrailCatChip(
+                    label = stringResource(R.string.home_trail_picker_all),
+                    photoPath = null,
+                    selected = highlightedCatId == null,
+                    onClick = { onSelect(null) }
+                )
+            }
+            items(items = trails, key = { trail -> trail.catId }) { trail ->
+                val cat = latestByCat[trail.catId]
+                TrailCatChip(
+                    // Nama panggilan kalau ada, lalu catatannya, baru "tanpa nama":
+                    // foto di sebelahnya tetap jadi pembeda untuk cuking yang belum
+                    // dinamai, dan dua catatan yang panjang akan memanjangkan chip
+                    // tanpa menambah jelas.
+                    label = cat?.catName
+                        ?: cat?.description
+                        ?: stringResource(R.string.home_trail_picker_unnamed),
+                    photoPath = cat?.photoPath,
+                    selected = trail.catId == highlightedCatId,
+                    // Menekan chip yang sedang menyala melepas sorotannya, jadi tidak
+                    // ada satu pun tindakan yang butuh chip "Semua jejak" dulu.
+                    onClick = {
+                        onSelect(if (trail.catId == highlightedCatId) null else trail.catId)
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Satu pilihan di pemilih jejak: foto cukingnya plus namanya.
+ *
+ * `selectable` dipakai, bukan `clickable`, karena chip ini memang menyorot satu
+ * pilihan: TalkBack membacakannya sebagai chip yang terpilih atau tidak, sama
+ * seperti baris riwayat di layar detail.
+ *
+ * Warnanya meminjam warna "terpilih" yang sudah dipakai baris riwayat
+ * (`secondaryContainer`), jadi satu bahasa untuk "yang ini sedang dipamerkan" di
+ * seluruh app. Tingginya minimal 44dp supaya lolos tap target (R-03).
+ */
+@Composable
+private fun TrailCatChip(
+    label: String,
+    photoPath: String?,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.selectable(selected = selected, onClick = onClick),
+        shape = CircleShape,
+        color = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .heightIn(min = 44.dp)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (photoPath != null) {
+                // Foto sengaja dekoratif: teks di sebelahnya sudah menjelaskan chipnya,
+                // dan untuk cuking tanpa nama, TalkBack tetap membacakan chipnya lewat
+                // teks itu, bukan lewat gambarnya.
+                AsyncImage(
+                    model = File(photoPath),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(TRAIL_CHIP_PHOTO_DP.dp)
+                        .clip(CircleShape)
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                // Batas lebarnya ada karena nama penggantinya bisa catatan bebas:
+                // satu chip yang memanjang hampir selebar layar membuat sisa
+                // barisnya tidak terbaca, padahal baris ini gunanya membandingkan
+                // beberapa cuking sekaligus.
+                modifier = Modifier.widthIn(max = 160.dp),
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecentSightingsSection(
+    sightings: List<CatSighting>,
     totalCount: Int,
-    onCatClick: (Long) -> Unit,
-    onDelete: (Cat) -> Unit,
+    onSightingClick: (Long) -> Unit,
+    onDelete: (CatSighting) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -679,11 +857,11 @@ private fun RecentCatsSection(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(bottom = 96.dp)
         ) {
-            items(items = cats, key = { it.id }) { cat ->
+            items(items = sightings, key = { it.id }) { sighting ->
                 CatListCard(
-                    cat = cat,
-                    onClick = { onCatClick(cat.id) },
-                    onDelete = { onDelete(cat) }
+                    sighting = sighting,
+                    onClick = { onSightingClick(sighting.id) },
+                    onDelete = { onDelete(sighting) }
                 )
             }
         }

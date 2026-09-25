@@ -29,7 +29,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.ui.components.CatListCard
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
@@ -49,15 +49,15 @@ import com.khalied.cukinggo.ui.theme.appCardOutline
 @Composable
 fun CatListScreen(
     viewModel: CatListViewModel,
-    onCatClick: (Long) -> Unit,
+    onSightingClick: (Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val cats = viewModel.cats.collectAsLazyPagingItems()
-    val catCount by viewModel.catCount.collectAsStateWithLifecycle()
+    val sightings = viewModel.sightings.collectAsLazyPagingItems()
+    val sightingCount by viewModel.sightingCount.collectAsStateWithLifecycle()
 
-    val refreshState = cats.loadState.refresh
-    val appendState = cats.loadState.append
+    val refreshState = sightings.loadState.refresh
+    val appendState = sightings.loadState.append
 
     Column(modifier = modifier.fillMaxSize()) {
         PlayfulTopBar(title = stringResource(R.string.cat_list_title), onBack = onBack)
@@ -65,7 +65,7 @@ fun CatListScreen(
         // Chip jumlahnya disembunyikan selama angkanya belum kebaca, bukan
         // ditampilkan sebagai 0: angka 0 di layar terbaca seperti "koleksimu
         // kosong", padahal catatannya cuma belum selesai dihitung.
-        val count = catCount
+        val count = sightingCount
         if (count != null && count > 0) {
             InfoChip(
                 text = stringResource(R.string.home_counter, count),
@@ -78,14 +78,14 @@ fun CatListScreen(
         when {
             // Halaman pertama gagal dibaca, dan belum ada satu pun kartu di layar:
             // jalan keluarnya cuma satu tombol, jadi layarnya tidak buntu.
-            refreshState is LoadState.Error && cats.itemCount == 0 ->
-                ListMessageCard { ListErrorBody(onRetry = cats::retry) }
+            refreshState is LoadState.Error && sightings.itemCount == 0 ->
+                ListMessageCard { ListErrorBody(onRetry = sightings::retry) }
 
-            cats.itemCount > 0 -> CatList(
-                cats = cats,
+            sightings.itemCount > 0 -> CatList(
+                sightings = sightings,
                 appendState = appendState,
-                onCatClick = onCatClick,
-                onDelete = viewModel::deleteCat
+                onSightingClick = onSightingClick,
+                onDelete = viewModel::deleteSighting
             )
 
             // Paging bilang tidak ada apa-apa lagi: memang koleksinya kosong.
@@ -101,10 +101,10 @@ fun CatListScreen(
 
 @Composable
 private fun CatList(
-    cats: LazyPagingItems<Cat>,
+    sightings: LazyPagingItems<CatSighting>,
     appendState: LoadState,
-    onCatClick: (Long) -> Unit,
-    onDelete: (Cat) -> Unit,
+    onSightingClick: (Long) -> Unit,
+    onDelete: (CatSighting) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -113,18 +113,18 @@ private fun CatList(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp)
     ) {
         items(
-            count = cats.itemCount,
-            key = cats.itemKey { cat -> cat.id },
-            contentType = cats.itemContentType { "cuking" }
+            count = sightings.itemCount,
+            key = sightings.itemKey { sighting -> sighting.id },
+            contentType = sightings.itemContentType { "cuking" }
         ) { index ->
             // Placeholder dimatikan di PagingConfig, jadi null cuma mungkin muncul
             // di antara dua pembaruan halaman; barisnya cukup dilewati.
-            val cat = cats[index]
-            if (cat != null) {
+            val sighting = sightings[index]
+            if (sighting != null) {
                 CatListCard(
-                    cat = cat,
-                    onClick = { onCatClick(cat.id) },
-                    onDelete = { onDelete(cat) }
+                    sighting = sighting,
+                    onClick = { onSightingClick(sighting.id) },
+                    onDelete = { onDelete(sighting) }
                 )
             }
         }
@@ -146,13 +146,13 @@ private fun CatList(
         // menyambungnya cukup satu tombol.
         if (appendState is LoadState.Error) {
             item(key = "gagal-menyusul") {
-                ListRetryRow(onRetry = cats::retry)
+                ListRetryRow(onRetry = sightings::retry)
             }
         }
 
         // Penanda ujung daftar: tanpa ini, daftar yang berhenti karena sudah habis
         // terlihat sama seperti daftar yang berhenti karena macet.
-        if (appendState.endOfPaginationReached && cats.itemCount > 0) {
+        if (appendState.endOfPaginationReached && sightings.itemCount > 0) {
             item(key = "ujung-daftar") {
                 Text(
                     text = stringResource(R.string.cat_list_end),
