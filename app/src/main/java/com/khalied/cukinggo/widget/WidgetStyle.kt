@@ -3,12 +3,12 @@ package com.khalied.cukinggo.widget
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.toArgb
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.CreamBg
-import com.khalied.cukinggo.ui.theme.CreamSurface
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.NightBg
-import com.khalied.cukinggo.ui.theme.NightInk
-import com.khalied.cukinggo.ui.theme.NightSurface
+import com.khalied.cukinggo.ui.theme.FrostBg
+import com.khalied.cukinggo.ui.theme.FrostNightBg
+import com.khalied.cukinggo.ui.theme.FrostNightInk
+import com.khalied.cukinggo.ui.theme.FrostNightSurface
+import com.khalied.cukinggo.ui.theme.FrostSolidsurface
+import com.khalied.cukinggo.ui.theme.SteelText
 import java.time.LocalDate
 
 /**
@@ -146,14 +146,16 @@ private fun pick(isDark: Boolean, light: Int, dark: Int): Int = if (isDark) dark
 private fun fallbackArt(isDark: Boolean): Int =
     pick(isDark, R.drawable.widget_paw_light, R.drawable.widget_paw_dark)
 
-private fun captionColor(isDark: Boolean): Int = (if (isDark) NightInk else InkSoft).toArgb()
+private fun captionColor(isDark: Boolean): Int = (if (isDark) FrostNightInk else SteelText).toArgb()
 
-private fun bodyColor(isDark: Boolean): Int = (if (isDark) NightSurface else CreamSurface).toArgb()
+private fun bodyColor(isDark: Boolean): Int =
+    (if (isDark) FrostNightSurface else FrostSolidsurface).toArgb()
 
-private fun windowBodyColor(isDark: Boolean): Int = (if (isDark) NightBg else CreamBg).toArgb()
+private fun windowBodyColor(isDark: Boolean): Int = (if (isDark) FrostNightBg else FrostBg).toArgb()
 
 /** Kumis digambar di atas foto, jadi warnanya diambil dari warna badan dan tepi. */
 private fun whiskerLineColor(isDark: Boolean): Int =
-    (if (isDark) NightInk else CreamSurface).toArgb()
+    (if (isDark) FrostNightInk else FrostSolidsurface).toArgb()
 
-private fun whiskerOutlineColor(isDark: Boolean): Int = (if (isDark) NightBg else InkSoft).toArgb()
+private fun whiskerOutlineColor(isDark: Boolean): Int =
+    (if (isDark) FrostNightBg else SteelText).toArgb()

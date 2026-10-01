@@ -60,11 +60,12 @@ import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.VideoSection
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
+import com.khalied.cukinggo.ui.components.glassTopBarPadding
 import com.khalied.cukinggo.ui.components.standardBackCameraSelector
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.ui.theme.frostBackdrop
 import com.khalied.cukinggo.util.hasCameraPermission
+import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
 
@@ -176,11 +177,10 @@ fun EditCatScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            PlayfulTopBar(title = stringResource(R.string.edit_title), onBack = onBack)
+    val hazeState = remember { HazeState() }
 
-            when (val state = uiState) {
+    Box(modifier = modifier.fillMaxSize()) {
+        when (val state = uiState) {
                 EditCatUiState.Loading -> EditPlaceholder(
                     loaderText = stringResource(R.string.edit_loading)
                 )
@@ -198,12 +198,15 @@ fun EditCatScreen(
                 is EditCatUiState.Ready -> Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .frostBackdrop(hazeState)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp)
                         .navigationBarsPadding()
                         .padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    // Ruang di bawah bar kaca, sebagai isi yang ikut menggulir.
+                    Spacer(Modifier.height(glassTopBarPadding()))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.extraLarge,
@@ -365,8 +368,8 @@ fun EditCatScreen(
                             .height(56.dp),
                         shape = MaterialTheme.shapes.extraLarge,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = PeachAccent,
-                            contentColor = InkSoft
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text(
@@ -379,8 +382,16 @@ fun EditCatScreen(
                 EditCatUiState.Saved -> EditPlaceholder(
                     loaderText = stringResource(R.string.edit_saving)
                 )
-            }
         }
+
+        PlayfulTopBar(
+            title = stringResource(R.string.edit_title),
+            onBack = onBack,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+            hazeState = hazeState
+        )
 
         if (showVideoRecorder) {
             Column(

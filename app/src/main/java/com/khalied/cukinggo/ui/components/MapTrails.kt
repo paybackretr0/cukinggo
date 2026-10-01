@@ -80,9 +80,10 @@ private fun trailFor(catId: Long, sightings: List<CatSighting>): CatTrail? {
  *
  * Dipilih dari keluarga palet app, tapi dalam versi pekat. Alasannya kontras:
  * garis ini digambar di atas tile peta, dan tile osmdroid selalu terang (tidak ikut
- * mode gelap app), jadi pastel mentahnya seperti PeachAccent dan MintPop terlalu
- * pudar di sana. Karena warnanya berfungsi sebagai penanda data, yaitu "garis ini
- * milik cuking yang mana", ia tidak dipakai di permukaan UI yang lain.
+ * mode gelap app), jadi versi pastel dari palet Frost terlalu pudar di sana.
+ * Karena warnanya berfungsi sebagai penanda data, yaitu "garis ini milik cuking
+ * yang mana", ia tidak dipakai di permukaan UI yang lain, dan sengaja tetap
+ * berbeda rona satu sama lain ketimbang diseragamkan jadi biru.
  */
 private val TRAIL_COLORS = intArrayOf(
     0xFF8B5E3C.toInt(), // PawBrown, sewarna dengan garis luar marker yang sudah ada

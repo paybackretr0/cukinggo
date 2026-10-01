@@ -30,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,22 +42,25 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.domain.model.CatSighting
+import com.khalied.cukinggo.ui.components.glassTopBarPadding
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.MintPop
-import com.khalied.cukinggo.ui.theme.PeachAccent
+import com.khalied.cukinggo.ui.theme.IceAccent
+import com.khalied.cukinggo.ui.theme.IceSoft
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.ui.theme.frostBackdrop
 import com.khalied.cukinggo.util.WeeklyRecap
 import com.khalied.cukinggo.util.formatShortDate
 import com.khalied.cukinggo.util.formatShortDay
+import dev.chrisbanes.haze.HazeState
 import java.io.File
 import java.time.LocalDate
 
@@ -87,9 +91,12 @@ fun WeeklyRecapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = modifier.fillMaxSize()) {
-        PlayfulTopBar(title = stringResource(R.string.weekly_title), onBack = onBack)
+    // Sumber blur untuk bar kaca di atas, plus tinggi yang perlu disisakan daftar
+    // di bawahnya supaya isinya benar-benar lewat di belakang bar itu.
+    val hazeState = remember { HazeState() }
+    val topBarPadding = glassTopBarPadding()
 
+    Box(modifier = modifier.fillMaxSize()) {
         when (val state = uiState) {
             WeeklyRecapUiState.Loading -> RecapPlaceholder(
                 loaderText = stringResource(R.string.home_loading)
@@ -101,9 +108,20 @@ fun WeeklyRecapScreen(
 
             is WeeklyRecapUiState.Content -> RecapContent(
                 recap = state.recap,
-                onSightingClick = onSightingClick
+                onSightingClick = onSightingClick,
+                topBarPadding = topBarPadding,
+                modifier = Modifier.frostBackdrop(hazeState)
             )
         }
+
+        PlayfulTopBar(
+            title = stringResource(R.string.weekly_title),
+            onBack = onBack,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+            hazeState = hazeState
+        )
     }
 }
 
@@ -111,17 +129,21 @@ fun WeeklyRecapScreen(
 private fun RecapContent(
     recap: WeeklyRecap,
     onSightingClick: (Long) -> Unit,
+    topBarPadding: Dp,
     modifier: Modifier = Modifier
 ) {
     val firstDay = recap.days.first().date
     val lastDay = recap.days.last().date
 
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
-        contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = topBarPadding + 4.dp,
+            bottom = 24.dp
+        )
     ) {
         item {
             Text(
@@ -176,13 +198,13 @@ private fun WeeklyStats(recap: WeeklyRecap, modifier: Modifier = Modifier) {
         InfoChip(
             text = stringResource(R.string.weekly_stat_sightings, recap.sightingCount),
             iconRes = R.drawable.ic_paw,
-            containerColor = PeachAccent,
-            contentColor = InkSoft
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         )
         InfoChip(
             text = stringResource(R.string.weekly_stat_new_cats, recap.newCatCount),
-            containerColor = MintPop,
-            contentColor = InkSoft
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
         )
         InfoChip(
             text = stringResource(R.string.weekly_stat_active_days, recap.activeDayCount),
@@ -263,8 +285,11 @@ private fun WeeklyChart(
                                             bottomEnd = 2.dp
                                         )
                                     )
+                                    // Hari ini dibedakan warnanya, bukan cuma
+                                    // di-bold: aksen es penuh untuk hari ini,
+                                    // versi pucatnya untuk enam hari lain.
                                     .background(
-                                        if (isToday) MintPop else PeachAccent
+                                        if (isToday) IceAccent else IceSoft
                                     )
                             )
                         }

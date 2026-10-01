@@ -41,8 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Observer
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.PeachAccent
 import java.util.Locale
 import kotlin.math.abs
 
@@ -219,14 +217,14 @@ fun CameraCaptureArea(
             modifier = Modifier
                 .size(76.dp)
                 .clip(CircleShape)
-                .background(PeachAccent)
+                .background(MaterialTheme.colorScheme.primary)
                 .clickable(onClick = onCapture),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_paw),
                 contentDescription = stringResource(R.string.add_capture),
-                tint = InkSoft,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -247,8 +245,8 @@ private fun ZoomChip(
     Surface(
         modifier = modifier.selectable(selected = selected, onClick = onClick),
         shape = CircleShape,
-        color = if (selected) PeachAccent else MaterialTheme.colorScheme.surface,
-        contentColor = if (selected) InkSoft else MaterialTheme.colorScheme.onSurface
+        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),

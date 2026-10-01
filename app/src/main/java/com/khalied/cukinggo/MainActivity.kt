@@ -15,9 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.khalied.cukinggo.navigation.CukingGoNavHost
-import com.khalied.cukinggo.ui.theme.CreamBg
 import com.khalied.cukinggo.ui.theme.CukingGoTheme
-import com.khalied.cukinggo.ui.theme.NightBg
+import com.khalied.cukinggo.ui.theme.FrostBg
+import com.khalied.cukinggo.ui.theme.FrostNightBg
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
             // yang tidak sesuai saat pindah layar.
             SideEffect {
                 window.setBackgroundDrawable(
-                    ColorDrawable((if (darkTheme) NightBg else CreamBg).toArgb())
+                    ColorDrawable((if (darkTheme) FrostNightBg else FrostBg).toArgb())
                 )
             }
 

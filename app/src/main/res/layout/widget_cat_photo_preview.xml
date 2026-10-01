@@ -69,9 +69,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="3dp"
-                android:fontFamily="@font/nunito"
+                android:fontFamily="@font/inter"
                 android:text="3"
-                android:textColor="#3A2E26"
+                android:textColor="#2E3A46"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 tools:ignore="HardcodedText" />
@@ -100,13 +100,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="end"
-        android:fontFamily="@font/nunito"
+        android:fontFamily="@font/manrope"
         android:maxLines="2"
         android:paddingStart="2dp"
         android:paddingTop="5dp"
         android:paddingEnd="2dp"
         android:paddingBottom="1dp"
         android:text="@string/widget_preview_caption"
-        android:textColor="#3A2E26"
+        android:textColor="#2E3A46"
         android:textSize="12sp" />
 </LinearLayout>

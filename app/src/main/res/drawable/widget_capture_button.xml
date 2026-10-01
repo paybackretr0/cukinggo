@@ -1,15 +1,16 @@
 <!--
-  Latar tombol jepret di widget: lingkaran penuh PeachAccent.
+  Latar tombol jepret di widget: lingkaran penuh IceDeep.
 
   Bentuk oval dipakai, bukan kotak bersudut seperti badge rentetan, karena ini
   satu-satunya kontrol di widget: lingkaran membedakannya dari foto di belakangnya
   tanpa perlu garis tepi, dan ukurannya tetap pas di sudut mana pun.
 
-  Warnanya sama dengan FAB dan tombol utama di dalam app, jadi "aksen utama =
-  tombol" tetap berlaku di layar utama. Punch PeachAccent tetap di kedua tema,
-  jadi satu varian cukup.
+  Warnanya sama dengan warna `primary` di dalam app dan tetap di kedua tema, jadi
+  "aksen utama = tombol" tetap berlaku di layar utama. IceDeep, bukan IceAccent:
+  jejak kaki di atasnya harus terbaca, dan itu hanya lolos kontras di biru yang
+  lebih pekat ini.
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="#FFB27A" />
+    <solid android:color="#2F6E96" />
 </shape>

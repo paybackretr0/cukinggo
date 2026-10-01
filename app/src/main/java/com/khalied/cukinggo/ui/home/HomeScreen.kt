@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -50,7 +51,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -81,14 +84,18 @@ import com.khalied.cukinggo.ui.components.CatTrail
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.NearbyAlertDialog
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
+import com.khalied.cukinggo.ui.components.SwipeDeleteHint
 import com.khalied.cukinggo.ui.components.AppearancePickerDialog
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.components.buildTrails
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.MintPop
-import com.khalied.cukinggo.ui.theme.PeachAccent
+import com.khalied.cukinggo.ui.theme.FrostSolidsurface
+import com.khalied.cukinggo.ui.theme.GlassSurface
+import com.khalied.cukinggo.ui.theme.SteelText
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.ui.theme.frostBackdrop
+import com.khalied.cukinggo.ui.theme.frostSurface
+import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.widget.CatWidgets
 import com.khalied.cukinggo.widget.WidgetSkinMode
 import com.khalied.cukinggo.util.catStreak
@@ -115,6 +122,36 @@ private const val RECENT_CAT_LIMIT = 5
  * tapi foto tetap jadi pembeda utama antara cuking yang belum dinamai.
  */
 private const val TRAIL_CHIP_PHOTO_DP = 26
+
+/**
+ * Ruang minimum yang disisakan di atas daftar untuk bar kaca yang tetap di sana.
+ *
+ * Ini cuma lantai, bukan angka final: tinggi bar yang sebenarnya diukur saat
+ * runtime (lihat [HOME_HEADER_GAP_DP] dan `headerHeightPx`) karena judul dan
+ * subjudul bisa membungkus jadi lebih dari satu baris di layar sempit, dan angka
+ * patok yang tetap akan menutupi kartu pertama persis seperti yang sempat terjadi
+ * pada chip rentetan.
+ */
+private val HOME_HEADER_SPACE_DP = 88.dp
+
+/**
+ * Jarak antara dasar bar kaca dan kartu pertama di daftar.
+ *
+ * Sama dengan jarak antar-kartu di daftar (10dp), jadi chip rentetan tidak
+ * menempel ke tepi bar.
+ */
+private val HOME_HEADER_GAP_DP = 10.dp
+
+/**
+ * Tinggi peta di daftar Home.
+ *
+ * Tinggi tetap, bukan weight: daftar yang menggulir tidak punya tinggi terbatas
+ * untuk dibagi. 340dp cukup untuk membaca arah jejak tanpa menelan seluruh layar.
+ */
+private val HOME_MAP_HEIGHT_DP = 340.dp
+
+/** Tinggi kartu keadaan (memuat/gagal/kosong) supaya tampilannya tidak gepeng. */
+private val HOME_STATE_CARD_HEIGHT_DP = 240.dp
 
 @Composable
 fun HomeScreen(
@@ -151,6 +188,22 @@ fun HomeScreen(
 
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
+    // Sumber blur untuk permukaan kaca di layar ini. Isi layar di bawah FAB
+    // ditandai sebagai sumbernya, jadi yang diblur FAB adalah kartu-kartu yang
+    // lewat di belakangnya, bukan warna latar yang kosong.
+    val hazeState = remember { HazeState() }
+
+    // Tinggi bar kaca diukur, bukan dipatok: judul dan subjudul bisa membungkus
+    // jadi dua baris di layar sempit, dan daftar yang menyisakan angka tetap akan
+    // menyisakan celah yang salah di layar seperti itu. Dipakai sebagai ruang di
+    // atas daftar, dengan [HOME_HEADER_SPACE_DP] sebagai lantai supaya daftar
+    // tidak melompat naik di frame pertama sebelum bar sempat diukur.
+    var headerHeightPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val headerSpace = maxOf(
+        with(density) { headerHeightPx.toDp() } + HOME_HEADER_GAP_DP,
+        HOME_HEADER_SPACE_DP
+    )
 
     // Rentetan harian dihitung dari catatan yang sudah ada di layar ini, jadi
     // tidak perlu query tambahan. Kuncinya daftar kucing, artinya angkanya ikut
@@ -286,155 +339,172 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = { PawFab(onClick = onAddCat) }
+        floatingActionButton = { PawFab(onClick = onAddCat, hazeState = hazeState) }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp)
         ) {
-            Spacer(Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.home_title),
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.home_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                NearbyPill(
-                    active = nearbyState == NearbyAlertState.ACTIVE,
-                    onClick = { showNearbyDialog = true }
-                )
-                AppearancePill(onClick = { showAppearanceDialog = true })
-            }
-
-            // Rentetan harian hanya muncul kalau sudah jalan. Widget pun begitu:
-            // tidak ada yang menagih sebelum pengguna mulai sendiri.
-            if (streakDays > 0) {
-                Spacer(Modifier.height(10.dp))
-                InfoChip(
-                    text = stringResource(R.string.streak_chip, streakDays),
-                    iconRes = R.drawable.ic_flame,
-                    containerColor = PeachAccent,
-                    contentColor = InkSoft
-                )
-            }
-
-            // Cuking terdekat disorot di atas peta, bukan diselipkan ke dalam
-            // daftar: begitu kamu masuk radiusnya, dia yang jadi hal pertama yang
-            // terlihat di layar ini. Kalau tidak ada yang dekat, kartunya hilang
-            // sama sekali dan peta tetap jadi isi utama seperti sebelumnya.
-            val nearest = nearestCat
-            if (nearest != null) {
-                Spacer(Modifier.height(10.dp))
-                NearestCatCard(
-                    sighting = nearest.sighting,
-                    distanceMeters = nearest.distanceMeters,
-                    onClick = { onSightingClick(nearest.sighting.id) }
-                )
-            }
-
-            // Pemilih jejak cuma muncul kalau memang ada yang bisa dipilih, yaitu
-            // saat minimal dua cuking punya jejak. Dengan nol atau satu, baris ini
-            // tidak menambah kemampuan apa pun, jadi lebih jujur tidak ada.
-            if (trails.size > 1) {
-                Spacer(Modifier.height(10.dp))
-                TrailCatPicker(
-                    trails = trails,
-                    latestByCat = latestByCat,
-                    highlightedCatId = highlightedCatId,
-                    onSelect = { catId -> highlightedCatId = catId }
-                )
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            // Satu-satunya shadow di layar ini, dan memang alasannya: peta adalah
-            // permukaan utama yang "duduk di atas" halaman. Kartu lain di bawahnya
-            // cukup pakai garis tipis (lihat appCardOutline).
-            Surface(
+            // Seluruh isi layar jadi satu daftar yang digulir, jadi kontennya
+            // benar-benar lewat di belakang bar atas dan efek kacanya terlihat.
+            // Tinggi peta dan kartu keadaan dipatok, bukan pakai weight, karena
+            // daftar yang menggulir tidak punya tinggi terbatas untuk dibagi.
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.05f)
-                    .clip(MaterialTheme.shapes.extraLarge),
-                color = MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.extraLarge,
-                shadowElevation = 6.dp
+                    .fillMaxSize()
+                    .frostBackdrop(hazeState),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = headerSpace,
+                    bottom = 96.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                CatMapView(
-                    sightings = sightings,
-                    onSightingClick = onSightingClick,
-                    modifier = Modifier.fillMaxSize(),
-                    highlightCatId = highlightedCatId
-                )
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            when (val state = uiState) {
-                HomeUiState.Loading -> CatsPlaceholderCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    WalkingCatLoader(text = stringResource(R.string.home_loading))
-                }
-
-                HomeUiState.Failed -> CatsErrorCard(
-                    onRetry = viewModel::retry,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
-
-                is HomeUiState.Content -> if (state.sightings.isEmpty()) {
-                    EmptyCatsCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        // Pintu ke rekap mingguan duduk di depan daftar, bukan di
-                        // header: headernya sudah penuh dengan judul, chip rentetan,
-                        // dan dua pill, dan menambah pill ketiga di situ akan
-                        // menyempitkan judul. Tempat ini juga membuat pintunya cuma
-                        // muncul saat memang ada catatan untuk direkap.
-                        WeeklyRecapRow(onClick = onOpenWeeklyRecap)
-                        Spacer(Modifier.height(10.dp))
-
-                        // Baris ini cuma muncul kalau memang masih ada sisa: kalau
-                        // koleksinya belum lebih dari lima, halaman daftarnya isinya
-                        // sama persis dengan yang sudah ada di layar ini.
-                        if (state.sightings.size > RECENT_CAT_LIMIT) {
-                            SeeAllCatsRow(onClick = onSeeAllCats)
-                            Spacer(Modifier.height(10.dp))
-                        }
-
-                        RecentSightingsSection(
-                            sightings = state.sightings.take(RECENT_CAT_LIMIT),
-                            totalCount = state.sightings.size,
-                            onSightingClick = onSightingClick,
-                            onDelete = viewModel::deleteSighting,
-                            modifier = Modifier.fillMaxSize()
+                // Rentetan harian hanya muncul kalau sudah jalan. Widget pun begitu:
+                // tidak ada yang menagih sebelum pengguna mulai sendiri.
+                if (streakDays > 0) {
+                    item(key = "streak") {
+                        // Isian `primary` (IceDeep), bukan IceAccent: labelnya
+                        // teks, dan IceAccent di bawah 4,5:1 untuk teks.
+                        InfoChip(
+                            text = stringResource(R.string.streak_chip, streakDays),
+                            iconRes = R.drawable.ic_flame,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
+
+                // Cuking terdekat disorot di atas peta, bukan diselipkan ke dalam
+                // daftar: begitu kamu masuk radiusnya, dia yang jadi hal pertama
+                // yang terlihat di layar ini.
+                val nearest = nearestCat
+                if (nearest != null) {
+                    item(key = "nearest") {
+                        NearestCatCard(
+                            sighting = nearest.sighting,
+                            distanceMeters = nearest.distanceMeters,
+                            onClick = { onSightingClick(nearest.sighting.id) }
+                        )
+                    }
+                }
+
+                // Pemilih jejak cuma muncul kalau memang ada yang bisa dipilih,
+                // yaitu saat minimal dua cuking punya jejak.
+                if (trails.size > 1) {
+                    item(key = "trail-picker") {
+                        TrailCatPicker(
+                            trails = trails,
+                            latestByCat = latestByCat,
+                            highlightedCatId = highlightedCatId,
+                            onSelect = { catId -> highlightedCatId = catId }
+                        )
+                    }
+                }
+
+                // Peta tetap bidang pekat dengan border tipis, tanpa shadow:
+                // kaca di atas tile peta akan membuat petanya tidak terbaca.
+                item(key = "map") {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(HOME_MAP_HEIGHT_DP)
+                            .clip(MaterialTheme.shapes.extraLarge),
+                        color = FrostSolidsurface,
+                        shape = MaterialTheme.shapes.extraLarge,
+                        border = appCardOutline(),
+                        shadowElevation = 0.dp
+                    ) {
+                        CatMapView(
+                            sightings = sightings,
+                            onSightingClick = onSightingClick,
+                            modifier = Modifier.fillMaxSize(),
+                            highlightCatId = highlightedCatId
+                        )
+                    }
+                }
+
+                when (val state = uiState) {
+                    HomeUiState.Loading -> item(key = "loading") {
+                        CatsPlaceholderCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(HOME_STATE_CARD_HEIGHT_DP)
+                        ) {
+                            WalkingCatLoader(text = stringResource(R.string.home_loading))
+                        }
+                    }
+
+                    HomeUiState.Failed -> item(key = "failed") {
+                        CatsErrorCard(
+                            onRetry = viewModel::retry,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(HOME_STATE_CARD_HEIGHT_DP)
+                        )
+                    }
+
+                    is HomeUiState.Content -> if (state.sightings.isEmpty()) {
+                        item(key = "empty") {
+                            EmptyCatsCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(HOME_STATE_CARD_HEIGHT_DP)
+                            )
+                        }
+                    } else {
+                        // Pintu ke rekap mingguan duduk di depan daftar, bukan di
+                        // header: headernya sudah penuh dengan judul dan dua pill.
+                        item(key = "weekly") {
+                            WeeklyRecapRow(onClick = onOpenWeeklyRecap)
+                        }
+
+                        // Baris ini cuma muncul kalau memang masih ada sisa.
+                        if (state.sightings.size > RECENT_CAT_LIMIT) {
+                            item(key = "see-all") {
+                                SeeAllCatsRow(onClick = onSeeAllCats)
+                            }
+                        }
+
+                        item(key = "recent-header") {
+                            RecentSightingsHeader(totalCount = state.sightings.size)
+                        }
+
+                        // Petunjuk hapus duduk di atas kartu-kartunya, bukan di
+                        // latar swipe: di latar swipe ia cuma terlihat sepotong
+                        // selagi kartunya disapu, jadi tidak terbaca sebagai
+                        // petunjuk.
+                        item(key = "swipe-hint") {
+                            SwipeDeleteHint()
+                        }
+
+                        items(
+                            items = state.sightings.take(RECENT_CAT_LIMIT),
+                            key = { sighting -> sighting.id }
+                        ) { sighting ->
+                            CatListCard(
+                                sighting = sighting,
+                                onClick = { onSightingClick(sighting.id) },
+                                onDelete = { viewModel.deleteSighting(sighting) }
+                            )
+                        }
+                    }
+                }
             }
+
+            // Bar kaca yang tetap di atas: daftar yang lewat di belakangnya yang
+            // diblur, jadi petanya sengaja tidak ikut (peta ada di dalam daftar).
+            HomeHeaderBar(
+                hazeState = hazeState,
+                nearbyActive = nearbyState == NearbyAlertState.ACTIVE,
+                onNearbyClick = { showNearbyDialog = true },
+                onAppearanceClick = { showAppearanceDialog = true },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .onSizeChanged { size -> headerHeightPx = size.height }
+            )
         }
     }
 
@@ -543,12 +613,12 @@ private fun CatsErrorCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
 /**
  * Cuking terdekat, ditampilkan begitu kamu masuk radiusnya.
  *
- * Latarnya `secondaryContainer` (MintPop di tema terang) dan bukan warna kartu
- * biasa, karena makna kartu ini memang "dekat": warna yang sama sudah dipakai
- * pil lonceng saat fitur kabarnya aktif dan chip jumlah di bagian daftar. Semua
- * teks memakai `onSecondaryContainer` di atas latar itu, dan itu lolos WCAG AA di
- * kedua tema (7,7:1 di terang, 4,9:1 di gelap), jadi judulnya tidak boleh memakai
- * `primary` seperti kartu daftar: di atas MintPop warnanya cuma 3,2:1.
+ * Latarnya `secondaryContainer` dan bukan warna kartu biasa, karena makna kartu
+ * ini memang "dekat": warna yang sama sudah dipakai pil lonceng saat fitur
+ * kabarnya aktif dan chip jumlah di bagian daftar. Semua teks memakai
+ * `onSecondaryContainer` di atas latar itu, dan itu lolos WCAG AA di kedua tema
+ * (9,0:1 di terang, 9,8:1 di gelap), jadi judulnya tidak boleh memakai `primary`
+ * seperti kartu daftar: di atas latar terangnya warnanya cuma 4,4:1.
  */
 @Composable
 private fun NearestCatCard(
@@ -619,8 +689,10 @@ private fun NearestCatCard(
 
 /**
  * Kontrol kabar "dekat kucing": bulat dan ikon saja supaya tidak menyempitkan
- * judul di sebelahnya. Warnanya berubah jadi MintPop waktu fiturnya aktif, jadi
- * statusnya kelihatan tanpa harus membuka dialog.
+ * judul di sebelahnya. Warnanya berubah jadi `primary` waktu fiturnya aktif, jadi
+ * statusnya kelihatan tanpa harus membuka dialog. `primary`, bukan IceAccent:
+ * loncengnya ikon di atas isian itu, dan IceAccent cuma lolos 4,4:1 untuk teks
+ * kecil.
  *
  * Tinggi 44dp supaya tetap lolos tap target (R-03).
  */
@@ -629,8 +701,12 @@ private fun NearbyPill(active: Boolean, onClick: () -> Unit, modifier: Modifier 
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         shape = CircleShape,
-        color = if (active) MintPop else MaterialTheme.colorScheme.primaryContainer,
-        contentColor = if (active) InkSoft else MaterialTheme.colorScheme.onPrimaryContainer
+        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+        contentColor = if (active) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        }
     ) {
         Box(
             modifier = Modifier.size(44.dp),
@@ -713,7 +789,7 @@ private fun WeeklyRecapRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
 /**
  * Baris menuju halaman daftar lengkap, duduk di antara peta dan jejak terbaru.
  *
- * Warnanya `surfaceVariant`, bukan PeachAccent seperti FAB: yang jadi aksi utama di
+ * Warnanya `surfaceVariant`, bukan `primary` seperti FAB: yang jadi aksi utama di
  * layar ini tetap "Tandai cuking", sedangkan baris ini cuma jalan ke daftar.
  * Tingginya 48dp supaya lolos tap target (R-03), dan angkanya sengaja tidak
  * diulang di sini karena chip jumlah di bawahnya sudah menyebutkannya.
@@ -871,48 +947,76 @@ private fun TrailCatChip(
     }
 }
 
+/**
+ * Bar kaca yang tetap di atas daftar Home.
+ *
+ * Ditaruh sebagai overlay, bukan di dalam daftar: yang perlu terjadi adalah
+ * daftar lewat di belakangnya, dan itu tidak mungkin kalau bar-nya ikut menggulir.
+ * Bentuknya siku (bukan kartu) dan tanpa border supaya terbaca sebagai bar atas,
+ * bukan sebagai satu kartu yang kebetulan di atas.
+ */
 @Composable
-private fun RecentSightingsSection(
-    sightings: List<CatSighting>,
-    totalCount: Int,
-    onSightingClick: (Long) -> Unit,
-    onDelete: (CatSighting) -> Unit,
+private fun HomeHeaderBar(
+    hazeState: HazeState,
+    nearbyActive: Boolean,
+    onNearbyClick: () -> Unit,
+    onAppearanceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .frostSurface(
+                state = hazeState,
+                shape = RectangleShape,
+                opacity = 0.72f,
+                borderAlpha = 0f
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.home_recent_title),
-                style = MaterialTheme.typography.titleLarge,
+                text = stringResource(R.string.home_title),
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.primary
             )
-            // Angkanya jumlah seluruh koleksi, bukan jumlah kartu di bawahnya:
-            // menulis "5 cuking ditemukan" saat catatannya ada 23 justru angka yang
-            // salah, dan sisanya memang ada di halaman "Semua cuking".
-            InfoChip(
-                text = stringResource(R.string.home_counter, totalCount),
-                containerColor = MintPop,
-                contentColor = InkSoft
+            Text(
+                text = stringResource(R.string.home_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(Modifier.height(8.dp))
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 96.dp)
-        ) {
-            items(items = sightings, key = { it.id }) { sighting ->
-                CatListCard(
-                    sighting = sighting,
-                    onClick = { onSightingClick(sighting.id) },
-                    onDelete = { onDelete(sighting) }
-                )
-            }
-        }
+        NearbyPill(active = nearbyActive, onClick = onNearbyClick)
+        AppearancePill(onClick = onAppearanceClick)
+    }
+}
+
+/**
+ * Judul bagian daftar terbaru plus jumlah seluruh koleksi.
+ *
+ * Angkanya jumlah seluruh koleksi, bukan jumlah kartu di bawahnya: menulis
+ * "5 cuking ditemukan" saat catatannya ada 23 justru angka yang salah, dan
+ * sisanya memang ada di halaman "Semua cuking".
+ */
+@Composable
+private fun RecentSightingsHeader(totalCount: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = stringResource(R.string.home_recent_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        InfoChip(
+            text = stringResource(R.string.home_counter, totalCount),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
     }
 }
 
@@ -948,8 +1052,18 @@ private fun EmptyCatsCard(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Tombol utama layar ini dibuat sebagai permukaan kaca, bukan FAB Material
+ * bawaan: FAB Material tidak menerima blur latar, sedangkan tombol inilah yang
+ * paling sering lewat di atas kartu-kartu daftar, jadi justru di situ efek
+ * kacanya paling terlihat. Gerak squish saat ditekan dipertahankan.
+ *
+ * Opacity-nya 72%, di batas atas rentang Frost UI: teks di atas kaca menimpa
+ * foto yang bisa gelap, jadi kaca yang terlalu bening membuat kontrasnya tidak
+ * lagi bisa dijamin (R-25).
+ */
 @Composable
-private fun PawFab(onClick: () -> Unit) {
+private fun PawFab(onClick: () -> Unit, hazeState: HazeState) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -961,25 +1075,34 @@ private fun PawFab(onClick: () -> Unit) {
         label = "fabSquish"
     )
 
-    ExtendedFloatingActionButton(
-        onClick = onClick,
-        modifier = Modifier.scale(scale),
-        shape = MaterialTheme.shapes.extraLarge,
-        containerColor = PeachAccent,
-        contentColor = InkSoft,
-        interactionSource = interactionSource,
-        icon = {
-            Icon(
-                painter = painterResource(R.drawable.ic_paw),
-                contentDescription = null,
-                modifier = Modifier.size(22.dp)
+    Row(
+        modifier = Modifier
+            .scale(scale)
+            .frostSurface(
+                state = hazeState,
+                shape = MaterialTheme.shapes.extraLarge,
+                tint = GlassSurface,
+                opacity = 0.72f
             )
-        },
-        text = {
-            Text(
-                text = stringResource(R.string.fab_add_cat),
-                style = MaterialTheme.typography.labelLarge
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
             )
-        }
-    )
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_paw),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Text(
+            text = stringResource(R.string.fab_add_cat),
+            style = MaterialTheme.typography.labelLarge,
+            color = SteelText
+        )
+    }
 }

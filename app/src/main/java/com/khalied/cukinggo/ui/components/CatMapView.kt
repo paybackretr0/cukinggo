@@ -55,8 +55,8 @@ import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.location.LocationHelper
-import com.khalied.cukinggo.ui.theme.BlushPink
-import com.khalied.cukinggo.ui.theme.InkSoft
+import com.khalied.cukinggo.ui.theme.IceSoft
+import com.khalied.cukinggo.ui.theme.SteelText
 import com.khalied.cukinggo.util.isOnline
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -568,8 +568,8 @@ fun CatMapView(
                     .align(Alignment.TopStart)
                     .padding(start = 14.dp, end = 14.dp, top = 14.dp),
                 shape = MaterialTheme.shapes.large,
-                color = BlushPink,
-                contentColor = InkSoft,
+                color = IceSoft,
+                contentColor = SteelText,
                 shadowElevation = 3.dp
             ) {
                 Row(

@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.domain.model.CatSighting
-import com.khalied.cukinggo.ui.theme.BlushPink
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.util.formatDayLabel
 import com.khalied.cukinggo.util.formatTime
@@ -117,28 +116,30 @@ fun CatListCard(
         enableDismissFromStartToEnd = false,
         enableDismissFromEndToStart = true,
         backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(MaterialTheme.shapes.large)
-                    .background(BlushPink)
-                    .padding(horizontal = 24.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Latarnya cuma digambar saat kartunya memang sedang disapu, jadi
+            // kartu yang diam tidak pernah punya lapisan merah di belakangnya.
+            //
+            // Isinya cuma ikon, tanpa tulisan: ikon sudah cukup jadi isyarat
+            // arah, sedangkan kalimat di sela-sela sapuan lebih sering terpotong
+            // daripada terbaca. Penjelasan caranya ada di atas daftar (lihat
+            // `SwipeDeleteHint`).
+            if (dismissState.progress > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
-                    Text(
-                        text = stringResource(R.string.home_delete_hint),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onTertiary
-                    )
+                    // Tempat sampah, bukan jejak kaki: jejak kaki itu bahasa
+                    // "cuking" di seluruh app, dan memakainya untuk menghapus
+                    // justru salah baca. Hiasan, jadi tidak perlu dibacakan.
                     Icon(
-                        painter = painterResource(R.drawable.ic_paw),
+                        painter = painterResource(R.drawable.ic_delete),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiary,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -152,7 +153,14 @@ fun CatListCard(
                 // cukup sekali, tidak diulang per elemen di dalamnya.
                 .semantics(mergeDescendants = true) {},
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            colors = CardDefaults.cardColors(
+                // Bidang pekat, bukan translusen seperti kartu kaca yang lain:
+                // kartu ini punya latar swipe di belakangnya, dan kartu bening
+                // membuat isi latar itu tembus, sehingga kartu yang diam terlihat
+                // seperti membawa ikon hapus. Kepekatan kartu di daftar ini yang
+                // memisahkan isi kartu dari isyarat sapuannya.
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
             border = appCardOutline()
         ) {
             Row(

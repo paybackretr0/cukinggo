@@ -19,10 +19,10 @@
     <string name="home_loading">Lagi memuat catatan cuking…</string>
     <string name="error_load_title">Catatannya belum kebaca 😿</string>
     <string name="home_error_message">Coba sekali lagi, biasanya langsung beres.</string>
-    <string name="home_delete_hint">Cukingnya dilepas 😿</string>
     <string name="home_delete_confirm_title">Hapus catatan ini?</string>
     <string name="home_delete_confirm_message">Catatan kegiatan &amp; fotonya bakal hilang permanen dari HP kamu.</string>
     <string name="home_delete_confirm">Hapus</string>
+    <string name="list_delete_hint">Geser kartu ke kiri buat hapus.</string>
     <string name="home_my_location">Ke lokasi kamu</string>
     <string name="map_offline_notice">Peta butuh internet buat gambarnya. Catatan cukingmu tetap aman di HP.</string>
     <string name="map_tiles_failed_notice">Peta belum bisa dimuat. Coba lagi ya.</string>
@@ -61,12 +61,8 @@
     <string name="video_ready_hint">Videonya siap. Ketuk Simpan buat menyimpannya bareng fotonya.</string>
     <string name="video_camera_hint">Tekan tombol buat mulai merekam 🎥</string>
     <string name="video_record_start">Mulai merekam</string>
-    <string name="video_record_stop">Stop</string>
     <string name="video_recording">Lagi merekam…</string>
-    <string name="video_error_record">Rekamannya gagal diproses. Coba sekali lagi ya.</string>
     <string name="video_error_mic">Izin mikrofonnya mati, jadi suaranya nggak ikut terekam. Buka Pengaturan buat menyalakannya.</string>
-    <string name="cd_cat_video">Video cuking</string>
-    <string name="video_play">Putar video cuking</string>
     <string name="add_saved_celebration">Cukingnya udah ditandain! 🐾</string>
     <string name="add_saved_sighting">Ketemu dia lagi! 🐾</string>
     <string name="add_saved_streak">Rentetanmu makin panjang!</string>
@@ -98,7 +94,6 @@
     <string name="detail_trail_title">Jejak di peta</string>
     <string name="detail_trail_caption">Garis menghubungkan tiap tempat dia ketemu. Yang lebih terang berarti lebih baru.</string>
     <string name="detail_loading">Lagi membuka catatannya…</string>
-    <string name="detail_error_message">Coba sekali lagi ya.</string>
     <string name="detail_delete_sighting">Hapus kegiatan ini?</string>
     <string name="detail_delete_sighting_message">Foto &amp; kegiatan ini bakal hilang permanen dari HP kamu.</string>
     <string name="detail_delete_sighting_confirm">Hapus kegiatan</string>
@@ -116,7 +111,6 @@
     <string name="edit_activity_hint">Cukingnya lagi ngapain waktu itu? (opsional)</string>
     <string name="edit_change_photo">Ganti foto</string>
     <string name="edit_new_photo_hint">Foto barunya belum disimpan. Ketuk Simpan buat menerapkannya.</string>
-    <string name="edit_video_hint">Videonya baru berubah setelah Simpan ditekan.</string>
     <string name="edit_save">Simpan perubahan</string>
     <string name="edit_error_save">Perubahannya gagal disimpan. Coba sekali lagi ya.</string>
 

@@ -17,10 +17,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -34,10 +36,12 @@ import com.khalied.cukinggo.ui.components.CatListCard
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
+import com.khalied.cukinggo.ui.components.SwipeDeleteHint
+import com.khalied.cukinggo.ui.components.glassTopBarPadding
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.ui.theme.frostBackdrop
+import dev.chrisbanes.haze.HazeState
 
 /**
  * Daftar seluruh cuking yang pernah ditandai, dimuat sehalaman demi sehalaman.
@@ -59,22 +63,14 @@ fun CatListScreen(
     val refreshState = sightings.loadState.refresh
     val appendState = sightings.loadState.append
 
-    Column(modifier = modifier.fillMaxSize()) {
-        PlayfulTopBar(title = stringResource(R.string.cat_list_title), onBack = onBack)
+    val hazeState = remember { HazeState() }
+    val topBarPadding = glassTopBarPadding()
+    // Chip jumlahnya disembunyikan selama angkanya belum kebaca, bukan
+    // ditampilkan sebagai 0: angka 0 di layar terbaca seperti "koleksimu
+    // kosong", padahal catatannya cuma belum selesai dihitung.
+    val count = sightingCount
 
-        // Chip jumlahnya disembunyikan selama angkanya belum kebaca, bukan
-        // ditampilkan sebagai 0: angka 0 di layar terbaca seperti "koleksimu
-        // kosong", padahal catatannya cuma belum selesai dihitung.
-        val count = sightingCount
-        if (count != null && count > 0) {
-            InfoChip(
-                text = stringResource(R.string.home_counter, count),
-                containerColor = MintPop,
-                contentColor = InkSoft,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
-            )
-        }
-
+    Box(modifier = modifier.fillMaxSize()) {
         when {
             // Halaman pertama gagal dibaca, dan belum ada satu pun kartu di layar:
             // jalan keluarnya cuma satu tombol, jadi layarnya tidak buntu.
@@ -85,7 +81,10 @@ fun CatListScreen(
                 sightings = sightings,
                 appendState = appendState,
                 onSightingClick = onSightingClick,
-                onDelete = viewModel::deleteSighting
+                onDelete = viewModel::deleteSighting,
+                count = count,
+                topBarPadding = topBarPadding,
+                modifier = Modifier.frostBackdrop(hazeState)
             )
 
             // Paging bilang tidak ada apa-apa lagi: memang koleksinya kosong.
@@ -96,6 +95,15 @@ fun CatListScreen(
                 WalkingCatLoader(text = stringResource(R.string.home_loading))
             }
         }
+
+        PlayfulTopBar(
+            title = stringResource(R.string.cat_list_title),
+            onBack = onBack,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+            hazeState = hazeState
+        )
     }
 }
 
@@ -105,13 +113,38 @@ private fun CatList(
     appendState: LoadState,
     onSightingClick: (Long) -> Unit,
     onDelete: (CatSighting) -> Unit,
+    count: Int?,
+    topBarPadding: Dp,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp)
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = topBarPadding + 4.dp,
+            bottom = 24.dp
+        )
     ) {
+        // Chip jumlah dibawa ke dalam daftar, bukan duduk tetap di bawah bar:
+        // supaya isi halamannya benar-benar lewat di belakang bar kaca.
+        if (count != null && count > 0) {
+            item(key = "jumlah") {
+                InfoChip(
+                    text = stringResource(R.string.home_counter, count),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+        // Petunjuk hapus ditaruh di atas kartu-kartunya, bukan di latar swipe:
+        // di latar swipe ia cuma terlihat sepotong selagi kartunya disapu, jadi
+        // tidak terbaca sebagai petunjuk.
+        item(key = "petunjuk-hapus") {
+            SwipeDeleteHint()
+        }
+
         items(
             count = sightings.itemCount,
             key = sightings.itemKey { sighting -> sighting.id },

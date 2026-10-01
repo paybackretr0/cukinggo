@@ -10,10 +10,10 @@ import android.graphics.Typeface
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.res.ResourcesCompat
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.MintPop
-import com.khalied.cukinggo.ui.theme.PawBrown
-import com.khalied.cukinggo.ui.theme.PeachAccent
+import com.khalied.cukinggo.ui.theme.IceDeep
+import com.khalied.cukinggo.ui.theme.IceSoft
+import com.khalied.cukinggo.ui.theme.SteelText
+import com.khalied.cukinggo.ui.theme.IceAccent
 
 /**
  * Marker peta digambar sendiri supaya tidak butuh aset eksternal:
@@ -67,7 +67,7 @@ object CatMarkerRenderer {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = size * 0.025f
-                color = PawBrown.copy(alpha = 0.45f).toArgb()
+                color = SteelText.copy(alpha = 0.45f).toArgb()
             }
         )
 
@@ -93,11 +93,13 @@ object CatMarkerRenderer {
             cx, cy + size * 0.02f, radius,
             Paint(Paint.ANTI_ALIAS_FLAG).apply { color = SHADOW_COLOR }
         )
+        // Isian cluster lebih pekat dari marker kucing: angkanya teks di atas
+        // isian ini, dan IceAccent tidak lolos kontras untuk teks.
         canvas.drawCircle(
             cx, cy, radius,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = PeachAccent.toArgb()
+                color = IceDeep.toArgb()
             }
         )
         canvas.drawCircle(
@@ -113,7 +115,7 @@ object CatMarkerRenderer {
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = size * 0.025f
-                color = PawBrown.copy(alpha = 0.45f).toArgb()
+                color = SteelText.copy(alpha = 0.45f).toArgb()
             }
         )
 
@@ -121,7 +123,7 @@ object CatMarkerRenderer {
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(roundedTypeface(context), Typeface.BOLD)
-            color = InkSoft.toArgb()
+            color = 0xFFFFFFFF.toInt()
             textSize = when (label.length) {
                 1 -> size * 0.42f
                 2 -> size * 0.36f
@@ -144,7 +146,7 @@ object CatMarkerRenderer {
 
         canvas.drawCircle(
             center, center, size * 0.44f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = MintPop.copy(alpha = 0.22f).toArgb() }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = IceSoft.copy(alpha = 0.22f).toArgb() }
         )
         canvas.drawCircle(
             center, center + size * 0.015f, size * 0.24f,
@@ -156,7 +158,7 @@ object CatMarkerRenderer {
         )
         canvas.drawCircle(
             center, center, size * 0.155f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = MintPop.toArgb() }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = IceSoft.toArgb() }
         )
         return output
     }
@@ -176,7 +178,7 @@ object CatMarkerRenderer {
             ears,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = PeachAccent.toArgb()
+                color = IceAccent.toArgb()
             }
         )
         canvas.drawPath(
@@ -191,6 +193,6 @@ object CatMarkerRenderer {
     }
 
     private fun roundedTypeface(context: Context): Typeface =
-        runCatching { ResourcesCompat.getFont(context, R.font.fredoka) }.getOrNull()
+        runCatching { ResourcesCompat.getFont(context, R.font.inter) }.getOrNull()
             ?: Typeface.DEFAULT_BOLD
 }
