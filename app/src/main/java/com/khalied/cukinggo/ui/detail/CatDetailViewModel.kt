@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.khalied.cukinggo.data.repository.CatRepository
 import com.khalied.cukinggo.di.AppContainer
 import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatSighting
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,6 +63,18 @@ class CatDetailViewModel(
 
     fun retry() {
         refreshTrigger.value += 1
+    }
+
+    /**
+     * Menghapus satu kegiatan, yaitu satu penemuan saja.
+     *
+     * Beda dengan [deleteCat]: yang dibuang di sini cuma penemuan yang dipilih,
+     * sedangkan cukingnya tetap ada selama masih punya penemuan lain. Kalau ia
+     * penemuan terakhir, lapisan data yang menghapus profilnya, dan layarnya
+     * menampilkan keadaan "sudah tidak ada" seperti biasa.
+     */
+    fun deleteSighting(sighting: CatSighting) {
+        viewModelScope.launch { catRepository.deleteSighting(sighting) }
     }
 
     /**

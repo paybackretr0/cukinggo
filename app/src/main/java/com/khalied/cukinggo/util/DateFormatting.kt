@@ -11,6 +11,10 @@ private val dayFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", indonesian)
 private val dayLongFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", indonesian)
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", indonesian)
 
+/** Nama hari pendek dan tanggal pendek, dipakai batang grafik rekap mingguan. */
+private val shortDayFormatter = DateTimeFormatter.ofPattern("EEE", indonesian)
+private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", indonesian)
+
 private fun localDate(timestamp: Long): LocalDate =
     Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
 
@@ -32,6 +36,12 @@ fun formatFullDateTime(timestamp: Long): String {
     val day = dayLongFormatter.format(localDate(timestamp))
     return "$day, ${formatTime(timestamp)}"
 }
+
+/** Mis. "Sen" untuk batang grafik mingguan. */
+fun formatShortDay(date: LocalDate): String = shortDayFormatter.format(date)
+
+/** Mis. "23 Sep", dipakai rentang tanggal rekap mingguan. */
+fun formatShortDate(date: LocalDate): String = shortDateFormatter.format(date)
 
 fun formatCoordinates(latitude: Double, longitude: Double): String =
     // Koordinat selalu pakai titik desimal supaya tidak rancu dengan pemisah lat/lng.

@@ -76,10 +76,18 @@ class AddCatViewModel(
     val uiState: StateFlow<AddCatUiState> = _uiState.asStateFlow()
 
     /**
-     * Ambil GPS saat simpan (tanpa input manual), pindahkan foto ke internal
-     * storage, lalu simpan catatannya ke Room.
+     * Ambil GPS saat simpan (tanpa input manual), pindahkan foto dan videonya ke
+     * internal storage, lalu simpan catatannya ke Room.
+     *
+     * [videoCapture] null berarti pengguna tidak merekam apa-apa, dan itu memang
+     * pilihan yang sah: videonya opsional.
      */
-    fun saveCat(captureFile: File?, name: String, description: String) {
+    fun saveCat(
+        captureFile: File?,
+        name: String,
+        description: String,
+        videoCapture: File? = null
+    ) {
         if (captureFile == null || !captureFile.exists()) {
             _uiState.value = AddCatUiState.Error(R.string.add_error_no_photo)
             return
@@ -114,13 +122,19 @@ class AddCatViewModel(
                 val photoPath = withContext(Dispatchers.IO) {
                     imageStorageHelper.moveCaptureToInternalStorage(captureFile)
                 }
+                val videoPath = withContext(Dispatchers.IO) {
+                    videoCapture
+                        ?.takeIf { it.exists() }
+                        ?.let { imageStorageHelper.moveVideoToInternalStorage(it) }
+                }
                 if (isNewCat) {
                     catRepository.addCat(
                         photoPath = photoPath,
                         name = name,
                         description = description,
                         latitude = location.latitude,
-                        longitude = location.longitude
+                        longitude = location.longitude,
+                        videoPath = videoPath
                     )
                 } else {
                     catRepository.addSighting(
@@ -128,7 +142,8 @@ class AddCatViewModel(
                         photoPath = photoPath,
                         description = description,
                         latitude = location.latitude,
-                        longitude = location.longitude
+                        longitude = location.longitude,
+                        videoPath = videoPath
                     )
                 }
             }.onSuccess {

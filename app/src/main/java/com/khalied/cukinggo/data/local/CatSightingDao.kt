@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
  */
 private const val SIGHTING_WITH_NAME =
     "SELECT s.id AS id, s.catId AS catId, c.name AS catName, s.photoPath AS photoPath, " +
+        "s.videoPath AS videoPath, " +
         "s.description AS description, s.latitude AS latitude, s.longitude AS longitude, " +
         "s.timestamp AS timestamp FROM cat_sightings s INNER JOIN cats c ON c.id = s.catId"
 
@@ -89,6 +90,33 @@ interface CatSightingDao {
      */
     @Query("SELECT COUNT(*) FROM cat_sightings WHERE catId = :catId")
     suspend fun countSightingsForCat(catId: Long): Int
+
+    /**
+     * Mengubah catatan kegiatan satu penemuan. Null berarti catatannya
+     * dikosongkan. Lokasi dan waktunya tidak ikut: yang boleh diedit cuma apa
+     * yang ditulis pengguna, bukan fakta kapan dan di mana dia ketemu.
+     */
+    @Query("UPDATE cat_sightings SET description = :description WHERE id = :id")
+    suspend fun updateDescription(id: Long, description: String?)
+
+    /** Mengganti fotonya, misalnya saat fotonya jelek dan mau diganti. */
+    @Query("UPDATE cat_sightings SET photoPath = :photoPath WHERE id = :id")
+    suspend fun updatePhotoPath(id: Long, photoPath: String)
+
+    /** Foto yang sedang dipakai satu penemuan, dibaca sebelum fotonya diganti. */
+    @Query("SELECT photoPath FROM cat_sightings WHERE id = :id")
+    suspend fun getPhotoPath(id: Long): String?
+
+    /**
+     * Mengganti atau melepas videonya. Null berarti video pendampingnya dibuang,
+     * dan itu memang boleh: videonya opsional.
+     */
+    @Query("UPDATE cat_sightings SET videoPath = :videoPath WHERE id = :id")
+    suspend fun updateVideoPath(id: Long, videoPath: String?)
+
+    /** Video yang sedang dipakai satu penemuan, dibaca sebelum videonya diganti. */
+    @Query("SELECT videoPath FROM cat_sightings WHERE id = :id")
+    suspend fun getVideoPath(id: Long): String?
 
     @Query("DELETE FROM cat_sightings WHERE id = :id")
     suspend fun deleteSightingById(id: Long)

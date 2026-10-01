@@ -34,6 +34,19 @@ class MapClusteringTest {
     }
 
     @Test
+    fun `satu cuking yang muncul beberapa kali dihitung sekali`() {
+        val sightings = listOf(
+            sighting(1, -6.20000, 106.80000).copy(catId = 7),
+            sighting(2, -6.20010, 106.80010).copy(catId = 7),
+            sighting(3, -6.20020, 106.80005).copy(catId = 9)
+        )
+
+        val cluster = clusterSightings(sightings, zoomLevel = 10).single()
+
+        assertEquals("dua cuking berbeda, walau fotonya ada tiga", 2, cluster.count)
+    }
+
+    @Test
     fun `penemuan yang berjauhan tetap terpisah`() {
         val sightings = listOf(
             sighting(1, -6.2, 106.8), // Jakarta

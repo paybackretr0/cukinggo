@@ -25,6 +25,12 @@ internal object NearbyAlertNotifier {
 
     private const val CHANNEL_ID = "kucing_dekat"
 
+    /**
+     * Id tetap untuk kabar contoh. Dipisah dari id cukingnya supaya kabar uji coba
+     * tidak menimpa kabar sungguhan untuk cuking yang sama.
+     */
+    private const val TEST_NOTIFICATION_ID = 2_000_000_001
+
     /** Dibuat lebih awal supaya channel-nya sudah terlihat di pengaturan notifikasi HP. */
     fun ensureChannel(context: Context) {
         val channel = NotificationChannelCompat
@@ -37,11 +43,7 @@ internal object NearbyAlertNotifier {
     }
 
     fun post(context: Context, sighting: CatSighting) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        if (!canPost(context)) return
 
         ensureChannel(context)
 
@@ -69,6 +71,48 @@ internal object NearbyAlertNotifier {
         // kabar sebelumnya, jadi tidak menumpuk di bilah notifikasi.
         NotificationManagerCompat.from(context).notify(sighting.catId.toInt(), notification)
     }
+
+    /**
+     * Kabar contoh, dipakai tombol "coba kirim" di dialog kabar dekat.
+     *
+     * Fitur ini bisa gagal di banyak tempat tanpa terlihat (izin notifikasi, channel
+     * belum diizinkan, penghemat baterai yang menahan geofence), dan geofencenya
+     * baru berbunyi saat pengguna kebetulan lewat. Satu kabar yang diminta langsung
+     * oleh pengguna itulah cara membedakan "izinnya yang bermasalah" dari
+     * "memang belum lewat", tanpa menunggu kejadian yang tidak bisa dipaksa.
+     *
+     * Kalau ada catatan, isinya memakai cuking terakhir supaya bentuknya sama
+     * persis dengan kabar sungguhan; kalau koleksinya kosong, dipakai kalimat
+     * contoh yang menjelaskan bahwa ini cuma uji coba.
+     */
+    fun postTest(context: Context, sighting: CatSighting?) {
+        if (!canPost(context)) return
+
+        ensureChannel(context)
+
+        val name = sighting?.let { cat -> blankToNull(cat.catName) }
+        val note = sighting?.let { cat -> blankToNull(cat.description) }
+        val title = if (name != null) {
+            context.getString(R.string.nearby_alert_title_named, name)
+        } else {
+            context.getString(R.string.nearby_test_title)
+        }
+        val body = note ?: context.getString(R.string.nearby_test_body)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_paw)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(context).notify(TEST_NOTIFICATION_ID, notification)
+    }
+
+    private fun canPost(context: Context): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun openCatIntent(context: Context, sightingId: Long): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)

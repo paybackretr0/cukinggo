@@ -4,6 +4,8 @@
 
     <!-- Kamera: motret kucing yang ditemui -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Mikrofon: hanya untuk suara pada video pendamping, dan cuma saat merekam -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Lokasi: menandai titik ketemu kucing secara otomatis -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -21,6 +23,9 @@
 
     <uses-feature
         android:name="android.hardware.camera.any"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
         android:required="false" />
     <uses-feature
         android:name="android.hardware.location.gps"

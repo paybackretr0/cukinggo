@@ -18,6 +18,7 @@ class CatMappingTest {
             id = 7L,
             catId = 3L,
             photoPath = "/data/files/cat_7.jpg",
+            videoPath = "/data/files/cat_7.mp4",
             description = "Cuking oren di warung",
             latitude = -6.2,
             longitude = 106.816666,
@@ -30,6 +31,7 @@ class CatMappingTest {
         assertEquals(3L, sighting.catId)
         assertEquals("si Kumis", sighting.catName)
         assertEquals("/data/files/cat_7.jpg", sighting.photoPath)
+        assertEquals("/data/files/cat_7.mp4", sighting.videoPath)
         assertEquals("Cuking oren di warung", sighting.description)
         assertEquals(-6.2, sighting.latitude, 0.0)
         assertEquals(106.816666, sighting.longitude, 0.0)
@@ -52,6 +54,9 @@ class CatMappingTest {
         val sighting = row.toDomain()
 
         assertNull(sighting.description)
+        // Baris tanpa video tetap null, bukan string kosong: yang membedakan
+        // "foto saja" dari "ada videonya" cuma null di sini.
+        assertNull(sighting.videoPath)
         assertEquals("si Belang", sighting.catName)
         assertEquals(9L, sighting.id)
     }

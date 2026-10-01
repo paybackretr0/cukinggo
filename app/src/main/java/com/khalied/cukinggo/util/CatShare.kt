@@ -7,7 +7,7 @@ import java.io.File
 import java.util.Locale
 
 /**
- * Membuat intent "bagikan kucing": foto (kalau filenya masih ada) plus teks
+ * Membuat intent "bagikan cuking": foto (kalau filenya masih ada) plus teks
  * template berisi catatan, koordinat, dan link Google Maps.
  *
  * Fotonya dikirim lewat [FileProvider] yang sama dengan yang dipakai widget,
@@ -16,7 +16,7 @@ import java.util.Locale
  */
 fun catShareIntent(context: Context, photoPath: String, text: String): Intent {
     val intent = Intent(Intent.ACTION_SEND)
-    val photoUri = photoUriFor(context, photoPath)
+    val photoUri = mediaUriFor(context, photoPath)
 
     if (photoUri != null) {
         intent.type = "image/jpeg"
@@ -32,8 +32,48 @@ fun catShareIntent(context: Context, photoPath: String, text: String): Intent {
     return intent
 }
 
-private fun photoUriFor(context: Context, photoPath: String): android.net.Uri? {
-    val file = File(photoPath)
+/**
+ * Intent "bagikan video cuking": video pendamping plus teks yang sama dengan
+ * bagikan foto.
+ *
+ * Dipisah dari [catShareIntent] karena media yang dikirim berbeda, dan app
+ * penerima memilih jenis penanganan dari MIME type-nya: `video/mp4` membuka
+ * pemutar atau editor video, sedangkan `image/jpeg` membuka penampil foto.
+ */
+fun catVideoShareIntent(context: Context, videoPath: String, text: String): Intent {
+    val intent = Intent(Intent.ACTION_SEND)
+    val videoUri = mediaUriFor(context, videoPath)
+
+    if (videoUri != null) {
+        intent.type = "video/mp4"
+        intent.putExtra(Intent.EXTRA_STREAM, videoUri)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    } else {
+        // Videonya sudah tidak ada, tapi catatannya masih berguna.
+        intent.type = "text/plain"
+    }
+
+    intent.putExtra(Intent.EXTRA_TEXT, text)
+    return intent
+}
+
+/**
+ * Intent "bagikan teks saja": isi pesannya tanpa foto.
+ *
+ * Ada karena sebagian app, Instagram di antaranya, mengabaikan teks yang
+ * menempel pada gambar dan cuma mengambil fotonya. Lewat jalur teks ini
+ * pesannya tetap sampai, dan pengguna bisa memakainya sebagai caption atau
+ * mengirimnya sebagai pesan biasa.
+ */
+fun catTextShareIntent(text: String): Intent =
+    Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+
+/** URI content:// untuk satu file media app. Null kalau filenya sudah tidak ada. */
+private fun mediaUriFor(context: Context, path: String): android.net.Uri? {
+    val file = File(path)
     if (!file.isFile) return null
     return runCatching {
         FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)

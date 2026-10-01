@@ -13,8 +13,10 @@ import com.khalied.cukinggo.data.local.CatWithSightings
 import com.khalied.cukinggo.data.local.toDomain
 import com.khalied.cukinggo.data.local.toDomainOrNull
 import com.khalied.cukinggo.domain.model.Cat
+import com.khalied.cukinggo.domain.model.CatProfile
 import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.domain.model.latestPerCat
+import java.io.File
 import com.khalied.cukinggo.util.ImageStorageHelper
 import com.khalied.cukinggo.util.blankToNull
 import kotlinx.coroutines.CoroutineDispatcher
@@ -82,6 +84,17 @@ class CatRepository(
 
     /** Jumlah seluruh penemuan, dipakai chip jumlah. */
     fun observeSightingCount(): Flow<Int> = catSightingDao.observeSightingCount()
+
+    /**
+     * Profil semua cuking tanpa penemuannya, dipakai rekap mingguan untuk
+     * menghitung berapa cuking yang baru ditandai.
+     */
+    fun observeCatProfiles(): Flow<List<CatProfile>> =
+        catDao.observeAllCats().map { entities ->
+            entities.map { entity ->
+                CatProfile(id = entity.id, name = entity.name, createdAt = entity.createdAt)
+            }
+        }
 
     /** Penemuan terbaru, dipakai widget "Cuking terakhir". */
     suspend fun latestSighting(): CatSighting? = withContext(ioDispatcher) {
@@ -157,6 +170,7 @@ class CatRepository(
         description: String?,
         latitude: Double,
         longitude: Double,
+        videoPath: String? = null,
         timestamp: Long = System.currentTimeMillis()
     ): Long = withContext(ioDispatcher) {
         val catId = catDao.insertCat(
@@ -169,6 +183,7 @@ class CatRepository(
             CatSightingEntity(
                 catId = catId,
                 photoPath = photoPath,
+                videoPath = videoPath,
                 description = blankToNull(description),
                 latitude = latitude,
                 longitude = longitude,
@@ -191,12 +206,14 @@ class CatRepository(
         description: String?,
         latitude: Double,
         longitude: Double,
+        videoPath: String? = null,
         timestamp: Long = System.currentTimeMillis()
     ): Long = withContext(ioDispatcher) {
         val sightingId = catSightingDao.insertSighting(
             CatSightingEntity(
                 catId = catId,
                 photoPath = photoPath,
+                videoPath = videoPath,
                 description = blankToNull(description),
                 latitude = latitude,
                 longitude = longitude,
@@ -208,6 +225,55 @@ class CatRepository(
     }
 
     /**
+     * Mengganti nama panggilan satu cuking.
+     *
+     * Yang dikirim ke database sudah lewat [blankToNull], jadi nama yang isinya
+     * cuma spasi tersimpan sebagai "belum diisi" dan UI cukup memeriksa null.
+     */
+    suspend fun updateCatName(catId: Long, name: String?) = withContext(ioDispatcher) {
+        catDao.updateName(catId, blankToNull(name))
+        onCatsChanged()
+    }
+
+    /**
+     * Mengedit satu penemuan: catatan kegiatannya, fotonya, dan videonya. Video
+     * punya tiga kemungkinan yang tidak dimiliki foto: dibiarkan, diganti, atau
+     * dilepas. Foto tidak punya "dilepas" karena ia yang jadi wujud penemuan di
+     * daftar dan widget.
+     *
+     * Urutan pemindahan filenya penting: file baru dipindah ke internal storage
+     * dan dicatat ke database dulu, baru file lama dihapus. Kalau dibalik, ada
+     * saat file lama sudah hilang sedangkan file baru belum tersimpan, dan itu
+     * satu-satunya cara catatan ini bisa kehilangan medianya.
+     */
+    suspend fun updateSighting(
+        sightingId: Long,
+        description: String?,
+        newPhotoCapture: File?,
+        newVideoCapture: File? = null,
+        removeVideo: Boolean = false
+    ) = withContext(ioDispatcher) {
+        catSightingDao.updateDescription(sightingId, blankToNull(description))
+        if (newPhotoCapture != null && newPhotoCapture.exists()) {
+            val previousPath = catSightingDao.getPhotoPath(sightingId)
+            val newPath = imageStorageHelper.moveCaptureToInternalStorage(newPhotoCapture)
+            catSightingDao.updatePhotoPath(sightingId, newPath)
+            imageStorageHelper.deleteStoredFile(previousPath)
+        }
+        if (newVideoCapture != null && newVideoCapture.exists()) {
+            val previousVideo = catSightingDao.getVideoPath(sightingId)
+            val newPath = imageStorageHelper.moveVideoToInternalStorage(newVideoCapture)
+            catSightingDao.updateVideoPath(sightingId, newPath)
+            imageStorageHelper.deleteStoredFile(previousVideo)
+        } else if (removeVideo) {
+            val previousVideo = catSightingDao.getVideoPath(sightingId)
+            catSightingDao.updateVideoPath(sightingId, null)
+            imageStorageHelper.deleteStoredFile(previousVideo)
+        }
+        onCatsChanged()
+    }
+
+    /**
      * Menghapus satu penemuan.
      *
      * Kalau itu penemuan terakhir cukingnya, profilnya ikut terhapus: profil
@@ -215,17 +281,19 @@ class CatRepository(
      */
     suspend fun deleteSighting(sighting: CatSighting) = withContext(ioDispatcher) {
         catSightingDao.deleteSightingById(sighting.id)
-        imageStorageHelper.deletePhoto(sighting.photoPath)
+        imageStorageHelper.deleteStoredFile(sighting.photoPath)
+        imageStorageHelper.deleteStoredFile(sighting.videoPath)
         if (catSightingDao.countSightingsForCat(sighting.catId) == 0) {
             catDao.deleteCatById(sighting.catId)
         }
         onCatsChanged()
     }
 
-    /** Menghapus satu cuking beserta seluruh penemuannya dan fotonya. */
+    /** Menghapus satu cuking beserta seluruh penemuannya, fotonya, dan videonya. */
     suspend fun deleteCat(cat: Cat) = withContext(ioDispatcher) {
         cat.sightings.forEach { sighting ->
-            imageStorageHelper.deletePhoto(sighting.photoPath)
+            imageStorageHelper.deleteStoredFile(sighting.photoPath)
+            imageStorageHelper.deleteStoredFile(sighting.videoPath)
         }
         // Penemuannya dihapus lebih dulu, bukan mengandalkan CASCADE: urutannya
         // jadi benar walau penegakan foreign key di SQLite sedang tidak aktif.

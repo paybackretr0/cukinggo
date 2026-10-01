@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CatEntity::class, CatSightingEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class CatDatabase : RoomDatabase() {
@@ -91,6 +91,17 @@ abstract class CatDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Kolom video pendamping ditambahkan sebagai kolom terakhir yang boleh
+         * null, jadi catatan lama tinggal dibiarkan kosong dan artinya "foto
+         * saja". Tidak ada foto yang perlu disalin atau dibuang.
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cat_sightings ADD COLUMN videoPath TEXT")
+            }
+        }
+
         @Volatile
         private var instance: CatDatabase? = null
 
@@ -101,7 +112,7 @@ abstract class CatDatabase : RoomDatabase() {
                     CatDatabase::class.java,
                     DB_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }

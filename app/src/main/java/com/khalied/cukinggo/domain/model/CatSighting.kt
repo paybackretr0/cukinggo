@@ -3,6 +3,10 @@ package com.khalied.cukinggo.domain.model
 /**
  * Satu penemuan: satu foto, satu kegiatan, satu lokasi, dan satu waktu.
  *
+ * Video pendamping bersifat opsional: fotonya selalu ada karena dialah yang jadi
+ * wujud penemuan di daftar, peta, dan widget. Video menempel padanya kalau
+ * pengguna memang merekamnya, dan tidak pernah menggantikan fotonya.
+ *
  * Ini satu-satunya hal yang bisa ditambah, dan tidak pernah diubah setelah
  * tersimpan. Cukingnya sendiri diwakili [Cat], yang menampung semua penemuan
  * dari cuking yang sama.
@@ -14,6 +18,8 @@ data class CatSighting(
     /** Nama panggilan cukingnya, dibaca dari profilnya. Null artinya belum diberi nama. */
     val catName: String?,
     val photoPath: String,
+    /** File video pendamping. Null artinya penemuan ini foto saja. */
+    val videoPath: String? = null,
     /** Kegiatan cuking waktu ditemukan, ditulis apa adanya oleh pengguna. */
     val description: String?,
     val latitude: Double,

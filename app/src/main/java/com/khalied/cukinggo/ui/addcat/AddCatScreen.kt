@@ -59,10 +59,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
+import com.khalied.cukinggo.ui.components.CameraCaptureArea
 import com.khalied.cukinggo.ui.components.CatSaveCelebration
 import com.khalied.cukinggo.ui.components.InfoChip
+import com.khalied.cukinggo.ui.components.VideoSection
+import com.khalied.cukinggo.ui.components.standardBackCameraSelector
 import com.khalied.cukinggo.ui.components.PermissionCard
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
+import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.theme.InkSoft
 import com.khalied.cukinggo.ui.theme.MintPop
@@ -121,6 +125,8 @@ fun AddCatScreen(
     }
     var permissionsAsked by remember { mutableStateOf(false) }
     var captureFile by remember { mutableStateOf<File?>(null) }
+    var videoCapture by remember { mutableStateOf<File?>(null) }
+    var showVideoRecorder by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var cameraFailed by remember { mutableStateOf(false) }
@@ -168,7 +174,9 @@ fun AddCatScreen(
     val controller = remember {
         LifecycleCameraController(context).apply {
             setEnabledUseCases(CameraController.IMAGE_CAPTURE)
-            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            // Lensa utama, bukan kamera belakang pertama yang ditemukan sistem:
+            // urutan itu bisa menunjuk ke lensa ultra-wide di sebagian HP.
+            cameraSelector = standardBackCameraSelector()
         }
     }
 
@@ -272,9 +280,17 @@ fun AddCatScreen(
                         },
                         description = description,
                         onDescriptionChange = { description = it },
+                        videoCapture = videoCapture,
+                        onAddVideo = { showVideoRecorder = true },
+                        onRemoveVideo = {
+                            container.imageStorageHelper.discardCapture(videoCapture)
+                            videoCapture = null
+                        },
                         onRetake = {
                             container.imageStorageHelper.discardCapture(captureFile)
+                            container.imageStorageHelper.discardCapture(videoCapture)
                             captureFile = null
+                            videoCapture = null
                             viewModel.clearError()
                         }
                     )
@@ -282,12 +298,16 @@ fun AddCatScreen(
                     when (val state = uiState) {
                         is AddCatUiState.Error -> ErrorCard(
                             message = stringResource(state.messageRes),
-                            onRetry = { viewModel.saveCat(captureFile, name, description) },
+                            onRetry = {
+                                viewModel.saveCat(captureFile, name, description, videoCapture)
+                            },
                             onDismiss = viewModel::clearError
                         )
 
                         else -> Button(
-                            onClick = { viewModel.saveCat(captureFile, name, description) },
+                            onClick = {
+                                viewModel.saveCat(captureFile, name, description, videoCapture)
+                            },
                             enabled = !busy,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -328,6 +348,32 @@ fun AddCatScreen(
             }
         }
 
+        // Perekam video menutupi seluruh layar, sama seperti perayaan di bawah:
+        // merekam butuh fokus pada satu pratinjau, bukan form yang menggoda untuk
+        // diisi sambil memegang HP.
+        if (showVideoRecorder) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                PlayfulTopBar(
+                    title = stringResource(R.string.video_add),
+                    onBack = { showVideoRecorder = false }
+                )
+                VideoRecorder(
+                    onRecorded = { file ->
+                        videoCapture = file
+                        showVideoRecorder = false
+                    },
+                    onCancel = { showVideoRecorder = false },
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .navigationBarsPadding()
+                )
+            }
+        }
+
         // Digambar paling akhir supaya menutupi form yang baru diisi, bukan
         // menggeser isinya. Kalau catatan barusan memanjangkan rentetan harian,
         // pesannya berganti; gambar dan gerakannya tetap sama.
@@ -350,72 +396,6 @@ fun AddCatScreen(
 }
 
 @Composable
-private fun CameraCaptureArea(
-    controller: LifecycleCameraController,
-    cameraFailed: Boolean,
-    onCapture: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(3f / 4f)
-                .clip(MaterialTheme.shapes.extraLarge)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    PreviewView(context).apply {
-                        scaleType = PreviewView.ScaleType.FILL_CENTER
-                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                        this.controller = controller
-                    }
-                }
-            )
-            if (cameraFailed) {
-                Text(
-                    text = stringResource(R.string.add_error_camera),
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-
-        Text(
-            text = stringResource(R.string.add_camera_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Box(
-            modifier = Modifier
-                .size(76.dp)
-                .clip(CircleShape)
-                .background(PeachAccent)
-                .clickable(onClick = onCapture),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_paw),
-                contentDescription = stringResource(R.string.add_capture),
-                tint = InkSoft,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-    }
-}
-
-@Composable
 private fun PhotoReview(
     photoFile: File,
     name: String,
@@ -426,6 +406,10 @@ private fun PhotoReview(
     contextLabel: String?,
     description: String,
     onDescriptionChange: (String) -> Unit,
+    /** Video pendamping yang baru direkam, null kalau belum ada. */
+    videoCapture: File?,
+    onAddVideo: () -> Unit,
+    onRemoveVideo: () -> Unit,
     onRetake: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -498,6 +482,11 @@ private fun PhotoReview(
                 },
                 shape = MaterialTheme.shapes.large,
                 maxLines = 3
+            )
+            VideoSection(
+                videoPath = videoCapture?.absolutePath,
+                onAddVideo = onAddVideo,
+                onRemoveVideo = onRemoveVideo
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),

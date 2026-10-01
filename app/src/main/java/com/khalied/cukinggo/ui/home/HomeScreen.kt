@@ -122,6 +122,7 @@ fun HomeScreen(
     onAddCat: () -> Unit,
     onSightingClick: (Long) -> Unit,
     onSeeAllCats: () -> Unit,
+    onOpenWeeklyRecap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -408,6 +409,14 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .weight(1f)
                     ) {
+                        // Pintu ke rekap mingguan duduk di depan daftar, bukan di
+                        // header: headernya sudah penuh dengan judul, chip rentetan,
+                        // dan dua pill, dan menambah pill ketiga di situ akan
+                        // menyempitkan judul. Tempat ini juga membuat pintunya cuma
+                        // muncul saat memang ada catatan untuk direkap.
+                        WeeklyRecapRow(onClick = onOpenWeeklyRecap)
+                        Spacer(Modifier.height(10.dp))
+
                         // Baris ini cuma muncul kalau memang masih ada sisa: kalau
                         // koleksinya belum lebih dari lima, halaman daftarnya isinya
                         // sama persis dengan yang sudah ada di layar ini.
@@ -468,6 +477,7 @@ fun HomeScreen(
                 showNearbyDialog = false
             },
             onFixPermission = ::fixPermission,
+            onSendTest = { NearbyAlerts.sendTestAlert(context) },
             onDismiss = { showNearbyDialog = false }
         )
     }
@@ -657,6 +667,44 @@ private fun AppearancePill(onClick: () -> Unit, modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(R.string.appearance_button),
                 style = MaterialTheme.typography.labelMedium
+            )
+        }
+    }
+}
+
+/**
+ * Baris menuju rekap mingguan, duduk di atas baris "Lihat semua".
+ *
+ * Warnanya `primaryContainer`, beda dari baris "Lihat semua" yang
+ * `surfaceVariant`: rekap ini bukan daftar lain, tapi ringkasan yang dibaca
+ * sekilas, jadi ia boleh sedikit lebih menonjol. Tingginya 48dp supaya lolos tap
+ * target (R-03).
+ */
+@Composable
+private fun WeeklyRecapRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Row(
+            modifier = Modifier
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_calendar),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = stringResource(R.string.weekly_open),
+                style = MaterialTheme.typography.labelLarge
             )
         }
     }

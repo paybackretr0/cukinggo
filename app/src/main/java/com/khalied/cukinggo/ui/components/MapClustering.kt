@@ -8,9 +8,11 @@ import kotlin.math.pow
  * Pengelompokan marker untuk mode zoom jauh: penemuan yang berdekatan digabung
  * jadi satu gelembung angka supaya marker tidak saling menumpuk.
  *
- * Yang dikelompokkan adalah penemuannya, bukan cukingnya, karena peta di Home
- * menampilkan satu titik per penemuan: cuking yang sudah ketemu di tiga tempat
- * memang layak terlihat di tiga tempat.
+ * Angka di gelembungnya adalah jumlah cukingnya, bukan jumlah fotonya: satu
+ * cuking yang difoto tiga kali di area yang sama tetap terbaca "1", karena angka
+ * itu menjawab "ada berapa cuking di sini", bukan "berapa kali kami memotret".
+ * Titiknya sendiri tetap dihitung dari semua penemuan, supaya posisi gelembungnya
+ * mewakili sebaran foto yang sebenarnya.
  */
 internal data class SightingCluster(
     val cellLatitude: Int,
@@ -46,7 +48,7 @@ internal fun clusterSightings(
             cellLongitude = binKey.second,
             latitude = members.sumOf { it.latitude } / members.size,
             longitude = members.sumOf { it.longitude } / members.size,
-            count = members.size
+            count = members.distinctBy { sighting -> sighting.catId }.size
         )
     }
 }

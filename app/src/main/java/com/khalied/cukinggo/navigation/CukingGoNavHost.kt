@@ -35,14 +35,21 @@ import com.khalied.cukinggo.ui.components.LocalAnimatedVisibilityScope
 import com.khalied.cukinggo.ui.components.LocalSharedTransitionScope
 import com.khalied.cukinggo.ui.detail.CatDetailScreen
 import com.khalied.cukinggo.ui.detail.CatDetailViewModel
+import com.khalied.cukinggo.ui.editcat.EditCatScreen
+import com.khalied.cukinggo.ui.editcat.EditCatViewModel
 import com.khalied.cukinggo.ui.home.HomeScreen
 import com.khalied.cukinggo.ui.home.HomeViewModel
+import com.khalied.cukinggo.ui.weekly.WeeklyRecapScreen
+import com.khalied.cukinggo.ui.weekly.WeeklyRecapViewModel
 
 object Routes {
     const val HOME = "home"
 
     /** Daftar seluruh cuking, dibuka dari baris "Lihat semua" di Home. */
     const val CAT_LIST = "cat_list"
+
+    /** Rekap tujuh hari terakhir, dibuka dari baris "Rekap minggu ini" di Home. */
+    const val WEEKLY_RECAP = "weekly_recap"
 
     /** Nama argumennya dipakai juga saat membaca nilainya dari back stack entry. */
     const val ARG_CAPTURE = "capture"
@@ -61,6 +68,11 @@ object Routes {
      */
     const val ARG_SIGHTING_ID = "sightingId"
     const val CAT_DETAIL = "cat_detail/{$ARG_SIGHTING_ID}"
+
+    /** Edit satu penemuan: nama cukingnya, kegiatannya, dan fotonya. */
+    const val EDIT_CAT = "edit_cat/{$ARG_SIGHTING_ID}"
+
+    fun editCat(sightingId: Long) = "edit_cat/$sightingId"
 
     /** [capture] true berarti kamera langsung menjepret sendiri begitu siap. */
     fun addCat(capture: Boolean = false, catId: Long = NEW_CAT_ID) =
@@ -189,7 +201,8 @@ fun CukingGoNavHost(
                         onSightingClick = { sightingId ->
                             navController.navigate(Routes.catDetail(sightingId))
                         },
-                        onSeeAllCats = { navController.navigate(Routes.CAT_LIST) }
+                        onSeeAllCats = { navController.navigate(Routes.CAT_LIST) },
+                        onOpenWeeklyRecap = { navController.navigate(Routes.WEEKLY_RECAP) }
                     )
                 }
             }
@@ -262,6 +275,38 @@ fun CukingGoNavHost(
                 )
             }
 
+            composable(Routes.WEEKLY_RECAP) {
+                val viewModel: WeeklyRecapViewModel = viewModel(
+                    factory = WeeklyRecapViewModel.factory(container)
+                )
+                WeeklyRecapScreen(
+                    viewModel = viewModel,
+                    onSightingClick = { sightingId ->
+                        navController.navigate(Routes.catDetail(sightingId))
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Routes.EDIT_CAT,
+                arguments = listOf(
+                    navArgument(Routes.ARG_SIGHTING_ID) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val editSightingId = backStackEntry.arguments
+                    ?.getLong(Routes.ARG_SIGHTING_ID)
+                    ?: return@composable
+                val viewModel: EditCatViewModel = viewModel(
+                    factory = EditCatViewModel.factory(editSightingId, container)
+                )
+                EditCatScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
+                )
+            }
+
             composable(
                 route = Routes.CAT_DETAIL,
                 arguments = listOf(
@@ -282,6 +327,9 @@ fun CukingGoNavHost(
                         viewModel = viewModel,
                         onAddSighting = { catId ->
                             navController.navigate(Routes.addCat(catId = catId))
+                        },
+                        onEdit = { editSightingId ->
+                            navController.navigate(Routes.editCat(editSightingId))
                         },
                         onBack = { navController.popBackStack() }
                     )

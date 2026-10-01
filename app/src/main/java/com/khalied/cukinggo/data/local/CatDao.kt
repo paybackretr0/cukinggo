@@ -29,4 +29,21 @@ interface CatDao {
 
     @Query("DELETE FROM cats WHERE id = :id")
     suspend fun deleteCatById(id: Long)
+
+    /**
+     * Mengganti nama panggilan satu cuking. Null berarti namanya dikosongkan,
+     * dan itu memang boleh: nama sifatnya opsional.
+     */
+    @Query("UPDATE cats SET name = :name WHERE id = :id")
+    suspend fun updateName(id: Long, name: String?)
+
+    /**
+     * Profil semua cuking tanpa penemuannya.
+     *
+     * Dipakai rekap mingguan, yang cuma butuh "cuking ini baru ditandai kapan".
+     * Membaca seluruh penemuannya untuk itu akan menarik ratusan baris foto yang
+     * tidak dipakai.
+     */
+    @Query("SELECT * FROM cats")
+    fun observeAllCats(): Flow<List<CatEntity>>
 }

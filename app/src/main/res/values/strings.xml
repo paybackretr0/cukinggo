@@ -20,6 +20,9 @@
     <string name="error_load_title">Catatannya belum kebaca 😿</string>
     <string name="home_error_message">Coba sekali lagi, biasanya langsung beres.</string>
     <string name="home_delete_hint">Cukingnya dilepas 😿</string>
+    <string name="home_delete_confirm_title">Hapus catatan ini?</string>
+    <string name="home_delete_confirm_message">Catatan kegiatan &amp; fotonya bakal hilang permanen dari HP kamu.</string>
+    <string name="home_delete_confirm">Hapus</string>
     <string name="home_my_location">Ke lokasi kamu</string>
     <string name="map_offline_notice">Peta butuh internet buat gambarnya. Catatan cukingmu tetap aman di HP.</string>
     <string name="map_tiles_failed_notice">Peta belum bisa dimuat. Coba lagi ya.</string>
@@ -31,6 +34,7 @@
     <string name="add_title">Tandai cuking baru</string>
     <string name="add_again_title">Tandai ketemu lagi</string>
     <string name="add_camera_hint">Arahkan ke cukingnya, lalu jepret 📸</string>
+    <string name="add_camera_zoom_hint">Masih jauh? Cubit layarnya, atau pakai tombol zoom di atas.</string>
     <string name="add_capture">Jepret</string>
     <string name="add_retake">Ambil ulang</string>
     <string name="add_name_label">Nama cuking</string>
@@ -49,6 +53,20 @@
     <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
     <string name="add_error_save">Cukingnya gagal disimpan. Coba sekali lagi ya.</string>
     <string name="add_retry">Coba lagi</string>
+    <string name="video_section_label">Video (opsional)</string>
+    <string name="video_section_support">Fotonya tetap jadi wujud utama. Video cuma teman, kalau kamu sempat merekam.</string>
+    <string name="video_add">Tambah video</string>
+    <string name="video_change">Ganti video</string>
+    <string name="video_remove">Hapus video</string>
+    <string name="video_ready_hint">Videonya siap. Ketuk Simpan buat menyimpannya bareng fotonya.</string>
+    <string name="video_camera_hint">Tekan tombol buat mulai merekam 🎥</string>
+    <string name="video_record_start">Mulai merekam</string>
+    <string name="video_record_stop">Stop</string>
+    <string name="video_recording">Lagi merekam…</string>
+    <string name="video_error_record">Rekamannya gagal diproses. Coba sekali lagi ya.</string>
+    <string name="video_error_mic">Izin mikrofonnya mati, jadi suaranya nggak ikut terekam. Buka Pengaturan buat menyalakannya.</string>
+    <string name="cd_cat_video">Video cuking</string>
+    <string name="video_play">Putar video cuking</string>
     <string name="add_saved_celebration">Cukingnya udah ditandain! 🐾</string>
     <string name="add_saved_sighting">Ketemu dia lagi! 🐾</string>
     <string name="add_saved_streak">Rentetanmu makin panjang!</string>
@@ -81,6 +99,26 @@
     <string name="detail_trail_caption">Garis menghubungkan tiap tempat dia ketemu. Yang lebih terang berarti lebih baru.</string>
     <string name="detail_loading">Lagi membuka catatannya…</string>
     <string name="detail_error_message">Coba sekali lagi ya.</string>
+    <string name="detail_delete_sighting">Hapus kegiatan ini?</string>
+    <string name="detail_delete_sighting_message">Foto &amp; kegiatan ini bakal hilang permanen dari HP kamu.</string>
+    <string name="detail_delete_sighting_confirm">Hapus kegiatan</string>
+    <string name="detail_sighting_delete_cd">Hapus kegiatan ini</string>
+
+    <!-- Edit catatan -->
+    <string name="edit_title">Edit catatan cuking</string>
+    <string name="edit_open">Edit catatan</string>
+    <string name="edit_loading">Lagi membuka catatannya…</string>
+    <string name="edit_saving">Lagi menyimpan perubahan…</string>
+    <string name="edit_missing">Catatannya sudah nggak ada.</string>
+    <string name="edit_name_label">Nama cuking</string>
+    <string name="edit_name_hint">Misal: si Kumis, si Belang</string>
+    <string name="edit_activity_label">Kegiatan waktu itu</string>
+    <string name="edit_activity_hint">Cukingnya lagi ngapain waktu itu? (opsional)</string>
+    <string name="edit_change_photo">Ganti foto</string>
+    <string name="edit_new_photo_hint">Foto barunya belum disimpan. Ketuk Simpan buat menerapkannya.</string>
+    <string name="edit_video_hint">Videonya baru berubah setelah Simpan ditekan.</string>
+    <string name="edit_save">Simpan perubahan</string>
+    <string name="edit_error_save">Perubahannya gagal disimpan. Coba sekali lagi ya.</string>
 
     <!-- Bagikan -->
     <string name="share_button">Bagikan cuking ini</string>
@@ -89,6 +127,30 @@
     <string name="share_message_with_note">Ketemu cuking di CukingGo 🐾\n\n%1$s\n\nDia nongkrong di:\n📍 %2$s\nLihat di Google Maps:\n%3$s</string>
     <string name="share_message_named">Ketemu cuking di CukingGo 🐾\n\nNamanya %1$s.\n\nDia nongkrong di:\n📍 %2$s\nLihat di Google Maps:\n%3$s</string>
     <string name="share_message_named_with_note">Ketemu cuking di CukingGo 🐾\n\nNamanya %1$s.\n\n%2$s\n\nDia nongkrong di:\n📍 %3$s\nLihat di Google Maps:\n%4$s</string>
+    <string name="share_options_title">Mau dibagikan seperti apa?</string>
+    <string name="share_option_photo_and_text">Foto + teks</string>
+    <string name="share_option_photo_and_text_desc">Paling pas buat WhatsApp, Telegram, dan app yang baca caption-nya.</string>
+    <string name="share_option_video_and_text">Video + teks</string>
+    <string name="share_option_video_and_text_desc">Buat yang mau ikut mengirim gerak-gerik cukingnya, bukan cuma fotonya.</string>
+    <string name="share_option_text_only">Teks saja</string>
+    <string name="share_option_text_only_desc">Buat Instagram dan app yang nggak baca caption foto.</string>
+    <string name="share_option_copy_text">Salin teks</string>
+    <string name="share_option_copy_text_desc">Tempel sendiri di caption atau kirim sebagai pesan biasa.</string>
+    <string name="share_chooser_text_title">Bagikan teksnya lewat mana?</string>
+    <string name="share_copy_done">Teksnya disalin. Tempel di caption Instagram ya 📋</string>
+
+    <!-- Rekap mingguan -->
+    <string name="weekly_open">Rekap minggu ini</string>
+    <string name="weekly_title">Rekap minggu ini</string>
+    <string name="weekly_range">%1$s sampai %2$s</string>
+    <string name="weekly_stat_sightings">%1$d ketemu</string>
+    <string name="weekly_stat_new_cats">%1$d cuking baru</string>
+    <string name="weekly_stat_active_days">%1$d hari aktif</string>
+    <string name="weekly_chart_title">Ketemu per hari</string>
+    <string name="weekly_chart_day">%1$s: %2$d penemuan</string>
+    <string name="weekly_cats_title">Cuking minggu ini</string>
+    <string name="weekly_empty_title">Minggu ini belum ada catatan</string>
+    <string name="weekly_empty_subtitle">Jepret cuking pertamamu minggu ini, nanti rekapnya muncul di sini.</string>
 
     <!-- Rentetan harian -->
     <string name="streak_chip">%1$d hari beruntun</string>
@@ -121,6 +183,9 @@
     <string name="nearby_alert_title">Cuking di dekat sini 🐱</string>
     <string name="nearby_alert_title_named">%1$s di dekat sini 🐱</string>
     <string name="nearby_alert_body">Kamu pernah nandain cuking di sekitar sini.</string>
+    <string name="nearby_test_action">Coba kirim notifikasi</string>
+    <string name="nearby_test_title">Notifikasi CukingGo jalan! 🐱</string>
+    <string name="nearby_test_body">Kalau baris ini kelihatan, berarti izin notifikasinya sudah oke. Kabar dekat cuking bakal muncul seperti ini.</string>
 
     <!-- Tampilan: tema + bentuk widget -->
     <string name="appearance_button">Tampilan</string>

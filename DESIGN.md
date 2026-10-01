@@ -469,6 +469,72 @@ Batas yang diketahui: belum pernah dilihat di perangkat, dan tidak ada unit test
 untuk jarak Compose. Yang membuktikan tanpa perangkat cuma perubahan satu tempat
 (lebar kolom tidak berubah, jadi tidak ada risiko layout baru).
 
+## Delapan perbaikan pemakaian harian (permintaan pemilik, sesi 2026-10-01)
+
+Sekumpulan keluhan nyata saat memakai app sehari-hari, dari angka peta yang salah
+sampai kamera yang memilih lensa terlalu lebar. Dial tetap
+**ENERGY 2 / RHYTHM 2 / MOTION 2**; tidak ada momen bintang baru, dan gerakan yang
+sudah ada (marker pop-in, perayaan simpan) tidak ditambah.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Angka di gelembung peta menghitung cuking, bukan foto:** angka itu menjawab "ada berapa cuking di sini", dan satu cuking yang difoto tiga kali di area yang sama memang satu cuking; titik tengahnya tetap dirata-ratakan dari semua penemuan supaya posisinya mewakili sebaran fotonya.
+- **Rekap mingguan jadi halaman sendiri, bukan notifikasi:** pemilik memilih halaman, dan halaman bisa dibaca kapan saja tanpa menyalahkan pengguna karena belum membukanya.
+- **Rekap dihitung ulang dari catatan yang ada, bukan angka tersimpan:** alasannya sama dengan rentetan harian, jadi kalau catatan dihapus atau jam bergeser, rekapnya langsung ikut benar.
+- **Batang grafik mingguan selalu berisi tujuh hari, termasuk hari kosong:** yang ingin dilihat justru hari yang bolong, dan jumlah batang yang tetap membuat lebar grafiknya tidak melompat-lompat.
+- **Pintu rekap duduk di depan daftar Home, bukan pill ketiga di header:** header sengaja cuma punya dua pill supaya judulnya tidak menyempit, dan pintu ini juga jadi cuma muncul saat memang ada catatan untuk direkap.
+- **Warna baris rekap `primaryContainer`, beda dari baris "Lihat semua":** rekap itu ringkasan yang dibaca sekilas, bukan daftar lain, jadi ia boleh sedikit lebih menonjol.
+- **Edit digabung satu layar (nama, kegiatan, foto):** yang diubah pengguna biasanya satu catatan yang sama, dan memecahnya jadi tiga aksi membuat tiap perubahan kecil butuh perjalanan sendiri.
+- **Foto baru baru dipindah ke storage tetap saat Simpan ditekan:** keluar dari layar edit tanpa menyimpan jadi tidak meninggalkan file sisa di cache.
+- **Foto lama dihapus setelah foto baru tercatat:** kalau dibalik, ada saat foto lama sudah hilang sedangkan foto baru belum masuk, dan itu satu-satunya cara catatan kehilangan fotonya.
+- **Lokasi dan waktu penemuan tidak ikut bisa diedit:** yang boleh diubah cuma apa yang ditulis pengguna; kapan dan di mana dia ketemu itu fakta, bukan isian.
+- **Isian form diedit sekali dari catatannya, bukan diikat ke flow:** kalau diikat, ketikan pengguna akan tertimpa nilainya sendiri setiap kali simpan gagal.
+- **Hapus kegiatan lewat ikon di baris riwayat, bukan swipe:** baris riwayat juga dipakai untuk memilih, dan satu baris yang bisa disapu sekaligus disentuh untuk memilih akan sulit dibedakan; tombol eksplisit juga lebih jelas bagi TalkBack.
+- **Swipe di daftar sekarang bertanya dulu:** kartunya balik ke tempatnya lalu muncul pertanyaan, karena satu catatan berisi foto dan cerita yang tidak bisa dikembalikan dan tidak boleh hilang cuma karena jari tergelincir.
+- **Bagikan punya pilihan "teks saja" dan "salin teks":** Instagram dan sebagian app lain mengabaikan teks yang menempel pada gambar, dan itu perilaku app penerimanya yang tidak bisa dipaksa dari sini; dengan pilihan ini pengguna tetap bisa membawa teksnya sendiri.
+- **Kamera memilih lensa dari panjang fokus setara terdekat 26 mm, bukan kamera belakang pertama:** urutan kamera bisa menunjuk lensa ultra-wide di sebagian HP, dan lensa utamanya dikenali dari angka, bukan dari urutan itu.
+- **Zoom tersedia lewat cubitan dan tombol angka:** tombolnya yang membuat kemampuannya kelihatan tanpa menebak, sedangkan cubitan yang membuatnya terasa seperti kamera biasa; angka yang muncul hanya yang memang didukung kamera.
+- **Area kamera jadi satu komponen bersama untuk menandai dan mengedit:** dua layar yang sama-sama memotret tidak boleh punya dua versi pratinjau yang bisa saling menyimpang, apalagi setelah ada zoom.
+- **Channel notifikasi dibuat sejak app dibuka, dan area pantauan disinkronkan saat app dibuka:** tanpa itu, channel baru ada setelah dialognya disentuh, dan area yang belum tersinkron tidak akan pernah berbunyi.
+- **Ada tombol "coba kirim notifikasi" di dialog kabar dekat:** fitur ini bisa gagal di banyak tempat tanpa terlihat (izin, channel, penghemat baterai), dan geofencenya baru berbunyi kalau pengguna kebetulan lewat; satu kabar yang diminta langsung memisahkan "izinnya bermasalah" dari "memang belum lewat".
+
+Batas yang diketahui: semua ini belum pernah dijalankan di perangkat. Yang paling
+belum terbukti: apakah pemilihan lensa dari panjang fokus menunjuk lensa yang benar
+di semua HP (sebagian perangkat tidak melaporkan ukuran sensor dengan jujur), apakah
+cubitan zoom terasa mulus di atas PreviewView, apakah teks yang disalin bisa
+ditempel di caption Instagram sesuai harapan, dan apakah kabar uji coba benar-benar
+muncul di HP yang notifikasinya diblokir sistem. Perilaku geofence yang butuh
+perjalanan nyata juga belum diuji.
+
+## Video pendamping di penemuan (permintaan pemilik, sesi 2026-10-01)
+
+Satu penemuan sekarang boleh punya video di samping fotonya: direkam dari layar
+kamera, diputar di layar detail, diubah di layar edit, dan ikut bisa dibagikan.
+Dial tetap **ENERGY 2 / RHYTHM 2 / MOTION 2**; tidak ada momen bintang baru dan
+tidak ada kosakata gerak baru.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Foto tetap wajib, video opsional:** foto yang jadi wujud penemuan di daftar, peta, dan widget, jadi menghilangkannya akan memaksa thumbnail dibuat dari frame video dan menyeret perubahan ke semua tempat itu; video menempel pada foto, bukan menggantikannya.
+- **Satu penemuan bisa punya keduanya, bukan salah satu:** permintaan pemiliknya begitu, dan hasilnya juga lebih berguna: daftar tetap punya foto, sedangkan yang mau gerak-geriknya membuka detailnya.
+- **Video disimpan di kolom `videoPath` yang boleh null, bukan tabel baru:** hubungannya tetap satu-ke-satu dengan penemuan, jadi tabel baru cuma menambah join tanpa menambah kemampuan.
+- **Migrasi Room 3 ke 4 cuma menambah satu kolom nullable:** catatan lama tidak perlu diisi apa-apa, dan artinya "foto saja" sudah terwakili oleh null.
+- **Mikrofon diminta di layar perekam, bukan di gerbang izin layar kamera:** izin itu baru berguna saat pengguna memang memilih merekam, dan memintanya lebih awal menambah satu dialog di alur satu jepret.
+- **Tombol rekam dimatikan saat izin mikrofon ditolak, bukan merekam tanpa suara:** CameraX melempar SecurityException kalau audio diminta tanpa izin, jadi tombol yang jujur mati lebih baik daripada rekaman yang gagal setelah beberapa detik; ada tombol "Buka pengaturan" di sebelah alasannya.
+- **Pemutar memakai `VideoView` bawaan platform, bukan pemutar pihak ketiga:** yang diputar selalu mp4 lokal buatan kamera sendiri dan kontrol dasarnya sudah disediakan sistem, jadi menambah pustaka pemutar penuh tidak sebanding dengan manfaatnya.
+- **Kontrol pemutar tidak dipaksa muncul saat video siap:** pemutar yang membuka kontrolnya tanpa diminta justru menutupi videonya sendiri; ketukan di video yang memunculkannya, seperti pemutar biasa.
+- **Perekam video jadi satu komponen utuh, bukan potongan yang disusun ulang di tiap layar:** dua layar memakainya (tandai baru dan edit) dengan urutan pengelolaan yang sama persis.
+- **Video ditaruh tepat di bawah foto di layar detail, dan di kartu yang sama saat review:** ia pasangan fotonya, jadi yang mencari gerak-gerik cukingnya mencarinya di tempat yang sama.
+- **Opsi bagikan video muncul hanya kalau videonya memang ada:** tombol yang tidak punya file untuk dikirim akan terbaca sebagai kontrol rusak (R-26).
+- **Video lama dihapus setelah video baru tercatat:** alasannya sama dengan penggantian foto, dan itu satu-satunya cara catatan kehilangan medianya.
+- **Video yang belum disimpan baru dipindah ke storage tetap saat Simpan ditekan:** keluar dari layar tanpa menyimpan tidak meninggalkan file sisa di cache.
+
+Batas yang diketahui: belum pernah dijalankan di perangkat. Yang paling belum
+terbukti: apakah `VideoView` di dalam `LazyColumn` layar detail tidak berkedip saat
+digulir, apakah rekaman dengan suara langsung jalan setelah izin mikrofon diberikan,
+dan apakah ukuran file video tidak terlalu besar untuk kebiasaan menandai cuking
+tiap hari. Foto yang tidak punya video tetap tampil persis seperti sebelumnya.
+
 ## Override yang perlu keputusan pemilik produk
 
 - **R-11 (variasi border radius) vs spec 14.1:** spec minta semua elemen membulat tanpa sudut tajam, sedangkan R-11 melarang semua elemen berbentuk pill tanpa variasi radius.

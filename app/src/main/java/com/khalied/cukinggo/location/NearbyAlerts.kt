@@ -50,6 +50,23 @@ internal object NearbyAlerts {
         syncAsync(appContext)
     }
 
+    /**
+     * Mengirim satu kabar contoh sekarang juga, dari tombol "coba kirim" di dialog.
+     *
+     * Catatan terakhir dipakai sebagai isinya kalau ada, supaya bentuk kabarnya
+     * sama dengan kabar sungguhan; kalau koleksinya masih kosong, notifier-nya
+     * mengirim kalimat contoh.
+     */
+    fun sendTestAlert(context: Context) {
+        val appContext = context.applicationContext
+        scope.launch {
+            val sighting = runCatching {
+                appContext.appContainer.catRepository.latestSighting()
+            }.getOrNull()
+            NearbyAlertNotifier.postTest(appContext, sighting)
+        }
+    }
+
     /** Dipanggil saat app dibuka, saat data kucing berubah, dan setelah izin dilihat ulang. */
     fun syncAsync(context: Context) {
         val appContext = context.applicationContext

@@ -1,6 +1,8 @@
 package com.khalied.cukinggo.ui.detail
 
 import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,8 +40,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -54,6 +59,7 @@ import com.khalied.cukinggo.ui.components.CatGoodbyeCelebration
 import com.khalied.cukinggo.ui.components.CatMapView
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
+import com.khalied.cukinggo.ui.components.VideoPlayer
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.components.buildTrails
 import com.khalied.cukinggo.ui.components.sharedCatPhoto
@@ -63,6 +69,8 @@ import com.khalied.cukinggo.ui.theme.MintPop
 import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.util.catShareIntent
+import com.khalied.cukinggo.util.catTextShareIntent
+import com.khalied.cukinggo.util.catVideoShareIntent
 import com.khalied.cukinggo.util.blankToNull
 import com.khalied.cukinggo.util.distanceMeters
 import com.khalied.cukinggo.util.formatCoordinates
@@ -101,6 +109,7 @@ private const val LOCATION_MAP_HEIGHT_DP = 220
 fun CatDetailScreen(
     viewModel: CatDetailViewModel,
     onAddSighting: (Long) -> Unit,
+    onEdit: (Long) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -191,6 +200,8 @@ fun CatDetailScreen(
                             distanceFromUser = distanceFromUser,
                             onSelectSighting = { sighting -> selectedSightingId = sighting.id },
                             onAddSighting = { onAddSighting(state.cat.id) },
+                            onEdit = { onEdit(selectedSighting.id) },
+                            onDeleteSighting = viewModel::deleteSighting,
                             onDeleteRequest = { showDeleteDialog = true },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -265,9 +276,18 @@ private fun DetailContent(
     distanceFromUser: Double?,
     onSelectSighting: (CatSighting) -> Unit,
     onAddSighting: () -> Unit,
+    onEdit: () -> Unit,
+    onDeleteSighting: (CatSighting) -> Unit,
     onDeleteRequest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showShareOptions by remember { mutableStateOf(false) }
+    // Penemuan yang sedang ditanyakan mau dihapus, null berarti tidak ada
+    // pertanyaan yang terbuka.
+    var sightingToDelete by remember { mutableStateOf<CatSighting?>(null) }
+
+    val shareMessage = shareMessageFor(selectedSighting)
+
     LazyColumn(
         modifier = modifier
             .navigationBarsPadding()
@@ -290,6 +310,21 @@ private fun DetailContent(
                         clip = MaterialTheme.shapes.extraLarge
                     )
             )
+        }
+
+        // Video pendamping ditaruh tepat di bawah fotonya, bukan di bagian lain:
+        // ia pasangan dari foto itu, dan yang mencari gerak-gerik cukingnya akan
+        // mencarinya di tempat yang sama dengan fotonya.
+        selectedSighting.videoPath?.let { videoPath ->
+            item {
+                VideoPlayer(
+                    videoPath = videoPath,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(3f / 4f)
+                        .clip(MaterialTheme.shapes.extraLarge)
+                )
+            }
         }
 
         item {
@@ -398,7 +433,35 @@ private fun DetailContent(
             }
         }
 
-        item { ShareCatButton(sighting = selectedSighting) }
+        item { ShareCatButton(onClick = { showShareOptions = true }) }
+
+        // Edit duduk di bawah bagikan dan di atas riwayat: ia mengubah catatan yang
+        // sedang dilihat di atas (nama cukingnya dan kegiatan di penemuan ini),
+        // bukan salah satu baris riwayat.
+        item {
+            Button(
+                onClick = onEdit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_paw),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = stringResource(R.string.edit_open),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
 
         // Riwayat cuma ditampilkan kalau memang ada lebih dari satu penemuan:
         // dengan satu penemuan, isinya sama persis dengan foto di atas, dan
@@ -419,7 +482,8 @@ private fun DetailContent(
                 SightingHistoryRow(
                     sighting = sighting,
                     selected = sighting.id == selectedSighting.id,
-                    onClick = { onSelectSighting(sighting) }
+                    onClick = { onSelectSighting(sighting) },
+                    onDelete = { sightingToDelete = sighting }
                 )
             }
         }
@@ -450,6 +514,28 @@ private fun DetailContent(
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+    }
+
+    if (showShareOptions) {
+        ShareOptionsDialog(
+            sighting = selectedSighting,
+            message = shareMessage,
+            onDismiss = { showShareOptions = false }
+        )
+    }
+
+    // Dialognya dibuka dari baris riwayat, dan yang dihapus adalah penemuan yang
+    // ditunjuk baris itu. Kalau memang cuma tersisa satu penemuan, baris riwayatnya
+    // tidak ada, dan menghapusnya tetap lewat tombol "Hapus cuking ini" di bawah.
+    val pendingDelete = sightingToDelete
+    if (pendingDelete != null) {
+        DeleteSightingDialog(
+            onConfirm = {
+                sightingToDelete = null
+                onDeleteSighting(pendingDelete)
+            },
+            onDismiss = { sightingToDelete = null }
+        )
     }
 }
 
@@ -540,6 +626,7 @@ private fun SightingHistoryRow(
     sighting: CatSighting,
     selected: Boolean,
     onClick: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -600,27 +687,36 @@ private fun SightingHistoryRow(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            // Hapus satu kegiatan: yang dibuang cuma penemuan ini, bukan cukingnya,
+            // jadi tombolnya menempel di baris yang mewakilinya.
+            IconButton(onClick = onDelete) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete),
+                    contentDescription = stringResource(R.string.detail_sighting_delete_cd),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
 
 /**
- * Tombol bagikan: foto satu penemuan dikirim bersama template chat berisi nama
- * cuking, catatan (kalau ada), koordinat, dan link Google Maps.
+ * Isi pesan bagikan: template chat berisi nama cuking, catatan (kalau ada),
+ * koordinat, dan link Google Maps.
  *
- * Isi pesannya sengaja disusun dari string resource, bukan ditempel di kode,
- * supaya kalimatnya gampang diganti tanpa menyentuh logika intent-nya. Template
- * dipilih dari dua hal yang boleh kosong, yaitu nama dan catatan.
+ * Template-nya dari string resource, bukan ditempel di kode, supaya kalimatnya
+ * gampang diganti tanpa menyentuh logika intent-nya. Dipilih dari dua hal yang
+ * boleh kosong, yaitu nama dan catatan.
  */
 @Composable
-private fun ShareCatButton(sighting: CatSighting, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+private fun shareMessageFor(sighting: CatSighting): String {
     val name = blankToNull(sighting.catName)
     val note = blankToNull(sighting.description)
     val coordinates = formatCoordinates(sighting.latitude, sighting.longitude)
     val mapsLink = mapsLinkFor(sighting.latitude, sighting.longitude)
 
-    val message = when {
+    return when {
         name != null && note != null -> stringResource(
             R.string.share_message_named_with_note, name, note, coordinates, mapsLink
         )
@@ -635,17 +731,13 @@ private fun ShareCatButton(sighting: CatSighting, modifier: Modifier = Modifier)
 
         else -> stringResource(R.string.share_message, coordinates, mapsLink)
     }
-    val chooserTitle = stringResource(R.string.share_chooser_title)
+}
 
+/** Tombol bagikan; pilihan bentuk bagikannya ada di [ShareOptionsDialog]. */
+@Composable
+private fun ShareCatButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(
-        onClick = {
-            context.startActivity(
-                Intent.createChooser(
-                    catShareIntent(context, sighting.photoPath, message),
-                    chooserTitle
-                )
-            )
-        },
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(54.dp),
@@ -666,6 +758,162 @@ private fun ShareCatButton(sighting: CatSighting, modifier: Modifier = Modifier)
             style = MaterialTheme.typography.labelLarge
         )
     }
+}
+
+/**
+ * Pilihan bentuk bagikan.
+ *
+ * Ada teks-saja dan salin-teks, bukan cuma foto+teks, karena sebagian app besar
+ * (Instagram di antaranya) mengabaikan teks yang menempel pada gambar dan cuma
+ * mengambil fotonya. Dengan pilihan ini pengguna tetap bisa membawa teksnya
+ * (kirim sebagai teks, atau salin lalu tempel sendiri di caption), jadi hasilnya
+ * tidak lagi bergantung pada selera app penerimanya.
+ */
+@Composable
+private fun ShareOptionsDialog(
+    sighting: CatSighting,
+    message: String,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    val chooserTitle = stringResource(R.string.share_chooser_title)
+    val textChooserTitle = stringResource(R.string.share_chooser_text_title)
+    val copiedMessage = stringResource(R.string.share_copy_done)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = stringResource(R.string.share_options_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                sighting.videoPath?.let { videoPath ->
+                    ShareOptionRow(
+                        title = stringResource(R.string.share_option_video_and_text),
+                        description = stringResource(R.string.share_option_video_and_text_desc),
+                        onClick = {
+                            onDismiss()
+                            context.startActivity(
+                                Intent.createChooser(
+                                    catVideoShareIntent(context, videoPath, message),
+                                    chooserTitle
+                                )
+                            )
+                        }
+                    )
+                }
+                ShareOptionRow(
+                    title = stringResource(R.string.share_option_photo_and_text),
+                    description = stringResource(R.string.share_option_photo_and_text_desc),
+                    onClick = {
+                        onDismiss()
+                        context.startActivity(
+                            Intent.createChooser(
+                                catShareIntent(context, sighting.photoPath, message),
+                                chooserTitle
+                            )
+                        )
+                    }
+                )
+                ShareOptionRow(
+                    title = stringResource(R.string.share_option_text_only),
+                    description = stringResource(R.string.share_option_text_only_desc),
+                    onClick = {
+                        onDismiss()
+                        context.startActivity(
+                            Intent.createChooser(catTextShareIntent(message), textChooserTitle)
+                        )
+                    }
+                )
+                ShareOptionRow(
+                    title = stringResource(R.string.share_option_copy_text),
+                    description = stringResource(R.string.share_option_copy_text_desc),
+                    onClick = {
+                        onDismiss()
+                        clipboard.setText(AnnotatedString(message))
+                        Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_close))
+            }
+        }
+    )
+}
+
+@Composable
+private fun ShareOptionRow(
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** Pertanyaan sebelum satu kegiatan dihapus dari riwayat. */
+@Composable
+private fun DeleteSightingDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = stringResource(R.string.detail_delete_sighting),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.detail_delete_sighting_message),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(
+                    text = stringResource(R.string.detail_delete_sighting_confirm),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }
 
 /** Tampilan untuk keadaan selain "catatan siap": memuat, sudah dihapus, atau gagal baca. */

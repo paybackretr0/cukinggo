@@ -55,6 +55,7 @@ fun NearbyAlertDialog(
     onTurnOff: () -> Unit,
     onRadiusChange: (NearbyRadius) -> Unit,
     onFixPermission: () -> Unit,
+    onSendTest: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -131,6 +132,18 @@ fun NearbyAlertDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // Cuma muncul saat fiturnya memang sudah aktif: di keadaan izin
+                // yang belum lengkap, tombol ini cuma akan diam-diam gagal.
+                if (state == NearbyAlertState.ACTIVE) {
+                    Spacer(Modifier.height(10.dp))
+                    TextButton(onClick = onSendTest) {
+                        Text(
+                            text = stringResource(R.string.nearby_test_action),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
