@@ -11,11 +11,11 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:top="18dp">
         <shape android:shape="rectangle">
-            <solid android:color="#FFFDF8" />
+            <solid android:color="#F2F7FB" />
             <corners android:radius="20dp" />
             <stroke
                 android:width="2dp"
-                android:color="#3A2E26" />
+                android:color="#2E3A46" />
         </shape>
     </item>
 </layer-list>

@@ -52,9 +52,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
-import com.khalied.cukinggo.ui.theme.BlushPink
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
 import java.util.Locale
@@ -197,7 +194,7 @@ fun VideoRecorder(
                         .align(Alignment.TopCenter)
                         .padding(12.dp)
                         .clip(CircleShape)
-                        .background(BlushPink)
+                        .background(MaterialTheme.colorScheme.errorContainer)
                         .padding(horizontal = 14.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -205,12 +202,12 @@ fun VideoRecorder(
                     Text(
                         text = stringResource(R.string.video_recording),
                         style = MaterialTheme.typography.labelMedium,
-                        color = InkSoft
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Text(
                         text = formatElapsed(elapsedMillis),
                         style = MaterialTheme.typography.labelMedium,
-                        color = InkSoft
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
@@ -269,10 +266,13 @@ fun VideoRecorder(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(if (recording) BlushPink else PeachAccent)
+                    .background(
+                        if (recording) MaterialTheme.colorScheme.errorContainer
+                        else MaterialTheme.colorScheme.primary
+                    )
                     .then(
                         if (canRecord || recording) {
-                            Modifier                            .clickable {
+                            Modifier.clickable {
                                 if (recording) {
                                     activeRecording?.stop()
                                 } else {
@@ -290,14 +290,14 @@ fun VideoRecorder(
                         modifier = Modifier
                             .size(22.dp)
                             .clip(MaterialTheme.shapes.small)
-                            .background(InkSoft)
-                            .border(2.dp, InkSoft, MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.error)
+                            .border(2.dp, MaterialTheme.colorScheme.error, MaterialTheme.shapes.small)
                     )
                 } else {
                     Icon(
                         painter = painterResource(R.drawable.ic_paw),
                         contentDescription = stringResource(R.string.video_record_start),
-                        tint = InkSoft,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(30.dp)
                     )
                 }

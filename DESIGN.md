@@ -9,6 +9,122 @@
 Reading this as: app catatan cuking untuk pemakaian harian pecinta cuking (Android, offline-first),
 dalam bahasa visual playful/hand-drawn ala jurnal stiker, dial **ENERGY 2 / RHYTHM 2 / MOTION 2**.
 
+## Arah baru: Frost UI (permintaan pemilik, sesi 2026-10-01)
+
+> **Ini menggantikan identitas, palet, dan tipografi di bawah.** Bagian Identitas,
+> Palet, Tipografi, dan Layout per layar adalah arah lama (jurnal hangat) yang
+> kini tidak dipakai. Bagian-bagian selanjutnya di dokumen ini yang menyebut
+> warna/tipografi lama ikut digantikan arah baru ini.
+
+Reading this as: app catatan cuking untuk pemakaian harian, dalam bahasa visual
+kaca buram dingin (frosted glass), dial **ENERGY 1 / RHYTHM 1 / MOTION 1**.
+Arah ini diminta pemilik, jadi dial-nya diturunkan dari permintaan itu: "calm,
+premium, mengambang ringan", bukan dari spekulasi.
+
+### Token warna (menggantikan palet lama)
+
+| Token | Nilai | Peran |
+|---|---|---|
+| FrostBg | #EAF2F8 | Latar dingin |
+| GlassSurface | #FFFFFF | Permukaan kaca (dipakai dengan opacity 55-72%) |
+| FrostBorder | #FFFFFF | Border tipis translucent |
+| IceAccent | #5FA8D3 | Aksen dekoratif: batang grafik, marker peta, ilustrasi |
+| IceDeep | #2F6E96 | Teks aksen dan isian tombol (lihat catatan kontras) |
+| SteelText | #2E3A46 | Teks utama (bukan hitam pekat) |
+| MistGray | #8FA6BC | Teks sekunder / outline |
+| FrostVariant | #DCE8F2 | Permukaan sekunder |
+
+### Tipografi (menggantikan Fredoka/Nunito)
+
+- **Inter** untuk judul, **Manrope** untuk teks isi.
+- Dibundel sebagai `.ttf` di `res/font` (tetap 100% offline), dengan lisensi OFL di `licenses/`.
+- Bobot maksimal SemiBold: arah baru minta hierarki yang ringan.
+
+### Override aturan antislop
+
+- **R-10 (dose cap glassmorphism) di-override atas permintaan pemilik.** Aturan aslinya membatasi blur ke 1-2 elemen dan melarangnya di top bar + card + modal sekaligus; pemilik meminta kaca dipakai konsisten sebagai karakter UI. Override ini dicatat di sini, dan konsekuensinya: kontras teks di atas kaca bergantung isi di belakangnya, jadi opacity dijaga di sisi atas rentang (55-75%) supaya R-25 masih bisa dipertahankan.
+- **Border putih murni diganti abu-biru tipis terang.** Aturan Frost UI meminta border putih 20-30%, tapi di atas latar #EAF2F8 border putih justru tidak terlihat, sehingga tujuan "menegaskan tepi" gagal. Yang dipakai: outline dingin 1dp dengan alpha 0.35.
+
+### Keputusan teknis dan alasan (R-31, satu baris per keputusan)
+
+- **Blur latar memakai Haze (1.7.3), bukan `Modifier.blur()` saja:** `Modifier.blur()` mengaburkan isi composable itu sendiri, bukan konten di belakangnya; Haze yang membedakan sumber (`hazeSource`) dan permukaan (`hazeEffect`), dan tetap jalan di bawah API 31 sedangkan app ini minSdk 29.
+- **Satu modifier `Modifier.frostSurface()` untuk semua permukaan:** resep kaca (blur + transparansi + border) hanya ditulis sekali, jadi top bar, card, dan dialog tidak bisa saling menyimpang.
+- **HazeState ditandai di konten latar (`frostBackdrop`), bukan di permukaannya:** yang perlu diblur adalah isi layar di belakang kaca, jadi sumbernya harus ditandai lebih dulu.
+- **FAB Home dibuat sendiri sebagai permukaan kaca, bukan `ExtendedFloatingActionButton`:** FAB Material tidak menerima blur latar, sedangkan FAB inilah yang paling sering lewat di atas kartu daftar, jadi efek kacanya paling terlihat di situ.
+- **Opacity FAB 72% (batas atas rentang):** teks di atas kaca menimpa foto yang bisa gelap, jadi kaca yang lebih bening membuat kontrasnya tidak bisa dijamin (R-25).
+- **Kartu peta tetap bidang pekat (`FrostSolidsurface`), tanpa shadow:** kaca di atas tile peta akan membuat petanya tidak terbaca, dan arah baru memang mengganti shadow Material dengan layering + border.
+- **Font dibundel, bukan downloadable font:** klaim "100% offline" app ini berlaku juga untuk teks.
+
+### Lingkup yang sudah jalan
+
+- **Seluruh app (lewat token terpusat):** palet dingin, Inter/Manrope, radius medium-large.
+- **Home:** bar atas kaca yang memblur daftar saat digulir, FAB kaca, kartu peta tanpa shadow, aksen dingin.
+- **Detail, Add, Edit, daftar "Semua cuking":** tombol dan aksen memakai peran tema Frost, kartu daftar jadi permukaan pekat berpembatas tipis, dialog hapus memakai warna error, dan `PlayfulTopBar` sekarang bisa jadi kaca kalau diberi sumber blur.
+- **Ilustrasi, marker peta, dan overlay peta:** diwarnai ulang ke token dingin; label marker pindah dari Fredoka ke Inter, dan marker cluster pindah ke IceDeep supaya angka putih di atasnya lolos kontras.
+- **Rekap mingguan:** chip statistik dan grafik batang ikut peran tema, bar atas jadi kaca.
+- **Dialog kabar dekat:** tombol mematikan fitur pakai `errorContainer`.
+- **Widget launcher:** bingkai, telinga, ekor, jejak kaki, lencana, dan tombol jepret ikut palet Frost; teks pindah ke Inter/Manrope.
+- **Ikon peluncur:** ikon adaptif memakai latar IceDeep dengan jejak kaki putih; raster lama dihapus.
+
+### Belum
+
+- **Rekap mingguan dan dialog kabar dekat:** chip statistik, batang grafik, tombol mematikan fitur, dan bar atasnya sudah ikut Frost (bar atas memblur daftar seperti di Home).
+- **Widget launcher:** sudah diwarnai ulang ke palet Frost, tapi tetap tidak bisa diblur (RemoteViews).
+
+### Keputusan tambahan (R-31, sesi 2026-10-01 lanjutan)
+
+- **Home diubah jadi satu `LazyColumn` dengan bar kaca sebagai overlay:** daftar baru bisa lewat di belakang bar kalau seluruh halaman menggulir sebagai satu daftar; dengan kolom ber-`weight` seperti sebelumnya, tiap bagian diam di tempatnya dan blur tidak akan pernah terlihat.
+- **Tinggi peta di Home dipatok 340dp, bukan `weight`:** daftar yang menggulir tidak punya tinggi terbatas untuk dibagi.
+- **Judul Home turun dari displaySmall ke headlineSmall di dalam bar:** bar yang lebih tipis menjaga kesan ringan, dan judul 30sp terlalu tinggi untuk bar yang menempel di atas daftar.
+- **Warna destructive (hapus, swipe, rekam) pakai `errorContainer`, bukan token hangat:** Frost UI hanya mengizinkan warna hangat/jenuh untuk status/alert, dan menghapus memang alert.
+- **Marker peta dan ilustrasi memakai token dingin statis, bukan peran tema:** keduanya digambar di `Canvas`/`Paint` yang bukan composable, jadi tidak bisa membaca `MaterialTheme`; ini sama seperti sebelumnya.
+- **`primary` tema terang pindah dari IceAccent ke IceDeep:** judul di seluruh app memakai `primary` sebagai warna teks, sedangkan IceAccent di atas latar FrostBg cuma 2,3:1 (jauh di bawah ambang AA); IceDeep di latar yang sama 4,9:1. IceAccent tetap dipakai, tapi hanya sebagai isian dekoratif tanpa teks.
+- **Chip berisi teks memakai isian `primary` atau kontainer tema, bukan IceAccent:** label chip itu teks kecil, dan SteelText di atas IceAccent cuma 4,4:1; pasangan `primary`/`onPrimary` (putih di atas IceDeep) 5,5:1.
+- **Batang grafik rekap mingguan: IceAccent untuk hari ini, IceSoft untuk enam hari lain:** ini satu-satunya bagian grafik yang tidak berisi teks, jadi aksen es penuhnya boleh dipakai di situ; bedanya dari segi warna, bukan cuma tebal huruf.
+- **Isian aksen di widget (tombol jepret, lencana rentetan) memakai IceDeep dengan ikon putih:** tombolnya tetap di kedua tema, jadi pasangan warna tetap harus lolos kontras; putih di atas IceDeep 5,5:1, sedangkan SteelText di atasnya cuma 2,1:1.
+- **Widget launcher hanya diwarnai ulang, tidak diblur:** RemoteViews digambar oleh proses launcher dan tidak punya `hazeEffect`, jadi permukaan kacanya tidak bisa dibawa ke sana.
+- **Latar window (`themes.xml`/`colors.xml`) ikut palet Frost:** kalau tidak, ada kedipan krem sebelum Compose pertama kali menggambar.
+- **Font `nunito` dan `fredoka` dihapus:** tidak ada lagi pemakainya setelah widget pindah ke Inter/Manrope, dan aset yang tidak dipakai cuma menambah ukuran app.
+- **Ikon adaptif jadi IceDeep dengan jejak kaki putih:** sewarna `primary` dan tombol jepret di widget, jadi ikon di layar utama masih terbaca satu keluarga dengan appnya; putih di atas IceDeep 5,5:1.
+- **`clip` di `frostSurface` dipindah ke depan `hazeEffect`:** lapisan blur Haze digambar oleh node-nya sendiri, jadi kalau `clip` ada di dalamnya, isian dan border tetap membulat tapi blur-nya keluar sebagai kotak, dan FAB "Tandai cuking" terlihat seperti punya petak persegi di belakangnya.
+- **Enam string yang tidak dipakai dihapus (`home_delete_hint`, `detail_error_message`, `video_record_stop`, `video_error_record`, `cd_cat_video`, `video_play`, `edit_video_hint`):** semuanya tidak punya satu pun pemanggil, dan teks yang tidak pernah tampil cuma menambah permukaan terjemahan serta menyamarkan string yang benar-benar dipakai.
+- **Kartu di daftar dibikin pekat, satu-satunya kartu Frost yang tidak translusen:** kartu ini punya latar swipe di belakangnya, dan kartu bening membuat isi latar itu tembus sehingga kartu yang diam terlihat seperti membawa ikon hapus; kepekatan di sini yang memisahkan isi kartu dari isyarat sapuannya.
+- **Latar swipe hapus cuma digambar saat kartunya memang disapu (`dismissState.progress > 0`):** kartu yang diam tidak pernah punya lapisan merah di belakangnya, jadi tidak ada isyarat hapus yang nyempil di balik kartu biasa.
+- **Latar swipe berisi bidang merah + ikon tempat sampah, tanpa tulisan:** ikon sudah cukup jadi isyarat arah, sedangkan kalimat di sela-sela sapuan lebih sering terpotong daripada terbaca.
+- **Cara hapus dijelaskan satu baris di atas kartu-kartunya (`SwipeDeleteHint`), bukan di latar swipe:** kalimat "Geser kartu ke kiri buat hapus" terbaca di tempatnya sendiri tanpa menimpa apa pun, dan satu komponen yang sama dipakai di Home dan halaman "Semua cuking" supaya kedua daftar berbicara satu bahasa. String lama (`home_delete_hint`) dihapus karena tidak terpakai lagi.
+- **Tulisan petunjuk hapus memakai warna `error`, bukan `onSurfaceVariant` seperti teks bantu biasa:** yang ditunjuknya tindakan menghapus, jadi ia harus terbaca sebagai peringatan sejak sebelum kartunya disentuh; `error` #C0392B di atas FrostBg ~4,8:1, jadi tetap lolos AA teks.
+- **Tinggi bar kaca Home diukur saat runtime, bukan dipatok 88dp:** judul dan subjudul bar itu membungkus jadi dua baris saat dua pill di sebelahnya mengambil lebar, sehingga bar sebenarnya ~128dp dan angka patok 88dp membuat chip rentetan di puncak daftar tertutup bar persis seperti yang dilaporkan. Ruang di atas daftar sekarang = tinggi bar yang diukur + 10dp, dengan 88dp tetap dipakai sebagai lantai supaya daftar tidak melompat di frame pertama.
+- **`mipmap-*/ic_launcher.webp` dihapus, bukan diwarnai ulang:** raster itu cuma dipakai di bawah API 26, sedangkan app ini minSdk 29, jadi tidak akan pernah dipilih di perangkat yang didukung; ikon adaptif di `mipmap-anydpi` yang selalu dipakai. Menyimpannya cuma menyisakan aset hangat yang mati.
+
+### Kontras teks (R-25)
+
+Diukur dengan rasio kontras WCAG terhadap latar yang benar-benar dipakai (latar
+FrostBg #EAF2F8, atau peran tema di tema malam):
+
+| Pasangan | Rasio | Ambang |
+|---|---|---|
+| SteelText di atas FrostBg / kaca | ~10,2:1 | AA teks: 4,5:1 |
+| IceDeep (primary) di atas FrostBg | ~4,9:1 | AA teks: 4,5:1 |
+| Putih di atas IceDeep | ~5,5:1 | AA teks: 4,5:1 |
+| onSurfaceVariant #4A5D70 di atas FrostBg | ~6,0:1 | AA teks: 4,5:1 |
+| onSecondaryContainer di atas secondaryContainer | ~9,0:1 (terang), ~9,8:1 (gelap) | AA teks: 4,5:1 |
+| error #C0392B di atas FrostBg (petunjuk hapus) | ~4,8:1 | AA teks: 4,5:1 |
+| FrostNightAccent (primary gelap) di atas FrostNightBg | ~9,1:1 | AA teks: 4,5:1 |
+| Putih di atas IceDeep (ikon widget) | ~5,5:1 | AA non-teks: 3:1 |
+
+Yang tidak bisa dijamin: teks di atas kaca yang menimpa **foto** (judul kartu, FAB)
+karena warna di belakangnya berubah-ubah. Itu dilindungi dengan menahan opacity
+kaca di 66-72%, bukan dengan klaim rasio.
+
+Batas yang diketahui: belum dijalankan di perangkat. Yang paling belum terbukti:
+apakah blur Haze benar menangkap daftar di belakang bar dan FAB (termasuk saat bar
+berada di atas peta osmdroid yang digambar di `AndroidView`), dan apakah biaya blur
+terasa di HP lambat saat menggulir. Soal ruang header sudah ditutup: tinggi bar
+kini diukur, bukan dipatok, jadi jumlah baris judul/subjudul di layar sempit tidak
+lagi bisa menutupi kartu pertama. Perubahan Home dari kolom ber-weight ke satu
+daftar juga mengubah proporsi peta (kini tinggi tetap), jadi kalau terasa terlalu
+tinggi atau pendek, yang perlu diubah cuma `HOME_MAP_HEIGHT_DP`.
+
 ## Identitas (spec 14.1)
 
 - Vibe: playful, hangat, sedikit hand-drawn/doodle seperti stiker atau ilustrasi anak cuking di jurnal.

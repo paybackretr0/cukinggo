@@ -73,6 +73,10 @@ dependencies {
     // Image loading from local file
     implementation(libs.coil.compose)
 
+    // Frost UI: blur di belakang permukaan kaca, juga di bawah API 31
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

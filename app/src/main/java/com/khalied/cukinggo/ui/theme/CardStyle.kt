@@ -15,4 +15,4 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun appCardOutline(): BorderStroke =
-    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f))
+    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,11 +69,11 @@ import com.khalied.cukinggo.ui.components.PermissionCard
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.MintPop
+import com.khalied.cukinggo.ui.components.glassTopBarPadding
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.PeachAccent
+import com.khalied.cukinggo.ui.theme.frostBackdrop
 import com.khalied.cukinggo.util.hasCameraPermission
+import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
 import kotlinx.coroutines.delay
@@ -225,24 +226,23 @@ fun AddCatScreen(
 
     val busy = uiState is AddCatUiState.Locating || uiState is AddCatUiState.Saving
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            PlayfulTopBar(
-                title = stringResource(
-                    if (viewModel.isNewCat) R.string.add_title else R.string.add_again_title
-                ),
-                onBack = onBack
-            )
+    val hazeState = remember { HazeState() }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
-                    .navigationBarsPadding()
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .frostBackdrop(hazeState)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Ruang di bawah bar kaca. Sengaja jadi isi yang ikut menggulir, bukan
+            // padding wadah: dengan begitu kontennya benar-benar lewat di belakang
+            // bar, bukan terpotong di bawahnya.
+            Spacer(Modifier.height(glassTopBarPadding()))
                 if (!cameraGranted || !locationGranted) {
                     PermissionCard(
                         cameraGranted = cameraGranted,
@@ -314,8 +314,8 @@ fun AddCatScreen(
                                 .height(56.dp),
                             shape = MaterialTheme.shapes.extraLarge,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = PeachAccent,
-                                contentColor = InkSoft
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
                             Text(
@@ -345,8 +345,18 @@ fun AddCatScreen(
 
                     else -> Unit
                 }
-            }
         }
+
+        PlayfulTopBar(
+            title = stringResource(
+                if (viewModel.isNewCat) R.string.add_title else R.string.add_again_title
+            ),
+            onBack = onBack,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(),
+            hazeState = hazeState
+        )
 
         // Perekam video menutupi seluruh layar, sama seperti perayaan di bawah:
         // merekam butuh fokus pada satu pratinjau, bukan form yang menggoda untuk
@@ -466,8 +476,8 @@ private fun PhotoReview(
                 InfoChip(
                     text = contextLabel,
                     iconRes = R.drawable.ic_paw,
-                    containerColor = MintPop,
-                    contentColor = InkSoft
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
             OutlinedTextField(

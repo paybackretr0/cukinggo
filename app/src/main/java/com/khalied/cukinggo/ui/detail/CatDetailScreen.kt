@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -48,6 +49,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -61,13 +63,12 @@ import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoPlayer
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
+import com.khalied.cukinggo.ui.components.glassTopBarPadding
 import com.khalied.cukinggo.ui.components.buildTrails
 import com.khalied.cukinggo.ui.components.sharedCatPhoto
-import com.khalied.cukinggo.ui.theme.BlushPink
-import com.khalied.cukinggo.ui.theme.InkSoft
-import com.khalied.cukinggo.ui.theme.MintPop
-import com.khalied.cukinggo.ui.theme.PeachAccent
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.ui.theme.frostBackdrop
+import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.util.catShareIntent
 import com.khalied.cukinggo.util.catTextShareIntent
 import com.khalied.cukinggo.util.catVideoShareIntent
@@ -167,14 +168,16 @@ fun CatDetailScreen(
         )
     }
 
+    // Sumber blur bar atas: konten yang lewat di belakangnya.
+    val hazeState = remember { HazeState() }
+    val topBarPadding = glassTopBarPadding()
+
     Box(modifier = modifier.fillMaxSize()) {
         // Saat berpamitan, isi layarnya dilepas sama sekali: catatannya sudah tidak
         // ada, jadi tanpa ini yang ada di belakang peredup justru keterangan
         // "catatan sudah tidak ada" tepat saat cukingnya sedang melambai.
         if (!sayingGoodbye) {
             Column(modifier = Modifier.fillMaxSize()) {
-                PlayfulTopBar(title = stringResource(R.string.detail_title), onBack = onBack)
-
                 when (val state = uiState) {
                     CatDetailUiState.Loading -> DetailPlaceholder(
                         modifier = Modifier.fillMaxSize(),
@@ -203,11 +206,23 @@ fun CatDetailScreen(
                             onEdit = { onEdit(selectedSighting.id) },
                             onDeleteSighting = viewModel::deleteSighting,
                             onDeleteRequest = { showDeleteDialog = true },
-                            modifier = Modifier.fillMaxSize()
+                            topBarPadding = topBarPadding,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .frostBackdrop(hazeState)
                         )
                     }
                 }
             }
+
+            PlayfulTopBar(
+                title = stringResource(R.string.detail_title),
+                onBack = onBack,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
+                hazeState = hazeState
+            )
         }
 
         if (sayingGoodbye) {
@@ -279,6 +294,8 @@ private fun DetailContent(
     onEdit: () -> Unit,
     onDeleteSighting: (CatSighting) -> Unit,
     onDeleteRequest: () -> Unit,
+    /** Ruang yang disisakan di atas daftar supaya kontennya lewat di belakang bar kaca. */
+    topBarPadding: Dp,
     modifier: Modifier = Modifier
 ) {
     var showShareOptions by remember { mutableStateOf(false) }
@@ -292,7 +309,10 @@ private fun DetailContent(
         modifier = modifier
             .navigationBarsPadding()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        // contentPadding, bukan padding biasa: kontennya harus tetap bisa lewat
+        // di belakang bar kaca saat digulir, bukan terpotong di bawahnya.
+        contentPadding = PaddingValues(top = topBarPadding)
     ) {
         item {
             // Foto penemuan yang sedang ditampilkan. Kartu di daftar memakai kunci
@@ -351,8 +371,8 @@ private fun DetailContent(
                             formatDistance(distance)
                         ),
                         iconRes = R.drawable.ic_my_location,
-                        containerColor = MintPop,
-                        contentColor = InkSoft
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
@@ -416,8 +436,8 @@ private fun DetailContent(
                     .height(54.dp),
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PeachAccent,
-                    contentColor = InkSoft
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Icon(
@@ -496,8 +516,8 @@ private fun DetailContent(
                     .height(54.dp),
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BlushPink,
-                    contentColor = InkSoft
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
             ) {
                 Icon(
@@ -614,7 +634,7 @@ private fun CatLocationMap(
  * Satu baris riwayat: satu penemuan yang pernah tercatat.
  *
  * Warnanya yang menandai pilihan, bukan hiasan tambahan: baris yang sedang
- * dipamerkan di atas memakai `secondaryContainer` (MintPop di tema terang),
+ * dipamerkan di atas memakai `secondaryContainer`,
  * warna yang sama dengan chip "dekat" di kartu Home. Semua teks memakai
  * `onSecondaryContainer` di atas latar itu supaya tetap lolos WCAG AA.
  *
@@ -743,8 +763,8 @@ private fun ShareCatButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             .height(54.dp),
         shape = MaterialTheme.shapes.extraLarge,
         colors = ButtonDefaults.buttonColors(
-            containerColor = PeachAccent,
-            contentColor = InkSoft
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Icon(

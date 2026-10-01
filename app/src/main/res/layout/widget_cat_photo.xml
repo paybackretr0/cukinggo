@@ -25,7 +25,7 @@
   pintas yang berguna dari layar utama adalah memotret cuking yang sedang di depan
   mata, dan itu tidak bergantung pada bentuk bingkainya.
 
-  Font: Nunito, sama dengan body text di app, karena baris ini isinya catatan
+  Font: Manrope, sama dengan body text di app, karena baris ini isinya catatan
   pengguna, bukan judul.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -113,8 +113,8 @@
           Jarak atasnya 16dp supaya badge-nya selalu masuk ke dalam badan widget,
           termasuk di bentuk stiker yang badannya dimulai 18dp dari tepi atas.
 
-          Latarnya PeachAccent yang tetap di kedua tema, jadi teks InkSoft di
-          atasnya selalu terbaca (kontras 7,7:1).
+          Latarnya IceDeep yang tetap di kedua tema, jadi teks putih di atasnya
+          selalu terbaca (kontras 5,5:1).
         -->
         <LinearLayout
             android:id="@+id/widget_streak"
@@ -145,9 +145,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="3dp"
-                android:fontFamily="@font/nunito"
+                android:fontFamily="@font/inter"
                 android:importantForAccessibility="no"
-                android:textColor="#3A2E26"
+                android:textColor="#2E3A46"
                 android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
@@ -187,13 +187,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="end"
-        android:fontFamily="@font/nunito"
+        android:fontFamily="@font/manrope"
         android:maxLines="2"
         android:paddingStart="2dp"
         android:paddingTop="5dp"
         android:paddingEnd="2dp"
         android:paddingBottom="1dp"
         android:text="@string/widget_empty"
-        android:textColor="#3A2E26"
+        android:textColor="#2E3A46"
         android:textSize="12sp" />
 </LinearLayout>

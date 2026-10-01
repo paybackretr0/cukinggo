@@ -3,9 +3,12 @@ package com.khalied.cukinggo.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,9 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
 
 /** Chip kecil membulat untuk info lokasi/tanggal. */
 @Composable
@@ -62,16 +69,67 @@ fun InfoChip(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Petunjuk satu baris bahwa kartu di daftar bisa dihapus dengan disapu ke kiri.
+ *
+ * Ditaruh di atas daftar, bukan di latar swipe di belakang kartu: apa pun yang
+ * ditulis di sana cuma muncul sepotong-sepotong selagi kartunya disapu, jadi
+ * kelihatan justru setelah orang menebak harus menyapu. Satu kalimat di tempat
+ * yang tenang lebih terbaca daripada isyarat yang harus ditemukan dulu.
+ *
+ * Warnanya `error`, bukan `onSurfaceVariant` seperti teks bantu biasa: yang
+ * ditunjuknya adalah tindakan menghapus, jadi ia harus terbaca sebagai peringatan
+ * sejak sebelum jarinya menyentuh kartunya. `error` di tema terang #C0392B, di atas
+ * latar FrostBg ~4,8:1, jadi tetap lolos ambang AA teks (R-25).
+ */
+@Composable
+fun SwipeDeleteHint(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.list_delete_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = modifier
+    )
+}
+
+/** Tinggi bar atas kecil Material3; angka ini yang disisakan konten di bawahnya. */
+private val TOP_BAR_HEIGHT_DP = 64.dp
+
+/**
+ * Tinggi yang perlu disisakan konten supaya bar kaca bisa melayang di atasnya.
+ *
+ * App ini edge-to-edge, jadi status bar ikut dihitung. Bar-nya sendiri
+ * (TopAppBar) sudah menangani inset itu; angka ini dipakai konten yang akan lewat
+ * di belakang bar.
+ */
+@Composable
+fun glassTopBarPadding(): Dp =
+    WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + TOP_BAR_HEIGHT_DP
+
+/**
+ * Bar judul dengan tombol kembali.
+ *
+ * [hazeState] diisi kalau konten di layar ini memang lewat di belakang bar
+ * (misalnya daftar yang digulir), supaya bar jadi permukaan kaca yang memblur
+ * isi di belakangnya. Null berarti tidak ada yang perlu diblur, dan bar memakai
+ * latar tema seperti biasa.
+ */
+@OptIn(ExperimentalMaterial3Api::class, dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi::class)
 @Composable
 fun PlayfulTopBar(
     title: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hazeState: HazeState? = null
 ) {
+    val barModifier = if (hazeState != null) {
+        modifier.hazeEffect(state = hazeState, style = HazeMaterials.ultraThin())
+    } else {
+        modifier
+    }
     TopAppBar(
         title = { Text(text = title, style = MaterialTheme.typography.titleLarge) },
-        modifier = modifier,
+        modifier = barModifier,
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
@@ -81,7 +139,11 @@ fun PlayfulTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = if (hazeState != null) {
+                Color.Transparent
+            } else {
+                MaterialTheme.colorScheme.background
+            },
             titleContentColor = MaterialTheme.colorScheme.primary,
             navigationIconContentColor = MaterialTheme.colorScheme.primary
         )

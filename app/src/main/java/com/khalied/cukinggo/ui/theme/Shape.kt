@@ -5,12 +5,13 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /**
- * Semua sudut membulat: tidak ada kotak tajam di app ini.
+ * Sudut medium-large untuk permukaan kaca: cukup membulat supaya tepinya lembut,
+ * tapi tidak sampai pill. Frost UI meminta 16-24dp, jadi langit-langitnya 24dp.
  */
 val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(10.dp),
+    extraSmall = RoundedCornerShape(12.dp),
     small = RoundedCornerShape(16.dp),
-    medium = RoundedCornerShape(22.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp)
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(24.dp)
 )
