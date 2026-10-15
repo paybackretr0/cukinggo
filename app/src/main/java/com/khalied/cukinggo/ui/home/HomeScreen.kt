@@ -89,8 +89,6 @@ import com.khalied.cukinggo.ui.components.AppearancePickerDialog
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.components.buildTrails
 import com.khalied.cukinggo.ui.theme.FrostSolidsurface
-import com.khalied.cukinggo.ui.theme.GlassSurface
-import com.khalied.cukinggo.ui.theme.SteelText
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.ui.theme.frostBackdrop
@@ -1081,7 +1079,6 @@ private fun PawFab(onClick: () -> Unit, hazeState: HazeState) {
             .frostSurface(
                 state = hazeState,
                 shape = MaterialTheme.shapes.extraLarge,
-                tint = GlassSurface,
                 opacity = 0.72f
             )
             .clickable(
@@ -1102,7 +1099,9 @@ private fun PawFab(onClick: () -> Unit, hazeState: HazeState) {
         Text(
             text = stringResource(R.string.fab_add_cat),
             style = MaterialTheme.typography.labelLarge,
-            color = SteelText
+            // Teksnya ikut tema, bukan dipatok SteelText: kaca FAB kini gelap di
+            // tema malam, jadi teks gelap yang dipatok akan hilang di atasnya.
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

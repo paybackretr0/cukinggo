@@ -1,0 +1,15 @@
+<!--
+  Varian gelap widget_photo_corner_speech.xml: bentuk jalurnya sama persis,
+  yang berbeda hanya isiannya, yaitu warna badan tema gelap (#1A2530). Kalau
+  satu aset dipakai di kedua tema, penutupnya terlihat sebagai tambalan karena
+  warna badannya berbeda.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <path
+        android:fillColor="#1A2530"
+        android:pathData="M0,0 L0,20 A20,20 0 0 1 20,0 Z" />
+</vector>

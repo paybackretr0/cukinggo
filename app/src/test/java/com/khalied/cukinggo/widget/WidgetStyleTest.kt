@@ -79,18 +79,33 @@ class WidgetStyleTest {
     }
 
     /**
-     * Foto pada bentuk stiker dan balon tidak boleh tertutup hiasannya, jadi
-     * ruangnya harus disisakan dari sisi yang benar.
+     * Sudut kotak foto tercetak di luar lengkung badan balon (radius 26dp) karena
+     * foto hanya diberi jarak 6dp dari tepi kartu, jadi cuma bentuk itu yang perlu
+     * penutup sudut. Bentuk stiker (badan 20dp) dan bentuk jendela (foto bulat)
+     * sudah aman, dan menutup sudutnya justru akan mengubah tampilannya.
      */
     @Test
-    fun `bentuk stiker menyisakan ruang di atas foto, bentuk balon di bawahnya`() {
+    fun `hanya bentuk balon yang menutup sudut atas fotonya`() {
         val stiker = widgetStyle(WidgetSkin.STICKER, isDark = false)
         val balon = widgetStyle(WidgetSkin.SPEECH, isDark = false)
+        val jendela = widgetStyle(WidgetSkin.WINDOW, isDark = false)
 
-        assertTrue(stiker.photoTopPaddingDp > 0)
-        assertEquals(0, stiker.photoBottomPaddingDp)
-        assertTrue(balon.photoBottomPaddingDp > 0)
-        assertEquals(0, balon.photoTopPaddingDp)
+        assertTrue("penutup sudut bentuk balon", balon.cornerMaskRes != 0)
+        assertEquals(0, stiker.cornerMaskRes)
+        assertEquals(0, jendela.cornerMaskRes)
+    }
+
+    /**
+     * Penutup sudut bentuk balon berisi warna badan dan garis tepi bingkainya,
+     * jadi ia punya versi terang dan gelap seperti aset bentuk lain. Kalau satu
+     * aset dipakai di kedua tema, penutupnya akan terlihat sebagai tambalan.
+     */
+    @Test
+    fun `penutup sudut bentuk balon ikut tema`() {
+        val terang = widgetStyle(WidgetSkin.SPEECH, isDark = false)
+        val gelap = widgetStyle(WidgetSkin.SPEECH, isDark = true)
+
+        assertNotEquals(terang.cornerMaskRes, gelap.cornerMaskRes)
     }
 
     /**

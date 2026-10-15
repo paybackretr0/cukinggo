@@ -14,13 +14,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -199,9 +204,17 @@ fun EditCatScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .frostBackdrop(hazeState)
+                        // Inset keyboard membungkus area gulir, bukan jadi padding
+                        // di dalamnya: dengan begitu viewport-nya benar-benar
+                        // menyusut di atas keyboard, dan field yang sedang diketik
+                        // ikut terdorong naik oleh gulir otomatis Compose.
+                        // Keyboard dan bar navigasi diambil dengan `union`, bukan
+                        // ditumpuk: keduanya menempati sisi bawah, jadi menumpuk
+                        // paddingnya membuat tinggi bar navigasi terhitung dua kali
+                        // saat keyboard terbuka.
+                        .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp)
-                        .navigationBarsPadding()
                         .padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {

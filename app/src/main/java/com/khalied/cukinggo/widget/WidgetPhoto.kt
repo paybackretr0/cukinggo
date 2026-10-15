@@ -15,8 +15,10 @@ import androidx.core.content.FileProvider
 import androidx.core.graphics.createBitmap
 import com.khalied.cukinggo.R
 import java.io.File
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sin
 
 /**
  * Menempelkan foto kucing terakhir ke widget.
@@ -172,40 +174,42 @@ internal class WidgetPhoto(private val context: Context) {
      * selalu menempel di tepi lingkaran di ukuran widget berapa pun: hiasan layout
      * punya jarak tetap dari tepi kartu, sedangkan lingkarannya menyusut di tengah.
      *
-     * Tiap segitiga digambar dua kali, berisi warna badan dengan garis tepi gelap,
-     * supaya tetap terbaca di atas foto gelap maupun terang tanpa perlu tahu isi
-     * fotonya lebih dulu.
+     * Tiap kumis digambar sebagai garis tipis dua lapis: garis tepi gelap yang
+     * agak tebal, lalu inti terang yang lebih tipis di atasnya. Yang membuatnya
+     * terbaca di foto gelap maupun terang bukan warnanya sendiri, melainkan
+     * pasangan gelap-terang itu.
+     *
+     * Tiga kumis per sisi dengan sudut yang berbeda, bukan satu, supaya bentuknya
+     * terbaca sebagai kumis cuking dan bukan sebagai satu tanda panah.
      */
     private fun drawWhiskers(canvas: Canvas, side: Int, widgetStyle: WidgetStyle) {
         val centerY = side / 2f
-        val length = side * LENGTH_RATIO
-        val halfBase = side * HALF_BASE_RATIO
-        val gap = side * GAP_RATIO
+        val length = side * WHISKER_LENGTH_RATIO
 
-        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = widgetStyle.whiskerLineColor
-            style = Paint.Style.FILL
-        }
-        val outline = Paint(fill).apply {
+        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = widgetStyle.whiskerOutlineColor
             style = Paint.Style.STROKE
-            strokeWidth = side * OUTLINE_RATIO
-            strokeJoin = Paint.Join.ROUND
+            strokeWidth = side * WHISKER_EDGE_RATIO
+            strokeCap = Paint.Cap.ROUND
+        }
+        val core = Paint(edge).apply {
+            color = widgetStyle.whiskerLineColor
+            strokeWidth = side * WHISKER_CORE_RATIO
         }
 
-        // direction +1 berarti sisi kiri: pangkalnya di tepi kiri, ujungnya ke kanan.
+        // direction +1 berarti sisi kiri: pangkalnya di tepi kiri, ujungnya ke dalam.
         listOf(1f, -1f).forEach { direction ->
             val baseX = if (direction > 0) 0f else side.toFloat()
-            listOf(-1f, 1f).forEach { offset ->
-                val baseY = centerY + (offset * gap)
+            WHISKER_ANGLES.forEach { angleDegrees ->
+                val radians = Math.toRadians(angleDegrees.toDouble())
+                val endX = baseX + direction * length * cos(radians).toFloat()
+                val endY = centerY + length * sin(radians).toFloat()
                 val whisker = Path().apply {
-                    moveTo(baseX, baseY - halfBase)
-                    lineTo(baseX, baseY + halfBase)
-                    lineTo(baseX + (direction * length), baseY)
-                    close()
+                    moveTo(baseX, centerY)
+                    lineTo(endX, endY)
                 }
-                canvas.drawPath(whisker, fill)
-                canvas.drawPath(whisker, outline)
+                canvas.drawPath(whisker, edge)
+                canvas.drawPath(whisker, core)
             }
         }
     }
@@ -247,10 +251,22 @@ internal class WidgetPhoto(private val context: Context) {
          *  transaksi Binder, karena fotonya RGB tanpa saluran alpha. */
         const val MAX_CIRCLE_PX = 448
 
-        /** Semua angka kumis dihitung dari sisi lingkaran, jadi ikut ukuran widget. */
-        const val LENGTH_RATIO = 0.26f
-        const val HALF_BASE_RATIO = 0.05f
-        const val GAP_RATIO = 0.075f
-        const val OUTLINE_RATIO = 0.022f
+        /**
+         * Semua angka kumis dihitung dari sisi lingkaran, jadi ikut ukuran widget.
+         *
+         * Ketiganya sengaja dibikin tipis dan pendek: pada percobaan pertama
+         * angkanya 0.22 / 0.05 dan hasilnya tiga garis itu saling menempel jadi
+         * satu baji tebal yang terbaca seperti panah, bukan kumis.
+         */
+        const val WHISKER_LENGTH_RATIO = 0.15f
+
+        /** Sudut tiap kumis terhadap garis datar; tiga kumis dikipas di tiap sisi. */
+        val WHISKER_ANGLES = listOf(-24f, 0f, 24f)
+
+        /** Lebar inti terang kumis. */
+        const val WHISKER_CORE_RATIO = 0.009f
+
+        /** Lebar garis tepi gelap di belakang inti, supaya tetap terbaca di foto apa pun. */
+        const val WHISKER_EDGE_RATIO = 0.026f
     }
 }
