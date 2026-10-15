@@ -72,6 +72,44 @@ Hasil APK ada di `app/build/outputs/apk/debug/app-debug.apk`. Untuk memasang: `.
 
 Catatan toolchain: template awal project tidak langsung bisa build, jadi ada tiga penyesuaian versi. `compileSdk` 37 (dituntut core-ktx 1.19.0 dan lifecycle 2.11.0), plugin Compose Kotlin 2.4.10 (compiler built-in AGP 9 tidak bisa membaca metadata stdlib 2.4.x), dan KSP 2.3.12 + Room 2.8.5 (KSP di bawah 2.3.11 bentrok dengan "built-in Kotlin" AGP 9).
 
+## Membangun rilis (R8 hidup)
+
+Varian rilis dibangun dengan optimasi R8 hidup (`optimization { enable = true }` di `app/build.gradle.kts`). Ini bukan pilihan gaya: Play Console menilai DEX varian rilis, dan selama blok itu masih `false`, angkanya terbaca **1% tersamarkan** sementara batas yang diminta 25%, dengan tenggat dari Google. Menyalakannya sekaligus menghidupkan pembuangan kode dan resource yang tidak terpakai.
+
+Angka sebelum dan sesudah, diukur dari DEX di dalam artefaknya sendiri dengan `apkanalyzer dex packages --defined-only`:
+
+| | Sebelum (optimasi mati) | Sesudah |
+|---|---|---|
+| Kelas terdefinisi | 27.115 | 4.948 |
+| Kelas bernama samaran | 0 (0%) | 4.788 (96%) |
+| Metode terdefinisi | 57.365 | 21.407 |
+| APK universal | 37,8 MB | 5,6 MB |
+| AAB | 14,3 MB | 7,25 MB |
+
+Baris DEX dan AAB diukur dari AAB yang sudah diunggah (5 / 1.4) dan dari AAB baru. Baris APK diukur dari build kode 1.4 yang sama, dengan optimasinya dimatikan sementara, supaya yang dibandingkan benar-benar cuma setelannya.
+
+Yang masih bernama asli sesudahnya hanya sembilan kelas yang memang harus dikenali sistem: tiga provider widget, `WidgetMidnightReceiver`, `NearbyAlertReceiver`, `MainActivity`, `CukingGoApp`, `CatDatabase`, dan `CatDatabase_Impl`.
+
+Kalau nanti ada kode yang terbuang padahal dipanggil lewat nama, aturan keep-nya ditulis di `app/src/main/keepRules/<nama>.keep` (AGP 9.3 ke atas membaca folder itu, bukan `proguard-rules.pro`), selalu dengan alasan satu baris. Sejauh ini belum ada satu pun yang perlu, jadi foldernya belum dibuat: R8 sudah dicoba pada widget (RemoteViews), peta osmdroid, kamera CameraX, Room, dan Coil tanpa aturan tambahan.
+
+Peta `mapping.txt` ikut masuk ke dalam AAB (`BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map`), dan itu yang dipakai Play Console untuk menerjemahkan laporan crash; belum saya buktikan sendiri di dashboard-nya.
+
+```bash
+# APK rilis, belum ditandatangani
+./gradlew :app:assembleRelease
+# AAB untuk diunggah
+./gradlew :app:bundleRelease
+```
+
+Untuk mencobanya di HP, APK rilis itu ditandatangani kunci debug lebih dulu supaya bisa menimpa app debug tanpa menghapus datanya:
+
+```bash
+zipalign -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk /tmp/rilis.apk
+apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android \
+  --ks-key-alias androiddebugkey --out /tmp/rilis-signed.apk /tmp/rilis.apk
+adb install -r /tmp/rilis-signed.apk
+```
+
 ## Aset untuk Play Store
 
 Ikon daftar Play Store ada di `store/ic_launcher_512.png`. Membuat ulangnya:
