@@ -1,0 +1,35 @@
+<!--
+  Penutup sudut kiri atas foto untuk bentuk balon bicara, mode terang.
+
+  Sudut foto itu kotak, sedangkan badan balon melengkung 26dp, dan foto hanya
+  diberi jarak 6dp dari tepi kartu. Hasilnya sudut kotak foto tercetak 2dp di
+  luar lengkung badan, dan di layar utama itu terbaca sebagai sudut tajam yang
+  mencuat dari bingkai. Angkanya bisa dihitung: sudut foto tetap di dalam
+  lengkung hanya kalau radius bingkainya maksimal 20,5dp, sedangkan balon memakai
+  26dp.
+
+  Yang ditutup bukan cuma bagian yang mencuat, tapi seluruh sudut kotak fotonya:
+  jalur di bawah ini adalah bagian yang di luar lengkung 20dp, jadi setelah
+  ditutup, sudut foto yang terlihat adalah lengkung 20dp itu. Radius 20dp = 26dp
+  radius bingkai dikurangi 6dp padding, jadi lengkung foto dan lengkung bingkai
+  sepusat, jarak tepinya rata 6dp di seluruh sudut, bukan cuma di sisi lurusnya.
+  Tidak ada garis tepi yang perlu digambar ulang di sini: lengkung bingkai berada
+  6dp di luar lengkung penutup ini, jadi tidak ikut tertutup.
+
+  Titik sudut jalurnya di koordinat 1 satuan = 1dp, dan busurnya berpusat di
+  sudut kanan bawah kotak ini, yaitu tepat di titik pusat lengkung bingkai yang
+  digeser padding: (20,20) dengan radius 20. Kalau radius bingkai, padding
+  layout, atau ukuran penutup di layout berubah, ketiganya harus dihitung ulang.
+
+  Versi gelapnya ada di widget_photo_corner_speech_dark.xml, karena RemoteViews
+  tidak bisa mengganti warna saat runtime.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <path
+        android:fillColor="#F2F7FB"
+        android:pathData="M0,0 L0,20 A20,20 0 0 1 20,0 Z" />
+</vector>

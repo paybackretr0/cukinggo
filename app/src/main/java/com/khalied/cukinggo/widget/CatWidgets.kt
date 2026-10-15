@@ -18,7 +18,6 @@ import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.util.catStreak
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -203,12 +202,6 @@ internal object CatWidgets {
         views.setImageViewResource(R.id.widget_art, style.fallbackArtRes)
         views.setTextColor(R.id.widget_caption, style.captionColor)
         showDecorations(views, style)
-        // Jarak foto ditentukan bentuknya: bentuk stiker butuh ruang di atas untuk
-        // telinga, bentuk balon butuh ruang di bawah untuk ekornya.
-        val topPadding = dp(context, style.photoTopPaddingDp)
-        val bottomPadding = dp(context, style.photoBottomPaddingDp)
-        views.setViewPadding(R.id.widget_photo, 0, topPadding, 0, bottomPadding)
-        views.setViewPadding(R.id.widget_photo_window, 0, topPadding, 0, bottomPadding)
 
         val caption = if (sighting == null) {
             // Kalimat kosongnya boleh dibawa pemilihnya sendiri, karena cuma dia
@@ -243,26 +236,42 @@ internal object CatWidgets {
     }
 
     /**
-     * Hiasan yang dimiliki satu bentuk saja. Bentuk lain menyembunyikannya, jadi
-     * satu layout tetap cukup untuk ketiga bentuk.
+     * Hiasan yang dimiliki satu bentuk saja. Bentuk lain menyembunyikan pitanya,
+     * jadi satu layout tetap cukup untuk ketiga bentuk.
+     *
+     * Yang disembunyikan pitanya, bukan cuma gambarnya: pitanya sendiri yang
+     * memakan tinggi di layout, jadi kalau ia masih VISIBLE walau gambarnya
+     * kosong, bentuk yang tidak memakai hiasan itu tetap menyisakan ruang kosong.
      */
     private fun showDecorations(views: RemoteViews, style: WidgetStyle) {
-        showDecoration(views, R.id.widget_ears, style.earsRes)
-        showDecoration(views, R.id.widget_tail, style.tailRes)
+        showDecoration(views, R.id.widget_ears_band, R.id.widget_ears, style.earsRes)
+        showDecoration(views, R.id.widget_tail_band, R.id.widget_tail, style.tailRes)
+        showCorners(views, style.cornerMaskRes)
     }
 
-    private fun showDecoration(views: RemoteViews, viewId: Int, artRes: Int) {
+    /**
+     * Penutup sudut atas foto, dipakai bentuk yang sudut fotonya tercetak di luar
+     * lengkung badannya. Kedua sudut memakai aset yang sama; yang kanan cuma
+     * dicerminkan dari layout, jadi tidak perlu file aset kedua.
+     */
+    private fun showCorners(views: RemoteViews, maskRes: Int) {
+        val visibility = if (maskRes == 0) View.GONE else View.VISIBLE
+        if (maskRes != 0) {
+            views.setImageViewResource(R.id.widget_corner_start, maskRes)
+            views.setImageViewResource(R.id.widget_corner_end, maskRes)
+        }
+        views.setViewVisibility(R.id.widget_corner_start, visibility)
+        views.setViewVisibility(R.id.widget_corner_end, visibility)
+    }
+
+    private fun showDecoration(views: RemoteViews, bandId: Int, artId: Int, artRes: Int) {
         if (artRes == 0) {
-            views.setViewVisibility(viewId, View.GONE)
+            views.setViewVisibility(bandId, View.GONE)
             return
         }
-        views.setImageViewResource(viewId, artRes)
-        views.setViewVisibility(viewId, View.VISIBLE)
+        views.setImageViewResource(artId, artRes)
+        views.setViewVisibility(bandId, View.VISIBLE)
     }
-
-    /** Jarak yang diminta dari kode selalu dalam dp, sedangkan RemoteViews memakai piksel. */
-    private fun dp(context: Context, value: Int): Int =
-        (value * context.resources.displayMetrics.density).roundToInt()
 
     /** Badge api di sudut foto. Rentetan nol berarti badge-nya tidak ditampilkan. */
     private fun showStreak(views: RemoteViews, context: Context, streakDays: Int) {

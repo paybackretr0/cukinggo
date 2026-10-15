@@ -87,6 +87,17 @@ internal data class WidgetStyle(
     /** Ekor balon, hanya dipakai bentuk balon. */
     @DrawableRes val tailRes: Int = 0,
     /**
+     * Penutup sudut atas foto, dipakai bentuk balon: foto hanya diberi jarak 6dp
+     * dari tepi kartu sedangkan badan balon melengkung 26dp, jadi sudut kotak
+     * foto tercetak di luar lengkung badan. Sudutnya ditutup dari atas foto,
+     * bukan dipotong, karena potongan butuh clipToOutline dan itu baru ada
+     * sebagai atribut XML di API 31 (lihat layout widget_cat_photo).
+     *
+     * 0 berarti bentuk itu tidak butuh penutup apa pun, dan itu keadaan bentuk
+     * stiker (badan 20dp) serta bentuk jendela (foto bulat).
+     */
+    @DrawableRes val cornerMaskRes: Int = 0,
+    /**
      * Kumis bentuk jendela, dan warnanya dipakai untuk menggambar kumis itu ke
      * dalam bitmap foto, bukan sebagai hiasan terpisah di layout.
      *
@@ -98,11 +109,7 @@ internal data class WidgetStyle(
      */
     val whiskerLineColor: Int = 0,
     /** Garis luar kumis, supaya tetap terbaca di atas foto yang gelap atau terang. */
-    val whiskerOutlineColor: Int = 0,
-    /** Ruang di atas foto, dipakai bentuk stiker supaya telinganya tidak menutupinya. */
-    val photoTopPaddingDp: Int = 0,
-    /** Ruang di bawah foto, dipakai bentuk balon supaya ekornya tidak menutupinya. */
-    val photoBottomPaddingDp: Int = 0
+    val whiskerOutlineColor: Int = 0
 )
 
 internal fun widgetStyle(skin: WidgetSkin, isDark: Boolean): WidgetStyle = when (skin) {
@@ -112,10 +119,7 @@ internal fun widgetStyle(skin: WidgetSkin, isDark: Boolean): WidgetStyle = when 
         captionColor = captionColor(isDark),
         photoShape = WidgetPhotoShape.CROP,
         bodyColor = bodyColor(isDark),
-        earsRes = pick(isDark, R.drawable.widget_ears, R.drawable.widget_ears_dark),
-        // 18dp = tinggi pita di atas badan stiker, jadi fotonya mulai tepat di
-        // bawah telinganya, bukan tertutup hiasan.
-        photoTopPaddingDp = 18
+        earsRes = pick(isDark, R.drawable.widget_ears, R.drawable.widget_ears_dark)
     )
 
     WidgetSkin.SPEECH -> WidgetStyle(
@@ -125,7 +129,11 @@ internal fun widgetStyle(skin: WidgetSkin, isDark: Boolean): WidgetStyle = when 
         photoShape = WidgetPhotoShape.CROP,
         bodyColor = bodyColor(isDark),
         tailRes = pick(isDark, R.drawable.widget_tail, R.drawable.widget_tail_dark),
-        photoBottomPaddingDp = 12
+        cornerMaskRes = pick(
+            isDark,
+            R.drawable.widget_photo_corner_speech,
+            R.drawable.widget_photo_corner_speech_dark
+        )
     )
 
     WidgetSkin.WINDOW -> WidgetStyle(

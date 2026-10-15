@@ -31,6 +31,12 @@ fun Modifier.frostBackdrop(state: HazeState): Modifier = hazeSource(state = stat
  * ini tidak punya sumber blur (misalnya muncul di luar layar ber-latar Frost);
  * kaca tetap tampil sebagai bidang tembus pandang tanpa blur, bukan gagal.
  *
+ * [tint] bawaannya diambil dari `colorScheme.surface`, bukan dipatok putih:
+ * kalau kacanya selalu putih, di tema malam ia jadi bidang terang sementara teks
+ * di atasnya ikut terang (judul memakai `primary` yang di tema malam biru muda),
+ * sehingga bar atas Home tidak terbaca. Di tema terang hasilnya tetap putih,
+ * karena `surface` tema terang memang [GlassSurface].
+ *
  * Border-nya tipis dan hampir putih: yang menegaskan tepinya adalah perbedaan
  * opacity, bukan garis gelap, jadi permukaannya tetap terasa ringan.
  *
@@ -43,7 +49,7 @@ fun Modifier.frostBackdrop(state: HazeState): Modifier = hazeSource(state = stat
 fun Modifier.frostSurface(
     state: HazeState? = null,
     shape: Shape = MaterialTheme.shapes.large,
-    tint: Color = GlassSurface,
+    tint: Color = MaterialTheme.colorScheme.surface,
     opacity: Float = 0.66f,
     borderAlpha: Float = 0.28f
 ): Modifier {

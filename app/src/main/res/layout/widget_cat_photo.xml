@@ -5,9 +5,26 @@
   dua provider, tapi bentuknya sekarang berganti tiap hari (lihat WidgetSkin).
 
   Satu layout dipakai untuk ketiga bentuk, dan yang berbeda hanya aset serta
-  jarak yang dipasang dari kode lewat RemoteViews. Alasannya: tiga file layout
-  yang isinya 90 persen sama akan cepat saling menyimpang, sedangkan hiasannya
-  sendiri cuma beberapa ImageView yang tinggal disembunyikan.
+  visibilitas pitanya. Alasannya: tiga file layout yang isinya 90 persen sama
+  akan cepat saling menyimpang.
+
+  Bentuk hiasannya dipisah ke pitanya sendiri, bukan ditempel di dalam area foto:
+
+  - Telinga bentuk stiker ada di `widget_ears_band` di ATAS area foto. Dulu
+    telinganya diletakkan di dalam area foto dan fotonya diberi padding atas
+    supaya telinganya tidak tertimpa; hasilnya telinga menempel di atas foto dan
+    terbaca sebagai dua segitiga di dalam kartu. Dengan pita sendiri, fotonya
+    memang mulai di bawah telinga, jadi telinganya berdiri di tepi badan kartu.
+  - Ekor bentuk balon ada di `widget_tail_band` di BAWAH catatan, jadi ia jatuh
+    di luar badan kartu. Bingkai balon dimasukkan 19dp dari tepi bawah (lihat
+    widget_frame_speech), dan 19dp itu = pita ekor 13dp + padding 6dp layout:
+    pangkal ekornya menempel persis di tepi bawah badan balon, ujungnya mencuat
+    keluar ke arah wallpaper. Versi pertama menaruh ekornya di dalam foto, dan
+    hasilnya terbaca sebagai segitiga yang mengambang di atas fotonya.
+
+  Pita yang tidak dipakai bentuk tertentu disembunyikan (GONE) dari kode, jadi
+  ia tidak memakan ruang sama sekali. Tinggi pitanya di layout: pita telinga
+  22dp (telinga 18dp + 4dp jarak ke foto), pita ekor 13dp (setinggi ekornya).
 
   Semua atribut di sini hanya boleh memakai view yang didukung RemoteViews
   (LinearLayout, FrameLayout, ImageView, TextView) dan atribut yang dibaca saat
@@ -18,12 +35,8 @@
   (supaya fotonya mengisi bingkai). Keduanya tidak bisa berbagi satu ImageView
   tanpa mengganti scaleType saat runtime, dan itu tidak didukung RemoteViews.
 
-  Tinggi foto memakai weight, bukan ukuran tetap, supaya widget tetap proporsional
-  di ukuran sel berapa pun, termasuk setelah pengguna menariknya sendiri.
-
-  Tombol jepret di sudut kanan bawah juga milik semua bentuk: satu-satunya jalan
-  pintas yang berguna dari layar utama adalah memotret cuking yang sedang di depan
-  mata, dan itu tidak bergantung pada bentuk bingkainya.
+  Tombol jepret dan lencana rentetan ada di area foto: ia milik semua bentuk,
+  sedangkan pita telinga/ekor cuma dekorasi bentuk tertentu.
 
   Font: Manrope, sama dengan body text di app, karena baris ini isinya catatan
   pengguna, bukan judul.
@@ -36,11 +49,25 @@
     android:orientation="vertical"
     android:padding="6dp">
 
+    <FrameLayout
+        android:id="@+id/widget_ears_band"
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/widget_ears"
+            android:layout_width="54dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|center_horizontal"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ears" />
+    </FrameLayout>
+
     <!--
-      Kotak ini isinya cuma foto dan hiasan, sedangkan catatannya ada di bawahnya.
-      clipChildren=false dipasang sebagai jaring pengaman: hiasan yang letaknya
-      persis di tepi kotak ini (misalnya telinga bentuk stiker, yang harus terlihat
-      mencuat di atas garis badan stiker) tetap tergambar utuh.
+      Kotak ini isinya cuma foto dan hiasan yang memang menempel di foto, sedangkan
+      catatannya ada di bawahnya. clipChildren=false dipasang sebagai jaring
+      pengaman untuk hiasan yang letaknya persis di tepi kotak ini.
     -->
     <FrameLayout
         android:layout_width="match_parent"
@@ -64,6 +91,40 @@
             android:scaleType="fitCenter"
             android:visibility="gone" />
 
+        <!--
+          Dua penutup sudut atas foto, dipakai cuma oleh bentuk balon (lihat
+          WidgetStyle.cornerMaskRes). Sudut foto itu kotak sedangkan badan balon
+          melengkung 26dp, jadi sudut kotaknya tercetak di luar lengkung kalau
+          tidak ditutup. Sudutnya ditutup dari atas fotonya, bukan dipotong:
+          potongan butuh clipToOutline, dan itu baru ada sebagai atribut XML di
+          API 31, sedangkan widget ini jalan mulai API 29.
+
+          Ukurannya 20 x 20dp karena selebar sudut foto yang ditutup, dan 20dp
+          itu radius bingkai balon (26dp) dikurangi padding layout (6dp).
+
+          Yang kanan cuma cerminan yang kiri (scaleX -1), jadi asetnya satu file
+          untuk dua sudut. Diletakkan sebelum jejak kaki dan lencana supaya
+          keduanya tetap digambar di atas penutup ini.
+        -->
+        <ImageView
+            android:id="@+id/widget_corner_start"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="top|start"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_photo_corner_speech"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/widget_corner_end"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="top|end"
+            android:importantForAccessibility="no"
+            android:scaleX="-1"
+            android:src="@drawable/widget_photo_corner_speech"
+            android:visibility="gone" />
+
         <ImageView
             android:id="@+id/widget_art"
             android:layout_width="38dp"
@@ -73,45 +134,15 @@
             android:src="@drawable/widget_paw_light" />
 
         <!--
-          Hiasan bentuk stiker: dua telinga cuking berdiri di pita 18dp di atas
-          badan stiker, jadi 12dp pertamanya naik di atas garis badan.
-        -->
-        <ImageView
-            android:id="@+id/widget_ears"
-            android:layout_width="54dp"
-            android:layout_height="18dp"
-            android:layout_gravity="top|center_horizontal"
-            android:importantForAccessibility="no"
-            android:src="@drawable/widget_ears"
-            android:visibility="gone" />
-
-        <!-- Hiasan bentuk balon: ekor kecil di kiri bawah. -->
-        <ImageView
-            android:id="@+id/widget_tail"
-            android:layout_width="16dp"
-            android:layout_height="13dp"
-            android:layout_gravity="bottom|start"
-            android:layout_marginStart="16dp"
-            android:layout_marginBottom="2dp"
-            android:importantForAccessibility="no"
-            android:src="@drawable/widget_tail"
-            android:visibility="gone" />
-
-        <!--
           Kumis bentuk jendela TIDAK digambar di sini, melainkan di dalam bitmap
-          fotonya (lihat WidgetPhoto): hiasan di layout punya jarak tetap dari tepi
-          kartu, sedangkan lingkaran fotonya menyusut di tengah dan ukurannya ikut
-          berubah saat widget ditarik, jadi kumis akan melayang jauh dari
-          lingkarannya. Itu yang terjadi pada versi pertama bentuk ini.
+          fotonya (lihat WidgetPhoto), jadi kumisnya selalu menempel di tepi
+          lingkaran di ukuran widget berapa pun.
         -->
 
         <!--
           Badge rentetan harian, menempel di sudut kanan atas foto. Disembunyikan
           dari kode kalau rentetannya masih nol, jadi widget tidak pernah menagih
           apa pun ke pengguna yang belum mulai.
-
-          Jarak atasnya 16dp supaya badge-nya selalu masuk ke dalam badan widget,
-          termasuk di bentuk stiker yang badannya dimulai 18dp dari tepi atas.
 
           Latarnya IceDeep yang tetap di kedua tema, jadi teks putih di atasnya
           selalu terbaca (kontras 5,5:1).
@@ -121,7 +152,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|end"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:layout_marginEnd="4dp"
             android:background="@drawable/widget_streak_badge"
             android:gravity="center_vertical"
@@ -159,9 +190,6 @@
           Sisanya tembus pandang, jadi yang terlihat tetap lingkaran kecilnya,
           dan ImageView di dalamnya tidak clickable, jadi sentuhan diteruskan ke
           kotak 44dp ini.
-
-          Letaknya di bawah, berseberangan dengan lencana rentetan di atas, dan
-          sengaja tidak menutupi bagian tengah foto.
         -->
         <FrameLayout
             android:id="@+id/widget_capture"
@@ -182,6 +210,15 @@
         </FrameLayout>
     </FrameLayout>
 
+    <!--
+      Jarak caption sengaja lebih lebar dari padding layout: sudut kartunya
+      melengkung 20-28dp (lihat widget_frame_*), sedangkan teks yang cuma diberi
+      jarak 8dp dari tepi akan menabrak lengkungan itu dan terbaca seperti
+      terpotong. Angka 10dp/6dp dipilih supaya garis teks terbawah tetap di dalam
+      area aman lengkungan terbesar (28dp) tanpa perlu rata tengah: teks yang
+      dirata-tengahkan tetap menyentuh sudut kalau catatannya panjang, dan jadi
+      ragged kalau dua baris.
+    -->
     <TextView
         android:id="@+id/widget_caption"
         android:layout_width="match_parent"
@@ -189,11 +226,33 @@
         android:ellipsize="end"
         android:fontFamily="@font/manrope"
         android:maxLines="2"
-        android:paddingStart="2dp"
-        android:paddingTop="5dp"
-        android:paddingEnd="2dp"
-        android:paddingBottom="1dp"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
         android:text="@string/widget_empty"
         android:textColor="#2E3A46"
         android:textSize="12sp" />
+
+    <!--
+      Ekor ada di bawah catatan, bukan di atasnya, supaya ia jatuh di luar badan
+      kartu. Tingginya 13dp tepat setinggi ekornya, dan bingkai balon dimasukkan
+      19dp dari tepi bawah, sehingga pangkal ekornya duduk persis di tepi bawah
+      badan balon.
+    -->
+    <FrameLayout
+        android:id="@+id/widget_tail_band"
+        android:layout_width="match_parent"
+        android:layout_height="13dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/widget_tail"
+            android:layout_width="16dp"
+            android:layout_height="13dp"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="16dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_tail" />
+    </FrameLayout>
 </LinearLayout>

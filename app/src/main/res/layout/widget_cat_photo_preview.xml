@@ -6,9 +6,14 @@
 
   Yang ditampilkan di sini bentuk stiker, karena cuma satu bentuk yang bisa
   dijanjikan oleh pratinjau, sedangkan bentuk aslinya bergilir tiap hari. Isi
-  lain mengikuti widget sebenarnya: hiasan telinga, jejak kaki sebagai pengganti
-  foto (di layar pemilih belum ada data cuking), lencana rentetan contoh, dan
-  satu baris catatan.
+  lain mengikuti widget sebenarnya: pita telinga di atas area foto (bukan telinga
+  yang ditempel di dalam foto), jejak kaki sebagai pengganti foto (di layar
+  pemilih belum ada data cuking), lencana rentetan contoh, dan satu baris
+  catatan.
+
+  Padanan pitanya sengaja sama dengan widget sebenarnya: pita telinga 22dp dan
+  foto yang mulai di bawahnya. Pita ekor bentuk balon tidak ada di sini, karena
+  yang dijanjikan memang bentuk stiker.
 
   Ini layout biasa, bukan RemoteViews, jadi di sini boleh ada ukuran tetap.
   Angka "3" pada lencana rentetan juga contoh, bukan data nyata, jadi sengaja
@@ -24,6 +29,18 @@
 
     <FrameLayout
         android:layout_width="match_parent"
+        android:layout_height="22dp">
+
+        <ImageView
+            android:layout_width="54dp"
+            android:layout_height="18dp"
+            android:layout_gravity="top|center_horizontal"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ears" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipChildren="false">
@@ -35,20 +52,13 @@
             android:importantForAccessibility="no"
             android:src="@drawable/widget_paw_light" />
 
-        <ImageView
-            android:layout_width="54dp"
-            android:layout_height="18dp"
-            android:layout_gravity="top|center_horizontal"
-            android:importantForAccessibility="no"
-            android:src="@drawable/widget_ears" />
-
         <!-- Badge rentetan ditampilkan di pratinjau dengan contoh angka, supaya
              bentuk widget yang dijanjikan ke pemilih widget sama dengan aslinya. -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|end"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="4dp"
             android:layout_marginEnd="4dp"
             android:background="@drawable/widget_streak_badge"
             android:gravity="center_vertical"
@@ -96,16 +106,18 @@
         </FrameLayout>
     </FrameLayout>
 
+    <!-- Jarak captionnya sama dengan widget aslinya, supaya teks di pratinjau
+         juga tidak menabrak sudut kartu yang melengkung. -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:fontFamily="@font/manrope"
         android:maxLines="2"
-        android:paddingStart="2dp"
-        android:paddingTop="5dp"
-        android:paddingEnd="2dp"
-        android:paddingBottom="1dp"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="6dp"
         android:text="@string/widget_preview_caption"
         android:textColor="#2E3A46"
         android:textSize="12sp" />
