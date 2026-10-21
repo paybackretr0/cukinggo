@@ -25,8 +25,10 @@ android {
         applicationId = "com.khalied.cukinggo"
         minSdk = 29
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.5"
+        // Nomor ini untuk build lokal dan artifact; saat publish, Gradle Play
+        // Publisher menimpanya dengan versi tertinggi di Play + 1.
+        versionCode = 7
+        versionName = "1.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
