@@ -14,10 +14,13 @@ Spesifikasi produknya ada di [`spesifikasi-app-penanda-kucing.md`](spesifikasi-a
   - Titik **"kamu di sini"** muncul sendiri begitu izin lokasi aktif, dan tombol target untuk mengantar kamera ke posisimu.
   - Kabar kecil kalau tile peta gagal dimuat, dengan kalimat berbeda untuk offline vs server bermasalah, plus tombol "Coba lagi".
 - **Tambah cuking**: kamera in-app (CameraX), frame ala polaroid, kolom **nama panggilan** opsional (dengan contoh seperti "si Kumis"), kolom catatan opsional, dan tombol "Simpan & Tandain!". Lokasi diambil otomatis saat menyimpan.
-- **Detail cuking**: foto full-width, chip tanggal, chip koordinat, chip jarak dari lokasimu, nama, catatan, tombol bagikan, dan hapus dengan dialog konfirmasi.
+- **Frame bidik yang mengenali cuking**: sudut bingkai di pratinjau kamera menguat dan muncul baris "Cuking terlihat, jepret kalau pas" begitu model di HP menemukan cuking di frame, plus satu getar saat isyaratnya menyala. Jepretnya tetap manual, dan model label ikut di APK sehingga deteksi jalan tanpa internet. Frame dianalisis paling banyak lima kali per detik supaya pratinjau tetap mulus, dan isyaratnya baru padam setelah tiga frame berturut tidak menemukan cuking supaya tidak berkedip.
+- **Stiker cuking dari foto**: setelah menjepret, tombol "Buat stiker" memotong latar fotonya di HP lalu menaruh cukingnya di kanvas transparan 512 px. Sebelum disimpan, stiker bisa dilihat bergantian dengan fotonya dan dihapus kalau tidak suka. Stiker ikut tersimpan bersama catatannya, dan kalau pembuatannya gagal, penyimpanan fotonya tidak ikut batal.
+- **Detail cuking**: foto full-width, chip tanggal, chip koordinat, chip jarak dari lokasimu, nama, catatan, tombol bagikan, dan hapus dengan dialog konfirmasi. Kalau penemuan itu punya stiker, ada pilihan **Foto / Stiker** di bawah gambarnya, dan stikernya ikut jadi salah satu bentuk bagikan.
 - **Peta cukingnya di layar detail**: kartu peta berisi catatan cuking itu saja, dipaskan supaya seluruh perjalanannya masuk layar (bukan berpusat di tempat terakhir dia ketemu). Kartunya selalu ada, juga saat cukingnya baru ketemu sekali, karena peta menjelaskan dia di mana sekilas sedangkan koordinat tidak. Judulnya menyesuaikan: "Jejak di peta" kalau ada perjalanan untuk digambar, "Lokasinya di peta" kalau tempatnya cuma satu. Menyentuh satu titik di situ memilih catatan itu di riwayat di bawahnya.
 - **Riwayat ketemu**: tiap catatan punya fotonya sendiri, dan cuking yang sudah ketemu berkali-kali bisa dipilih satu per satu untuk dipamerkan di atas. Yang lama tidak pernah diedit, yang baru selalu jadi catatan baru.
-- **Bagikan cuking**: kirim foto cuking (kalau filenya masih ada) plus template chat berisi nama, catatan, koordinat, dan **link Google Maps** ke titik ketemunya. Link-nya memakai format resmi Maps URLs, jadi terbuka di app Google Maps kalau ada, dan tidak butuh API key.
+- **Bagikan cuking**: kirim foto cuking (kalau filenya masih ada) plus template chat berisi nama, catatan, koordinat, dan **link Google Maps** ke titik ketemunya. Link-nya memakai format resmi Maps URLs, jadi terbuka di app Google Maps kalau ada, dan tidak butuh API key. Kalau penemuannya punya stiker, ada pilihan **Stiker transparan** yang mengirim PNG-nya saja tanpa teks, supaya app tujuan tidak memperlakukannya sebagai foto bercaption.
+- **Paket stiker WhatsApp**: semua stiker yang pernah kamu buat dikumpulkan jadi satu paket, dibuka dari pil stiker di header Home. **Stiker yang ikut bisa dipilih satu per satu** — ketuk untuk memasukkan atau mengeluarkan, dengan batas minimal 3 dan maksimal 30. Pilihannya diingat untuk kunjungan berikutnya, stiker baru tidak otomatis ikut (kamu yang menentukan), dan stiker yang catatannya dihapus otomatis keluar dari pilihan. Stiker diubah ke WebP 512 px di HP dengan ukuran dijaga di bawah 100 KB, ikon tray 96 px dibuat dari ikon cakar app, dan setiap kali tombolnya ditekan paket lama diganti utuh. Tombolnya berubah jadi "Perbarui paket di WhatsApp" begitu paketnya sudah ada, dan satu paket dipakai bersama oleh WhatsApp biasa maupun WhatsApp Business. WhatsApp duplikat (klon) tidak bisa memakainya karena berjalan di user Android sendiri, dan layar menjelaskan itu kalau yang dipilih di chooser adalah yang bertanda duplikat.
 - **Kabar kalau dekat cuking** (opsional, mati secara bawaan): begitu kamu masuk radius cuking yang pernah ditandai, muncul notifikasi, dan tap-nya langsung membuka detail cuking itu. Kalau namanya sudah diisi, nama itu dipakai sebagai judul notifikasinya, jadi kabarnya bisa dikenali tanpa membuka app. Radiusnya bisa dipilih di dialognya: **100 m, 200 m (bawaan), atau 500 m**, masing-masing dengan penjelasan akibatnya. Dipasang sebagai geofence Play Services, maksimal cuking terbaru sesuai batas 100 geofence, dengan jeda 12 jam per cuking supaya tidak berisik. Menyalakannya butuh izin lokasi sepanjang waktu (Android 11 ke atas mengarahkannya ke Pengaturan) dan izin notifikasi.
 - **Rentetan harian**: jumlah hari berturut-turut kamu menandai cuking, tampil sebagai chip api di header Home dan sebagai lencana kecil di sudut foto kedua widget. Angkanya dihitung dari waktu catatan yang ada, bukan dari angka yang disimpan, jadi tidak bisa jadi tidak sinkron. Chip dan lencana baru muncul kalau rentetannya jalan (hari ini atau kemarin ada catatan), dan lencananya hilang sama sekali saat angkanya nol.
 - **Daftar terbaru** di Home dengan swipe untuk hapus.
@@ -39,6 +42,9 @@ Spesifikasi produknya ada di [`spesifikasi-app-penanda-kucing.md`](spesifikasi-a
 | Peta | osmdroid (OpenStreetMap) |
 | Lokasi | `play-services-location` (FusedLocationProviderClient) |
 | Kamera | CameraX (`LifecycleCameraController` + `PreviewView`) |
+| Stiker | ML Kit Subject Segmentation (`play-services-mlkit-subject-segmentation`) |
+| Deteksi cuking di kamera | ML Kit Image Labeling (`com.google.mlkit:image-labeling`, model ikut di APK) |
+| Paket stiker WhatsApp | `ContentProvider` sendiri + WebP lewat `Bitmap.compress`, tanpa library tambahan |
 | Navigasi | Navigation Compose |
 | Async | Coroutines + Flow |
 | Foto | Coil |
@@ -88,6 +94,8 @@ Angka sebelum dan sesudah, diukur dari DEX di dalam artefaknya sendiri dengan `a
 
 Baris DEX dan AAB diukur dari AAB yang sudah diunggah (5 / 1.4) dan dari AAB baru. Baris APK diukur dari build kode 1.4 yang sama, dengan optimasinya dimatikan sementara, supaya yang dibandingkan benar-benar cuma setelannya.
 
+Angka di tabel itu dari rilis 1.5. AAB kode terbaru sudah 28,0 MB karena stiker dan model deteksi cuking ikut di dalamnya; yang bertambah cuma ukuran, bukan kelas yang tersamarkan.
+
 Yang masih bernama asli sesudahnya hanya sembilan kelas yang memang harus dikenali sistem: tiga provider widget, `WidgetMidnightReceiver`, `NearbyAlertReceiver`, `MainActivity`, `CukingGoApp`, `CatDatabase`, dan `CatDatabase_Impl`.
 
 Kalau nanti ada kode yang terbuang padahal dipanggil lewat nama, aturan keep-nya ditulis di `app/src/main/keepRules/<nama>.keep` (AGP 9.3 ke atas membaca folder itu, bukan `proguard-rules.pro`), selalu dengan alasan satu baris. Sejauh ini belum ada satu pun yang perlu, jadi foldernya belum dibuat: R8 sudah dicoba pada widget (RemoteViews), peta osmdroid, kamera CameraX, Room, dan Coil tanpa aturan tambahan.
@@ -108,14 +116,6 @@ zipalign -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk /tmp/ril
 apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android \
   --ks-key-alias androiddebugkey --out /tmp/rilis-signed.apk /tmp/rilis.apk
 adb install -r /tmp/rilis-signed.apk
-```
-
-## Aset untuk Play Store
-
-Ikon daftar Play Store ada di `store/ic_launcher_512.png`. Membuat ulangnya:
-
-```bash
-bash tools/icon-export/export-icon.sh
 ```
 
 ## Rilis otomatis ke closed testing (GitHub Actions)
@@ -149,6 +149,14 @@ ANDROID_PUBLISHER_CREDENTIALS="$(cat ~/play-cukinggo.json)" \
 ```
 
 Jangan pernah commit file JSON itu atau keystore-nya: `.gitignore` sudah menutup `*.jks`, `*.keystore`, `play-credentials*.json`, dan `/app/release/`. Artefak lama yang sudah telanjur masuk repo dikeluarkan sekali dengan `git rm -r --cached app/release`.
+
+## Aset untuk Play Store
+
+Ikon daftar Play Store ada di `store/ic_launcher_512.png`. Membuat ulangnya:
+
+```bash
+bash tools/icon-export/export-icon.sh
+```
 
 Script itu menggambar PNG-nya langsung dari geometri ikon adaptive di app memakai `java.awt`, jadi tidak perlu Android Studio, tidak perlu aplikasi desain, dan tidak ada dependensi atau koneksi internet. Yang dihasilkan juga bisa diperiksa ulang angkanya: jejak kakinya diukur dan dicetak, termasuk apakah ia masih utuh di dalam area aman ikon adaptive (66 dari 108, yang tidak pernah dipotong masking launcher).
 
@@ -206,11 +214,14 @@ Alurnya satu arah: `Room` → `CatRepository` → `ViewModel` (StateFlow) → Co
 - Widget layar utama memakai `FileProvider` untuk memberi launcher izin baca **satu URI** foto yang sedang tampil. Provider-nya `exported=false`, tidak ada file lain yang bisa diminta, dan pemeriksaan di `widget/WidgetPhoto.kt` hanya meloloskan file `cat_*.jpg` di `filesDir`. Foto tetap tidak keluar dari HP.
 - Uninstall app = semua data hilang. Tidak ada fitur export/backup, sesuai cakupan MVP.
 - Izin yang diminta: `CAMERA`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `INTERNET` + `ACCESS_NETWORK_STATE` (khusus tile peta), `POST_NOTIFICATIONS` (kabar dekat cuking), dan `ACCESS_BACKGROUND_LOCATION` (supaya kabar dekat cuking tetap jalan saat app tertutup, dan hanya dipakai kalau fiturnya kamu nyalakan).
+- Paket stiker WhatsApp ditulis ke `filesDir/sticker_packs/cukinggo` (WebP 512 px, ikon tray, dan satu file manifest teks) lalu dibuka lewat provider `com.khalied.cukinggo.stickercontentprovider`. Provider itu `exported=true` karena harus dibaca WhatsApp, tapi dijaga izin baca `com.whatsapp.sticker.READ` (hanya WhatsApp yang memegangnya), dan yang boleh diambil cuma nama file yang tercatat di manifest paket. Tidak ada foto atau stiker lain yang bisa diminta lewat alamat itu, dan semuanya ikut terhapus saat app di-uninstall.
+- Model deteksi cuking ikut di dalam APK (bukan diunduh), jadi deteksinya jalan tanpa internet dan tanpa Play Services. Ongkosnya sekitar 6 MB terkompresi per unduhan arm64: 4,2 MB library native dan 1,9 MB model, diukur dari AAB rilis. Frame kamera tidak dikirim ke mana pun; yang keluar dari frame cuma nama label dan skornya, dan itu pun hanya di dalam proses app.
+- Pemisah latar stiker memakai model ML Kit yang **diunduh sekali lewat Google Play Services**, tidak ikut di APK (tambahan ukurannya sekitar 200 KB menurut dokumentasi ML Kit). Fotonya tetap tidak dikirim ke mana pun dan pemotongannya jalan di HP, tapi pemakaian pertama "Buat stiker" butuh internet dan Play Services untuk mengambil modelnya. Kalau modelnya belum siap, app bilang cukingnya belum kebaca, bukan gagal diam-diam.
 - Fitur kabar dekat cuking **mati secara bawaan**. Kalau tidak dinyalakan, app tidak membaca lokasi di latar belakang sama sekali. Kalau dinyalakan, penilaian radius tetap dikerjakan Play Services di HP, tidak ada koordinatmu yang dikirim ke mana pun, dan waktu kabar terakhir per cuking hanya disimpan di HP.
 
 ## Pengujian
 
-83 unit test di `app/src/test` menutup logika yang tidak butuh device:
+156 unit test di `app/src/test` menutup logika yang tidak butuh device:
 
 | Test | Yang diuji |
 |---|---|
@@ -229,8 +240,16 @@ Alurnya satu arah: `Room` → `CatRepository` → `ViewModel` (StateFlow) → Co
 | `location/NearbyAlertTest` | daftar area pantauan (termasuk batas 100), masa jeda kabar, dan urutan langkah izin |
 | `location/NearbyRadiusTest` | tiga pilihan radius (100/200/500 m), radius bawaan, dan jatuhnya angka asing ke bawaan |
 | `util/CatStreakTest` | rentetan harian: hari berturut-turut, beberapa cuking di hari yang sama tetap satu hari, kemarin masih dianggap hidup, rentetan putus setelah kemarin lusa, catatan bertanggal masa depan tidak memperpanjang, dan batas harinya ikut zona waktu setempat |
+| `sticker/StickerGeometryTest` | tepi potongan dari alpha, bantalan yang tidak keluar dari gambar, dan skala 512 px yang muat tanpa memotong cuking |
+| `detect/CatLabelTest` | pemilihan label cuking dari keluaran model: huruf besar-kecil tidak membedakan, skor tertinggi yang dipakai, dan kata lain yang mengandung "cat" tidak ikut dihitung |
+| `detect/CatPresenceTest` | jeda nyala-padam isyarat: butuh dua frame berturut untuk menyala, tiga untuk padam, dan hitungannya direset saat analisis dilepas |
+| `whatsapp/StickerPackFormatTest` | manifest paket yang ditulis bisa dibaca kembali, tab dan baris baru tidak memecah barisnya, batas 3–30 stiker, pemotongan ke 30 terbaru, dan nama file berurutan |
+| `whatsapp/StickerPackSelectionTest` | pilihan stiker: ketukan memasukkan/mengeluarkan, batas 30 menolak tambahan tapi tetap boleh mengeluarkan, pilihan boleh turun di bawah 3, urutan paket mengikuti urutan tampil, dan stiker yang sudah dihapus dibuang dari pilihan |
+| `whatsapp/StickerPackRejectionTest` | alasan penolakan dari WhatsApp: provider yang tidak ditemukan dikenali sebagai WhatsApp duplikat (huruf besar-kecil dan spasi di tepi tidak mengubah hasil), authority lain dan alasan lain dibiarkan apa adanya, dan dialog yang ditutup tanpa alasan tidak dianggap penolakan |
 
-Status terakhir: build sukses, 83 test hijau, `lintDebug` 0 error (9 warning). Satu aturan lint dimatikan dengan alasan tertulis di [`app/lint.xml`](app/lint.xml): `PluralsCandidate`, karena aplikasi ini hanya berbahasa Indonesia dan bahasa Indonesia tidak mengubah bentuk kata karena jumlah.
+Delapan test instrumented di `app/src/androidTest` butuh HP. `CatLabelerTest` memastikan model benar-benar dimuat dari APK dan foto cuking sungguhan mendapat label "Cat" di atas ambang; `CatTargetOverlayTest` memastikan baris "Cuking terlihat" hanya muncul saat isyaratnya menyala; `StickerPackExportTest` memastikan paket yang ditulis benar-benar WebP 512 px di bawah 100 KB dengan ikon tray 96 px, provider menjawab dengan kolom yang dipakai WhatsApp, dan file di luar daftar paket tidak bisa dibuka.
+
+Status terakhir: build sukses, 168 unit test hijau, dan 8 test instrumented hijau di Vivo 1918 (Android 11). `lintDebug` sekarang hijau: 0 error, 46 warning. Tujuh error lama diperbaiki di sumbernya, bukan disupresi: opt-in Camera2 di `CameraCapture.kt` memakai `androidx.annotation.OptIn` (yang dibaca lint, sedangkan `kotlin.OptIn` dibuang saat compile), dan pemeriksaan izin notifikasi dipindah ke `canPostNotifications` dengan batas versi plus penanganan `SecurityException` saat mengirim. Satu aturan lint dimatikan dengan alasan tertulis di [`app/lint.xml`](app/lint.xml): `PluralsCandidate`, karena aplikasi ini hanya berbahasa Indonesia dan bahasa Indonesia tidak mengubah bentuk kata karena jumlah.
 
 ## Yang belum diverifikasi
 
@@ -247,11 +266,24 @@ Beberapa hal hanya bisa dibuktikan di perangkat, jadi belum saya klaim lulus:
 - Pratinjau di pemilih widget: `previewLayout` dipakai Android 12 ke atas. Di Android 10 dan 11 pemilih memakai ikon app sebagai gantinya. Dua varian widget sengaja memakai pratinjau yang sama, dan pratinjaunya menampilkan bentuk stiker pada 180 x 110dp sebagai contoh, karena cuma satu bentuk yang bisa dijanjikan sementara bentuk aslinya bergilir tiap hari.
 - Pergantian harian widget "Cuking hari ini": saya tidak bisa menunggu lewat tengah malam di sini, jadi yang terbukti hanya dua: pemilihan cukingnya (7 unit test, termasuk rotasi harian dan tidak ada pengulangan berurutan) dan alarmnya benar-benar dipasang lewat jalur API yang tidak butuh izin khusus. Apakah alarmnya benar-benar berbunyi dan fotonya berganti besok butuh dicek di HP, dan itu baru terlihat setelah satu hari penuh.
 - Kalau app di-force-stop (mis. dari Pengaturan), alarm dan pembaruan widget dihentikan sistem sampai app dibuka lagi. Jadi "cuking hari ini" bisa tertinggal di cuking kemarin pada kondisi itu.
-- Kabar "dekat cuking" sama sekali belum saya lihat jalan: butuh berjalan membawa HP melewati radius cuking yang sudah ditandai. Yang terbukti tanpa device: aturan pemilihan area, batas 100 geofence, masa jeda 12 jam, urutan langkah izin (7 unit test), dan daftar geofence-nya diterima API `GeofencingClient` yang sudah ada di dependency project. Berapa lama kabarnya muncul setelah masuk radius (Play Services yang memutuskan, biasanya dalam hitungan menit) belum terukur.
+- Kabar "dekat cuking" belum pernah terpicu geofence sungguhan: itu butuh berjalan membawa HP melewati radius cuking yang sudah ditandai. Yang sekarang terbukti di Vivo 1918: tombol "Coba kirim notifikasi" benar-benar memasang notifikasi (dibaca di `dumpsys notification`: id 2000000001, channel `kucing_dekat`), setelah izin lokasi diberikan lewat adb supaya keadaan fiturnya menjadi ACTIVE. Jalur ini juga menutup bug yang ketemu saat membereskan lint: di Android 12 ke bawah `POST_NOTIFICATIONS` tidak ada di daftar izin sistem (dibuktikan dengan `pm list permissions` yang tidak memuatnya), jadi pemeriksaan izinnya dulu selalu "ditolak" dan kabar tidak pernah terkirim; sekarang pemeriksaan itu dibatasi Android 13 ke atas dan aturannya diuji 3 unit test. Aturan pemilihan area, batas 100 geofence, masa jeda 12 jam, dan urutan langkah izin juga sudah ditutup unit test. Berapa lama kabarnya muncul setelah masuk radius (Play Services yang memutuskan, biasanya dalam hitungan menit) belum terukur.
 - Alur izin "sepanjang waktu" belum pernah saya lewati: di Android 11 ke atas pengguna diantar ke Pengaturan app untuk memilih izin lokasi sepanjang waktu, dan tombolnya baru aktif setelah kembali ke app. Termasuk belum teruji apakah dialog panduannya terasa jelas.
 - Penggantian radius belum pernah saya lakukan di HP: yang terbukti hanya bahwa radius pilihan dan radius terpasang disimpan terpisah lalu dibandingkan (jadi penggantiannya pasti memicu pemasangan ulang), dan bahwa `addGeofences` memang menimpa geofence dengan request ID yang sama menurut referensi API Play Services. Efek sampingnya yang perlu kamu tahu: setelah radius diganti, kalau kamu sedang berada di dalam radius baru, kabarnya bisa muncul sekali saat itu juga. Jeda 12 jam per cuking yang menahan supaya tidak jadi berisik.
 - Lencana rentetan di widget belum pernah saya lihat berganti tengah malam: sama seperti pergantian harian, ini butuh menunggu satu hari penuh di HP. Yang terbukti tanpa device: fungsi perhitungan rentetannya sendiri (10 unit test) dan bahwa alarm tengah malam kini dipasang oleh kedua provider widget lalu memicu penggambaran ulang keduanya.
 - Migrasi database versi 1 ke 2 belum pernah dijalankan di HP: `exportSchema = false`, jadi Room tidak bisa memeriksa SQL migrasinya saat build. Yang terbukti tanpa device: skema hasil kompilasi memang meminta kolom `name TEXT` yang boleh null (dibaca dari `CatDatabase_Impl` hasil KSP), dan SQL migrasinya sama dengan itu.
+- Tepi bulu stiker belum dinilai dengan mata. Yang sudah terukur: di emulator (Pixel 8a) alur lengkapnya jalan (model terunduh, PNG 512 x 512 ber-alpha, pratinjau bisa ditukar, file pindah ke `filesDir` saat disimpan, ikut terhapus saat catatan dihapus, dan migrasi 4 ke 5 jalan di data lama), dan di Vivo 1918 (Android 11) pemotongan foto cuking asli menghasilkan PNG 512 x 512 dengan 52% piksel transparan dan tepi kosong 25 px di sisi terpanjang. Yang belum: apakah tepi bulunya enak dilihat, dan apakah modelnya tetap tersedia di HP tanpa Play Services.
+- Deteksi cuking belum pernah melihat cuking betulan di frame. Yang sudah terbukti di Vivo 1918: frame kamera mengalir ke analyzer (206 frame dalam 9,5 detik, 44 di antaranya dianalisis, jadi sekitar 4,6 per detik) dan jalur isyarat sampai layar berjalan — dengan ambang diturunkan sementara ke nol, baris "Cuking terlihat, jepret kalau pas" benar-benar muncul di pratinjau. Ambangnya sudah dikembalikan ke 0,4 dan build terakhir dibangun ulang. Yang belum: apakah cuking asli di depan kamera melewati ambang 0,4, dan seberapa sering foto cuking di poster atau layar ikut memicu isyaratnya.
+- Biaya baterai dan panas deteksi belum diukur: yang dicatat baru 10 detik di Vivo 1918 tanpa cat, bukan sesi memotret sungguhan yang lebih lama.
+- Layar ganti foto juga memakai frame bidik yang sama, tapi jalur itu belum dicoba di HP (butuh catatan lama untuk diedit).
+- Bagikan stiker baru sampai membuka lembar bagikan sistem; belum pernah benar-benar dikirim ke WhatsApp atau app lain, jadi apakah alpha-nya bertahan di app tujuan belum terbukti. Di lembar bagikan Vivo, target yang muncul antara lain Messages, Email, dan TikTok.
+- Paket stiker WhatsApp sudah jalan sampai ujung di Vivo 1918: chooser menampilkan WhatsApp dan WhatsApp Business, WhatsApp membuka layar paket dengan nama **CukingGo**, ikon tray, dan tiga stiker (tercatat di provider: satu `metadata`, satu `stickers`, lalu tray dan tiap stiker diambil lewat `stickers_asset`), lalu "ADD TO YOUR STICKERS" menambahkan paketnya — app langsung berubah ke "Paket ini sudah ada di WhatsApp" dan tombolnya jadi "Perbarui paket di WhatsApp". Yang belum: jalur WhatsApp Business (yang terbuka selalu WhatsApp biasa), dan apakah stiker benar-benar muncul di tray saat mengirim pesan (belum dibuka di chat).
+- Ukuran dan bentuk ikon tray 96 px belum dilihat di tray WhatsApp, dan teks pembaca layarnya belum didengar dengan TalkBack. Yang terbukti: filenya 96 x 96 dan di bawah 50 KB, serta berisi cakar putih di atas lingkaran warna aksen.
+- Pemakaian WhatsApp Business belum dicoba. Yang terbukti di kode: pemeriksaan "sudah ditambahkan" menerima salah satu dari WhatsApp biasa atau Business, dan chooser menampilkan keduanya kalau dua-duanya terpasang.
+- Paket dengan lebih dari 30 stiker belum pernah dibuat di HP; yang terbukti cuma aturannya di unit test. Pilihan stiker sendiri sudah dicoba di Vivo 1918: dari 7 stiker, 4 dikeluarkan sampai tersisa 3, tombolnya nonaktif saat tinggal 2, dan paket yang ditulis hanya berisi 3 file sesuai pilihan (dibaca lewat `run-as`). Pilihannya juga tetap sama setelah layar ditutup dan dibuka lagi.
+- Stiker baru setelah pilihan disimpan belum pernah ditambahkan di HP untuk memastikan ia muncul dalam keadaan tidak terpilih; itu memang perilaku yang dimaksud, tapi belum dilihat langsung.
+- Alasan penolakan dari WhatsApp (extra `validation_error`) sudah terpicu di Vivo 1918: memilih **Ⅱ·WhatsApp** (WhatsApp duplikat) di chooser membuat WhatsApp menolak dengan "cannot find the provider for authority: com.khalied.cukinggo.stickercontentprovider", dan layar sekarang menjelaskannya sebagai WhatsApp duplikat, bukan menampilkan kalimat Inggris itu. Penyebabnya bukan manifest: provider ada dan bisa dibaca dari ruang utama (dibuktikan dengan `content query --user 0` yang kena `SecurityException` karena izin `com.whatsapp.sticker.READ`, sedangkan `--user 999` bilang provider-nya tidak ada), karena WhatsApp duplikat berjalan sebagai user Android sendiri dan provider hanya terpasang di user tempat app-nya dipasang. Jadi paket stiker memang tidak bisa dipakai dari WhatsApp duplikat; yang bisa dipakai adalah WhatsApp biasa atau WhatsApp Business di ruang utama.
+- Kalau semua stiker yang dulu dipilih dihapus, pilihan kembali ke bawaan (30 terbaru). Aturan itu diuji di unit test, tapi kejadiannya di HP belum dicoba.
+- Model pemisah latar masih beta dan tanpa SLA dari Google, dan belum dicoba di HP tanpa Play Services.
 - Nama cuking di kartu Home, layar detail, dan judul notifikasi belum pernah saya lihat di layar. Yang belum terlihat: apakah nama panjang dipotong rapi di kartu, dan apakah baris catatan satu baris di bawahnya tetap enak dibaca.
 - Dialog Tampilan sudah dipakai di emulator: tujuh baris pilihan muat tanpa digulir di layar 1080 x 2400, dan menekan Stiker, Balon bicara, atau Jendela bulat langsung menggambar ulang widget saat itu juga. Yang belum terlihat: apakah pilihan tema app juga berganti warna widget di layar utama seketika.
 - Tombol bagikan belum pernah saya tekan: yang terbukti hanya bentuk link Maps-nya (3 unit test) dan bahwa intent-nya memakai FileProvider yang sudah terpasang. Tampilan lembar bagikan di HP aslinya, dan perilaku app chat yang membuang teks saat ada gambar, perlu kamu lihat sendiri.

@@ -339,6 +339,7 @@ Keputusan dan alasan (R-31, satu baris per keputusan):
 - **Pill lonceng berbentuk ikon saja:** supaya judul di sebelahnya tidak makin sempit dibanding waktu hanya ada pill Tampilan, dengan tinggi tetap 44dp supaya lolos tap target.
 - **Nama opsi pengaturan diambil dari sistem (`getBackgroundPermissionOptionLabel()`):** sejak Android 11 izin "sepanjang waktu" hanya bisa diberikan lewat Pengaturan, jadi kalimatnya harus memakai nama opsi yang benar-benar tertulis di HP pengguna, bukan teks terjemahan sendiri.
 - **Urutan izin dipaksa oleh kode (`nearbyAlertState`):** notifikasi, lalu lokasi biasa, baru lokasi latar belakang. Tombolnya selalu menunjuk langkah yang paling awal belum terpenuhi, jadi pengguna tidak perlu tahu urutannya, dan ada satu tombol untuk menolak seluruh fiturnya.
+- **Izin notifikasi hanya diminta di Android 13 ke atas (`canPostNotifications`):** `POST_NOTIFICATIONS` belum ada di daftar izin sistem sebelum Android 13, jadi `checkSelfPermission` di sana selalu "ditolak" dan memeriksanya tanpa batas versi membuat kabar tidak pernah terkirim. Pengirimannya juga menangkap `SecurityException` untuk izin yang dicabut tepat sebelum kirim, karena lint hanya mengenali pemeriksaan izin yang terlihat di method yang sama.
 
 ## Nama panggilan cuking (permintaan pemilik, sesi 2026-09-24)
 
@@ -661,6 +662,110 @@ terbukti: apakah `VideoView` di dalam `LazyColumn` layar detail tidak berkedip s
 digulir, apakah rekaman dengan suara langsung jalan setelah izin mikrofon diberikan,
 dan apakah ukuran file video tidak terlalu besar untuk kebiasaan menandai cuking
 tiap hari. Foto yang tidak punya video tetap tampil persis seperti sebelumnya.
+
+## Stiker cuking (permintaan pemilik, sesi 2026-10-21)
+
+Reading this as: satu tombol tambahan di layar review foto yang sudah ada, dengan
+dial mengikuti arah Frost **ENERGY 1 / RHYTHM 1 / MOTION 1**. Animasi scan dan
+"masuk bola" yang diminta pemilik belum dibangun di tahap ini; kalau nanti jadi,
+ia akan jadi satu-satunya momen **MOTION 3** di app ini, menggantikan pop-in
+marker sebagai momen bintang, sesuai aturan spec 14.5 "satu momen jadi bintang".
+
+Lingkup tahap pertama: foto yang sudah dijepret bisa dipotong latarnya di HP,
+pratinjaunya bisa ditukar dengan foto, stiker ikut tersimpan bersama catatan,
+bisa dilihat lagi di layar detail, bisa dibagikan sebagai PNG, dan file-nya ikut
+terhapus saat catatannya dihapus. Belum ada animasi, belum ada layar baru, dan
+belum ada unggahan ke mana pun.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Latar pratinjau memakai warna permukaan, bukan papan catur:** papan catur adalah pola dekoratif yang bersaing dengan bentuk cukingnya, sedangkan yang perlu terbaca cuma "latarnya hilang".
+- **Stiker langsung ditampilkan begitu jadi, bukan menunggu pengguna menekan tombol lihat:** hasil potongan itulah yang ditunggu, jadi menampilkan foto lagi setelah menunggu beberapa detik justru terasa seperti tidak terjadi apa-apa.
+- **Dua tombol aksi ditaruh di baris sendiri di bawah chip "Stiker siap":** satu baris berisi chip dan dua tombol tidak muat di layar sempit atau saat huruf diperbesar (R-03).
+- **Tombol Simpan dimatikan selama stiker dipotong:** kalau tidak, pengguna bisa menyimpan tepat saat potongan belum selesai dan stiker yang ditunggunya hilang tanpa penjelasan.
+- **Kegagalan stiker tidak membatalkan penyimpanan foto:** stiker tambahan, fotonya yang wajib; menyembunyikan tombol Simpan karena potongan gagal akan menghukum pengguna karena fitur opsional.
+- **Master disimpan PNG 512 x 512, bukan WebP atau resolusi lebih tinggi:** 512 adalah ukuran yang diminta WhatsApp, jadi master yang lebih besar hanya akan diperkecil lagi, dan PNG menjaga alpha tanpa kompromi.
+- **Tepi transparan diambil dari kanvas (90% area), bukan dari sisa foto:** foto close-up membuat cuking sudah menyentuh tepi gambar, sehingga bantalan di dalam foto habis dipotong; versi pertama yang memakai cara itu terbukti menyentuh y=0 dan y=511 saat diukur di HP, sedangkan versi kanvas menyisakan 25 px di sisi terpanjang.
+- **Model pemisah latar diunduh lewat Play Services, bukan dibundel:** tambahan APK-nya sekitar 200 KB menurut dokumentasi ML Kit, dan pemotongan tetap terjadi di HP; ongkosnya, pemakaian pertama butuh internet dan Play Services.
+- **Pesan gagal menyebut kemungkinan model belum siap:** "belum kebaca" dan "model belum terunduh" punya gejala yang sama (hasil kosong), jadi kalimatnya menyebut keduanya daripada menuduh fotonya salah.
+- **Pilihan Foto/Stiker di layar detail ditaruh di bawah gambar, bukan di menu:** yang diubah adalah isi gambar itu sendiri, jadi kontrolnya menempel pada gambar; dan foto tetap pilihan pertama karena dialah wujud asli penemuan.
+- **Stiker di layar detail memakai latar permukaan, bukan papan catur:** alasannya sama dengan di layar review, polanya akan bersaing dengan bentuk cukingnya.
+- **Bagikan stiker tanpa teks:** app chat yang menerima gambar plus teks memperlakukannya sebagai foto bercaption, sedangkan yang mau dikirim cuma cukingnya; deskripsi pilihannya jujur menyebut sebagian app meratakan latarnya.
+- **Pilihan bagikan stiker hanya muncul kalau filenya ada:** tombol yang tidak punya file untuk dikirim adalah kontrol rusak (R-26).
+
+Batas yang diketahui: tepi bulu stikernya belum dinilai dengan mata. Yang sudah
+terukur: di emulator alur lengkapnya jalan, dan di Vivo 1918 pemotongan foto
+cuking asli menghasilkan PNG 512 x 512 dengan 52% piksel transparan serta tepi
+kosong 25 px. Stiker yang tersimpan sudah tampil di layar detail dan bisa
+dibagikan sebagai PNG; yang belum terbukti cuma apakah alpha-nya bertahan di app
+tujuan.
+
+## Frame bidik yang mengenali cuking (permintaan pemilik, sesi 2026-10-21, M2)
+
+Reading this as: isyarat halus di kamera yang sudah ada, bukan mode atau layar
+baru. Jepret tetap milik pengguna; yang dibantu cuma pertanyaan "cukingnya sudah
+masuk frame belum". Ini juga tempat pertama app ini memakai model penglihatan yang
+ikut di perangkat.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **ML Kit Image Labeling yang dibundel, bukan MediaPipe atau model `.tflite` sendiri:** model bawaan ML Kit sudah memuat label "Cat" dan itu dibuktikan dengan foto cuking sungguhan lewat test instrumented, sedangkan model kucing MediaPipe harus dicari, dilatih, atau dikuantisasi sendiri tanpa jaminan akurasi. Ongkosnya ukuran, dan itu diukur, bukan ditebak: sekitar 6 MB terkompresi per unduhan arm64 (4,2 MB library native + 1,9 MB model) sehingga AAB rilis jadi 28,0 MB.
+- **Model ikut APK, bukan diunduh seperti pemisah latar stiker:** deteksi ini dipakai tepat saat orang berdiri di depan cuking, dan di situ sinyal belum tentu ada; menunggu unduhan model di momen itu adalah kegagalan yang tidak bisa dijelaskan. Stiker boleh menunggu karena pembuatannya memang dipicu pengguna dan bisa diulang.
+- **Ambang 0,4 dipakai dua kali, untuk model dan untuk keputusan:** label di bawah ambang itu dibuang ML Kit sebelum sampai ke logika kita, jadi tidak ada dua angka berbeda yang harus dijaga selaras.
+- **Satu analisis tiap 200 ms, dan frame yang datang saat analisis sebelumnya belum selesai dilewati, bukan diantrekan:** yang diantrekan justru makin tertinggal dari kenyataan. Di Vivo 1918 hasil ukurnya 44 analisis dalam 9,5 detik (sekitar 4,6 per detik) dari 206 frame yang datang, dan pratinjaunya tidak tersendat.
+- **Isyarat nyala setelah dua frame, padam setelah tiga:** satu frame bisa meleset walau cukingnya masih di depan kamera; tanpa jeda, cincin di layar menyala-mati tiap beberapa ratus milidetik dan itu terbaca seperti kamera rusak. Padamnya lebih panjang dari nyalanya karena kehilangan isyarat lebih mengganggu daripada terlambat menyala.
+- **Jepret tetap manual, tidak ada jepret otomatis saat cuking terdeteksi:** detektor ini cuma bilang "ada cuking", bukan "cukingnya sudah bagus"; menjepret sendiri berarti membuang keputusan ke model yang tidak melihat framing, dan hasil jeleknya tidak bisa disalahkan ke siapa pun.
+- **Yang digambar sudut bingkai, bukan kotak posisi cuking:** kotak yang bergerak mengikuti objek akan terbaca seperti kamera yang memilih sendiri, padahal jepretnya tetap di tangan pengguna. Sudutnya digambar dua kali (garis gelap di bawah garis berwarna) karena pratinjau bisa terang atau gelap.
+- **Getar sekali saat isyarat menyala:** yang dikabarkan adalah perubahannya, bukan tiap frame; getar berulang bikin kamera terasa berisik.
+- **Detektor baru dibuat saat frame pertama dibutuhkan:** layar ganti foto memakai komponen kamera yang sama tapi belum tentu membuka kameranya, jadi memuat model saat layar dibuka berarti membayar ongkos tanpa ada yang memakainya.
+- **Layar ganti foto ikut memakai frame bidik yang sama:** bingkai yang selalu tampil tapi tidak pernah menyala adalah kontrol rusak (R-26), jadi pilihannya memasang deteksi di sana juga, bukan mematikan bingkainya.
+
+Batas yang diketahui: cuking betulan belum pernah dilihat di frame. Yang sudah
+terbukti di Vivo 1918: frame mengalir ke analyzer (206 frame dalam 9,5 detik, 44
+dianalisis), jalur isyarat sampai layar berjalan saat ambang diturunkan sementara,
+dan model memberi label "Cat" di atas ambang untuk foto cuking sungguhan. Yang
+belum: akurasi nyata di depan cuking, salah deteksi pada poster atau layar, dan
+biaya baterai sesi memotret yang panjang.
+
+## Paket stiker WhatsApp (permintaan pemilik, sesi 2026-10-21)
+
+Reading this as: satu paket yang isinya semua stiker yang pernah dibuat, dan satu
+tombol jujur di layar sendiri. Bukan katalog stiker untuk publik, dan bukan
+sepuluh paket tematik yang harus dipelihara.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Satu paket untuk semua stiker, bukan satu paket per cuking:** WhatsApp minta minimal 3 stiker per paket, sedangkan satu cuking jarang punya tiga stiker; paket per cuking akan sering mentok tepat di syarat itu. Batas 30 stiker dipakai apa adanya, yang dipotong yang paling lama karena yang baru biasanya yang mau dipakai.
+- **Master PNG 512 px yang sudah ada dipakai ulang, bukan memotong ulang dari foto:** potongannya sudah benar, dan memotong ulang berarti menunggu model segmentasi lagi untuk hasil yang bisa berbeda.
+- **WebP lossy dicoba dari kualitas 90 lalu turun sampai muat 100 KB:** WhatsApp menolak stiker di atas 100 KB, sedangkan PNG 512 px dengan alpha gampang melewatinya. Kalau semua tingkat masih terlalu besar, ekspornya gagal dengan pesan, bukan mengirim stiker yang akan ditolak.
+- **Ikon tray digambar sendiri: cakar putih di atas lingkaran warna aksen:** cakar transparan akan hilang di tray terang, dan memakai stiker pengguna sebagai ikon paket membuat paket terlihat seperti satu stiker tertentu.
+- **Manifest paket berupa teks tab-separated, bukan JSON:** pembacanya cuma provider kita sendiri, dan bentuk teks bisa diuji di JVM tanpa Android. Tab dan baris baru di teks dibuang saat menulis, jadi satu kalimat panjang tidak bisa memecah barisnya sendiri.
+- **Provider membaca manifest tiap permintaan, tidak menyimpannya di memori:** paket bisa diperbarui kapan saja, dan WhatsApp menanyakan daftar lagi setelah dialognya ditutup. Membaca file kecil lebih murah daripada menampilkan paket lama sampai app ditutup.
+- **Provider `exported` tapi dijaga `com.whatsapp.sticker.READ` dan daftar nama file:** WhatsApp harus bisa membacanya, app lain tidak. Nama file yang bukan bagian paket ditolak, jadi tidak ada jalan meminta file lain di HP lewat alamat itu.
+- **Pemeriksaan "sudah ditambahkan" menerima WhatsApp biasa atau Business:** contoh resmi WhatsApp menuntut keduanya, dan di HP yang hanya memakai WhatsApp Business itu berarti status "belum ditambahkan" yang tidak pernah berubah.
+- **Chooser selalu dipakai, bukan intent langsung ke satu paket:** pengguna bisa punya keduanya terpasang, dan sistem yang memilihkan saat cuma satu.
+- **Entry di header Home berupa pil ikon, layarnya terpisah:** header sudah berisi judul dan dua kontrol; pill berteks ketiga akan penuh di layar sempit. Halaman sendiri memberi ruang untuk pratinjau stiker, jumlah, dan penjelasan ukuran.
+- **Jumlah stiker dihitung dari file yang masih ada, bukan dari baris database:** kalau dihitung dari catatan, layar bisa bilang "5 stiker" sementara yang bisa dikirim 2.
+- **Stiker dipilih dengan mengetuk di kisi, bukan lewat urutan otomatis 30 terbaru:** pemilik meminta pilihan yang bisa diatur, dan urutan otomatis membuat stiker yang tidak diinginkan ikut terkirim tanpa cara mengeluarkannya. Ketukan langsung mengubah keadaan, tanpa tombol simpan terpisah.
+- **Batas 30 menolak penambahan, tapi tidak menahan pengeluaran:** batas itu milik WhatsApp, sedangkan mengeluarkan stiker selalu boleh. Kalau pengeluaran ikut ditahan saat penuh, pengguna tidak punya jalan keluar dari keadaan penuh itu.
+- **Pilihan boleh turun di bawah tiga:** memaksa tiga stiker bertahan berarti pilihan ini tidak bisa dipakai untuk membuang stiker yang tidak diinginkan. Yang menahan adalah tombol kirim yang nonaktif dan kalimat "butuh 3 stiker", bukan ketukan yang diam-diam ditolak.
+- **Pilihan disimpan sebagai path file, bukan nomor urut:** nomor urut bergeser setiap ada stiker baru, sedangkan path menunjuk stiker yang sama. Path yang catatannya sudah dihapus dibuang saat daftar dimuat, jadi paket tidak bisa memuat stiker yang sudah tidak ada.
+- **Stiker baru tidak otomatis ikut pilihan yang sudah ada:** kalau ikut otomatis, paket berubah tanpa pengguna memutuskannya, dan batas 30 bisa tiba-tiba terpenuhi oleh stiker yang tidak pernah dia pilih.
+- **Pilihan yang sengaja dikosongkan tidak diisi ulang dengan pilihan bawaan:** "belum pernah memilih" dan "sengaja tidak memilih satu pun" dibedakan, karena keduanya terlihat sama kalau hanya himpunan kosong yang disimpan.
+- **Pilihan yang jadi kosong karena semua stikernya dihapus kembali ke bawaan:** itu bukan keputusan pengguna, dan membuka layar dengan nol pilihan setelah menghapus catatan lama cuma memaksa dia memilih ulang tiga stiker tanpa sebab. Dua keadaan itu dibedakan di [StickerPackSelection.resolve].
+- **Dialog WhatsApp dibuka dengan `startActivityForResult`, bukan `startActivity`:** WhatsApp mengirim alasan penolakannya lewat extra `validation_error` pada hasil CANCELED. Tanpa hasil itu, dialog yang menutup sendiri terlihat seperti tombol yang tidak bereaksi, dan tidak ada cara tahu apa yang salah tanpa membongkar logcat.
+- **Penolakan diterjemahkan ke tipe (`StickerPackRejection`), bukan ditampilkan mentah:** isi `validation_error` adalah kalimat Inggris milik app lain. Kalau yang disebut provider tidak ditemukan, penyebabnya WhatsApp duplikat dan pengguna butuh jalan keluar, bukan istilah teknis; alasan lain tetap ditampilkan apa adanya karena itu satu-satunya petunjuk. Pencocokannya memakai kata "provider" + nama authority, bukan satu kalimat utuh, karena kalimat WhatsApp berubah antar versi sedangkan authority-nya tidak.
+- **Teks pembaca layar ditulis bahasa Indonesia dan menyebut nama cuking:** app ini berbahasa Indonesia, dan stiker yang berbeda tidak boleh terdengar sama semua.
+
+Batas yang diketahui: WhatsApp duplikat (klon) tidak bisa memakai paket ini, dan
+bukan karena manifest. Klon berjalan sebagai user Android sendiri (di Vivo 1918
+user 999), sedangkan provider hanya terpasang di user tempat app dipasang, jadi
+yang dibaca klon adalah authority yang tidak ada di ruangnya. Menyalin app ke
+ruang klon juga tidak menolong: file paketnya ada di data user utama. Karena itu
+yang dipilih adalah menjelaskan keadaan itu dan mengarahkan ke WhatsApp biasa
+atau WhatsApp Business, bukan berpura-pura bisa. Jalur WhatsApp Business dan
+kemunculan stiker di tray chat belum dilihat. Bentuk ikon tray dan teks pembaca
+layar juga belum dicoba di HP.
 
 ## Override yang perlu keputusan pemilik produk
 
