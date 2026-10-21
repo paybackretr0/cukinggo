@@ -79,7 +79,7 @@ fun standardBackCameraSelector(): CameraSelector = CameraSelector.Builder()
  * melawan kamera yang datanya jelas; kalau semua tidak terbaca, `minByOrNull`
  * tetap mengembalikan salah satu, jadi kameranya tidak pernah kosong.
  */
-@OptIn(ExperimentalCamera2Interop::class)
+@androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
 private fun focalDistanceFromStandard(cameraInfo: CameraInfo): Double = runCatching {
     val camera2Info = Camera2CameraInfo.from(cameraInfo)
     val focalLength = camera2Info

@@ -1,5 +1,6 @@
 package com.khalied.cukinggo.location
 
+import android.os.Build
 import com.khalied.cukinggo.domain.model.CatSighting
 
 /**
@@ -86,6 +87,21 @@ enum class NearbyAlertState {
     NEED_BACKGROUND_LOCATION,
     ACTIVE
 }
+
+/**
+ * Kabar boleh dikirim kalau pengguna tidak mematikannya dan izinnya ada.
+ *
+ * POST_NOTIFICATIONS baru dikenal sistem mulai Android 13. Di versi sebelumnya
+ * izin itu tidak ada di daftar sistem, jadi `checkSelfPermission` selalu
+ * menjawab "ditolak", dan memeriksanya tanpa batas versi berarti kabar tidak
+ * pernah terkirim di Android 12 ke bawah.
+ */
+fun canPostNotifications(
+    notificationsEnabled: Boolean,
+    hasNotificationPermission: Boolean,
+    sdkInt: Int
+): Boolean = notificationsEnabled &&
+    (sdkInt < Build.VERSION_CODES.TIRAMISU || hasNotificationPermission)
 
 fun nearbyAlertState(
     enabled: Boolean,

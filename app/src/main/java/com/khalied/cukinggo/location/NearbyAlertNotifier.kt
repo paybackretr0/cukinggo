@@ -1,11 +1,13 @@
 package com.khalied.cukinggo.location
 
 import android.Manifest
+import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.app.NotificationManager
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -69,7 +71,7 @@ internal object NearbyAlertNotifier {
 
         // Id notifikasi memakai id cukingnya: kabar untuk cuking yang sama menimpa
         // kabar sebelumnya, jadi tidak menumpuk di bilah notifikasi.
-        NotificationManagerCompat.from(context).notify(sighting.catId.toInt(), notification)
+        notify(context, sighting.catId.toInt(), notification)
     }
 
     /**
@@ -107,12 +109,33 @@ internal object NearbyAlertNotifier {
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(TEST_NOTIFICATION_ID, notification)
+        notify(context, TEST_NOTIFICATION_ID, notification)
     }
 
-    private fun canPost(context: Context): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
+    /** Aturan versi dan izinnya ada di [canPostNotifications], supaya bisa diuji tanpa HP. */
+    private fun canPost(context: Context): Boolean = canPostNotifications(
+        notificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled(),
+        // Dibatasi versi karena izinnya belum ada di Android 12 ke bawah.
+        hasNotificationPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED,
+        sdkInt = Build.VERSION.SDK_INT
+    )
+
+    /**
+     * Mengirim kabar, dengan izin yang bisa dicabut di antara pemeriksaan dan
+     * pengiriman. Kalau itu terjadi, satu kabar yang tidak muncul masih lebih
+     * baik daripada app yang berhenti.
+     */
+    private fun notify(context: Context, id: Int, notification: Notification) {
+        try {
+            NotificationManagerCompat.from(context).notify(id, notification)
+        } catch (_: SecurityException) {
+            return
+        }
+    }
 
     private fun openCatIntent(context: Context, sightingId: Long): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)

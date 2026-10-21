@@ -86,6 +86,41 @@ class NearbyAlertTest {
         )
     }
 
+    @Test
+    fun `di android 12 ke bawah izin notifikasi tidak diminta`() {
+        assertTrue(
+            canPostNotifications(
+                notificationsEnabled = true,
+                hasNotificationPermission = false,
+                sdkInt = 30
+            )
+        )
+    }
+
+    @Test
+    fun `di android 13 ke atas izin notifikasi wajib ada`() {
+        assertFalse(
+            canPostNotifications(
+                notificationsEnabled = true,
+                hasNotificationPermission = false,
+                sdkInt = 33
+            )
+        )
+        assertTrue(
+            canPostNotifications(
+                notificationsEnabled = true,
+                hasNotificationPermission = true,
+                sdkInt = 33
+            )
+        )
+    }
+
+    @Test
+    fun `notifikasi yang dimatikan pengguna tidak dikirim di versi mana pun`() {
+        assertFalse(canPostNotifications(false, hasNotificationPermission = true, sdkInt = 30))
+        assertFalse(canPostNotifications(false, hasNotificationPermission = true, sdkInt = 33))
+    }
+
     private fun sighting(catId: Long, latitude: Double, longitude: Double): CatSighting =
         CatSighting(
             id = catId,
