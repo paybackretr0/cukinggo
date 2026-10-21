@@ -40,17 +40,26 @@ jobs:
       - name: Pasang Gradle dengan cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Pasang Android SDK
-        uses: android-actions/setup-android@v3
-
-      # compileSdk project ini 37 dan image runner biasanya belum membawanya.
-      # Nama paketnya `android-37.0` (bukan `android-37`), sesuai isi
-      # platforms/android-37.0/package.xml. Dipasang eksplisit supaya
-      # kegagalannya kelihatan di langkah ini, bukan di tengah build.
+      # Runner GitHub sudah membawa Android SDK sendiri, jadi tidak pakai
+      # android-actions/setup-android: action itu memanggil `sdkmanager tools`,
+      # sedangkan paket `tools` sudah dihapus dari repo SDK dan langkahnya gagal
+      # sebelum build dimulai.
+      #
+      # compileSdk project ini 37 dan nama paketnya `android-37.0` (bukan
+      # `android-37`), sesuai isi platforms/android-37.0/package.xml.
       - name: Pastikan platform Android 37 tersedia
         run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager "platforms;android-37.0"
+          set -euo pipefail
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          if [ -x "$sdk_root/cmdline-tools/latest/bin/sdkmanager" ]; then
+            sdkmanager_bin="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          else
+            sdkmanager_bin="$(ls -d "$sdk_root"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)"
+          fi
+          # pipefail dimatikan khusus baris ini: `yes` mati oleh SIGPIPE saat
+          # sdkmanager selesai membaca, dan itu bukan kegagalan lisensi.
+          ( set +o pipefail; yes | "$sdkmanager_bin" --licenses > /dev/null )
+          "$sdkmanager_bin" "platforms;android-37.0"
 
       - name: Tulis keystore upload
         env:
