@@ -78,9 +78,10 @@ jobs:
           KEYSTORE_FILE: ${{ runner.temp }}/upload-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew :app:bundleRelease --console=plain
 
+      # KEY_PASSWORD tidak dikirim terpisah: keystore-nya PKCS12, jadi password
+      # kunci sama dengan password store dan Gradle memakai nilai itu.
       - name: Unggah ke Play (closed testing)
         if: ${{ !inputs.dry_run }}
         env:
@@ -88,7 +89,6 @@ jobs:
           KEYSTORE_FILE: ${{ runner.temp }}/upload-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew :app:publishReleaseBundle --console=plain
 
       - name: Simpan AAB

@@ -132,7 +132,7 @@ Secret yang dibutuhkan (Settings → Secrets and variables → Actions):
 | `KEYSTORE_BASE64` | `base64 -w0 upload.jks` (satu baris, tanpa baris baru) |
 | `KEYSTORE_PASSWORD` | password keystore upload |
 | `KEY_ALIAS` | alias kunci upload |
-| `KEY_PASSWORD` | password kunci upload |
+| `KEY_PASSWORD` | opsional, password kunci kalau beda dari password store. Keystore PKCS12 tidak punya password terpisah, jadi kalau dikosongkan Gradle memakai `KEYSTORE_PASSWORD`. |
 
 Yang harus beres di luar repo:
 
@@ -144,7 +144,7 @@ Menjalankan unggahan dari laptop, kalau perlu:
 
 ```bash
 ANDROID_PUBLISHER_CREDENTIALS="$(cat ~/play-cukinggo.json)" \
-  KEYSTORE_FILE=/path/upload.jks KEYSTORE_PASSWORD=... KEY_ALIAS=... KEY_PASSWORD=... \
+  KEYSTORE_FILE=/path/upload.jks KEYSTORE_PASSWORD=... KEY_ALIAS=... \
   ./gradlew :app:publishReleaseBundle
 ```
 

@@ -37,7 +37,12 @@ android {
                 storeFile = uploadKeystoreFile
                 storePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
                 keyAlias = providers.environmentVariable("KEY_ALIAS").orNull
+                // Keystore PKCS12 tidak punya password kunci terpisah, dan
+                // password kunci yang salah membuat bundletool gagal membaca
+                // kuncinya. Jadi kalau tidak diisi, pakai password store.
                 keyPassword = providers.environmentVariable("KEY_PASSWORD").orNull
+                    ?.takeIf { password -> password.isNotBlank() }
+                    ?: providers.environmentVariable("KEYSTORE_PASSWORD").orNull
             }
         }
     }
