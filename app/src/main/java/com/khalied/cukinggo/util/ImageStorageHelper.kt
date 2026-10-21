@@ -20,11 +20,27 @@ class ImageStorageHelper(private val context: Context) {
     fun createVideoCaptureFile(): File =
         File(context.cacheDir, "capture_${System.currentTimeMillis()}.mp4")
 
+    /**
+     * File sementara di cache tempat stiker baru ditulis. Stiker baru dipindah
+     * ke storage permanen kalau catatannya benar-benar disimpan, jadi hasil
+     * potong yang tidak jadi dipakai tidak meninggalkan file di filesDir.
+     */
+    fun createStickerTempFile(): File =
+        File(context.cacheDir, "sticker_${System.currentTimeMillis()}.png")
+
     /** Pindahkan hasil jepretan dari cache ke internal storage permanen. */
     fun moveCaptureToInternalStorage(captureFile: File): String {
         val target = File(context.filesDir, "cat_${System.currentTimeMillis()}.jpg")
         captureFile.copyTo(target, overwrite = true)
         captureFile.delete()
+        return target.absolutePath
+    }
+
+    /** Pindahkan stiker dari cache ke internal storage permanen. */
+    fun moveStickerToInternalStorage(stickerFile: File): String {
+        val target = File(context.filesDir, "sticker_${System.currentTimeMillis()}.png")
+        stickerFile.copyTo(target, overwrite = true)
+        stickerFile.delete()
         return target.absolutePath
     }
 

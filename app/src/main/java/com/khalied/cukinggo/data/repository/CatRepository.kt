@@ -171,6 +171,7 @@ class CatRepository(
         latitude: Double,
         longitude: Double,
         videoPath: String? = null,
+        stickerPath: String? = null,
         timestamp: Long = System.currentTimeMillis()
     ): Long = withContext(ioDispatcher) {
         val catId = catDao.insertCat(
@@ -184,6 +185,7 @@ class CatRepository(
                 catId = catId,
                 photoPath = photoPath,
                 videoPath = videoPath,
+                stickerPath = stickerPath,
                 description = blankToNull(description),
                 latitude = latitude,
                 longitude = longitude,
@@ -207,6 +209,7 @@ class CatRepository(
         latitude: Double,
         longitude: Double,
         videoPath: String? = null,
+        stickerPath: String? = null,
         timestamp: Long = System.currentTimeMillis()
     ): Long = withContext(ioDispatcher) {
         val sightingId = catSightingDao.insertSighting(
@@ -214,6 +217,7 @@ class CatRepository(
                 catId = catId,
                 photoPath = photoPath,
                 videoPath = videoPath,
+                stickerPath = stickerPath,
                 description = blankToNull(description),
                 latitude = latitude,
                 longitude = longitude,
@@ -256,9 +260,14 @@ class CatRepository(
         catSightingDao.updateDescription(sightingId, blankToNull(description))
         if (newPhotoCapture != null && newPhotoCapture.exists()) {
             val previousPath = catSightingDao.getPhotoPath(sightingId)
+            val previousSticker = catSightingDao.getStickerPath(sightingId)
             val newPath = imageStorageHelper.moveCaptureToInternalStorage(newPhotoCapture)
             catSightingDao.updatePhotoPath(sightingId, newPath)
             imageStorageHelper.deleteStoredFile(previousPath)
+            // Stiker lama menggambarkan foto lama, jadi ia ikut dilepas, bukan
+            // dibiarkan menunjuk cuking yang sudah tidak ada di foto itu.
+            catSightingDao.updateStickerPath(sightingId, null)
+            imageStorageHelper.deleteStoredFile(previousSticker)
         }
         if (newVideoCapture != null && newVideoCapture.exists()) {
             val previousVideo = catSightingDao.getVideoPath(sightingId)
@@ -283,6 +292,7 @@ class CatRepository(
         catSightingDao.deleteSightingById(sighting.id)
         imageStorageHelper.deleteStoredFile(sighting.photoPath)
         imageStorageHelper.deleteStoredFile(sighting.videoPath)
+        imageStorageHelper.deleteStoredFile(sighting.stickerPath)
         if (catSightingDao.countSightingsForCat(sighting.catId) == 0) {
             catDao.deleteCatById(sighting.catId)
         }
@@ -294,6 +304,7 @@ class CatRepository(
         cat.sightings.forEach { sighting ->
             imageStorageHelper.deleteStoredFile(sighting.photoPath)
             imageStorageHelper.deleteStoredFile(sighting.videoPath)
+            imageStorageHelper.deleteStoredFile(sighting.stickerPath)
         }
         // Penemuannya dihapus lebih dulu, bukan mengandalkan CASCADE: urutannya
         // jadi benar walau penegakan foreign key di SQLite sedang tidak aktif.

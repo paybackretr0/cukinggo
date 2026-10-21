@@ -61,6 +61,7 @@ import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.ui.components.CameraCaptureArea
+import com.khalied.cukinggo.ui.components.rememberCatDetection
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.VideoSection
@@ -137,7 +138,8 @@ fun EditCatScreen(
 
     val controller = remember {
         LifecycleCameraController(context).apply {
-            setEnabledUseCases(CameraController.IMAGE_CAPTURE)
+            // IMAGE_ANALYSIS dipakai frame bidik; jepretnya tetap IMAGE_CAPTURE.
+            setEnabledUseCases(CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS)
             cameraSelector = standardBackCameraSelector()
         }
     }
@@ -149,6 +151,13 @@ fun EditCatScreen(
         }
         onDispose { controller.unbind() }
     }
+
+    // Sama seperti di layar tambah: frame bidik cuma memberi tahu, jepret tetap
+    // menunggu sentuhan pengguna.
+    val catDetected by rememberCatDetection(
+        controller = controller,
+        enabled = capturing && cameraGranted
+    )
 
     val takePhoto = {
         val file = container.imageStorageHelper.createCaptureFile()
@@ -236,7 +245,8 @@ fun EditCatScreen(
                                 CameraCaptureArea(
                                     controller = controller,
                                     cameraFailed = cameraFailed,
-                                    onCapture = takePhoto
+                                    onCapture = takePhoto,
+                                    catDetected = catDetected
                                 )
                             } else {
                                 AsyncImage(

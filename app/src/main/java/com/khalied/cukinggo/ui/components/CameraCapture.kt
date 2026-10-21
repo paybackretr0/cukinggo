@@ -6,6 +6,8 @@ import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -26,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -114,8 +122,17 @@ fun CameraCaptureArea(
     controller: LifecycleCameraController,
     cameraFailed: Boolean,
     onCapture: () -> Unit,
+    /** Isyarat dari detektor: cuking sedang terlihat di frame. Jepret tetap manual. */
+    catDetected: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+
+    // Satu getar saat isyaratnya menyala, bukan tiap frame: yang dikabarkan adalah
+    // perubahannya, dan getar berulang justru bikin kamera terasa berisik.
+    LaunchedEffect(catDetected) {
+        if (catDetected) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
     // Perubahan zoom dibaca dari controller, bukan disimpan sendiri-sendiri:
     // controller bisa mereset zoomnya saat kameranya rebind, dan angka di layar
     // harus ikut.
@@ -175,6 +192,10 @@ fun CameraCaptureArea(
                         this.controller = controller
                     }
                 }
+            )
+            CatTargetOverlay(
+                detected = catDetected,
+                modifier = Modifier.matchParentSize()
             )
             if (cameraFailed) {
                 Text(
@@ -265,4 +286,104 @@ private fun formatZoom(ratio: Float): String {
         String.format(Locale.US, "%.1f", ratio)
     }
     return "${text}x"
+}
+
+/**
+ * Frame bidik di atas pratinjau kamera.
+ *
+ * Empat sudutnya selalu ada supaya pengguna tahu area yang dipantau, lalu
+ * menguat dan memunculkan satu baris kecil saat cuking terlihat. Yang dikabarkan
+ * cuma kehadiran, bukan kotak posisinya: jepret tetap manual, jadi kotak yang
+ * bergerak mengikuti cuking akan terbaca seperti kamera yang memilih sendiri.
+ *
+ * Sudutnya digambar dua kali, garis gelap lebih tebal di bawah garis berwarna.
+ * Pratinjau kamera bisa terang atau gelap, dan satu warna saja tidak bisa
+ * dijamin terlihat di keduanya.
+ */
+@Composable
+internal fun CatTargetOverlay(
+    detected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val lineColor = if (detected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val lineAlpha by animateFloatAsState(
+        targetValue = if (detected) 1f else 0.55f,
+        label = "catTargetAlpha"
+    )
+
+    Box(modifier = modifier) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val inset = 18.dp.toPx()
+            val length = 26.dp.toPx()
+            val stroke = 3.dp.toPx()
+            val underlay = 7.dp.toPx()
+            val right = size.width - inset
+            val bottom = size.height - inset
+
+            val corners = listOf(
+                listOf(
+                    Offset(inset, inset + length),
+                    Offset(inset, inset),
+                    Offset(inset + length, inset)
+                ),
+                listOf(
+                    Offset(right - length, inset),
+                    Offset(right, inset),
+                    Offset(right, inset + length)
+                ),
+                listOf(
+                    Offset(inset, bottom - length),
+                    Offset(inset, bottom),
+                    Offset(inset + length, bottom)
+                ),
+                listOf(
+                    Offset(right - length, bottom),
+                    Offset(right, bottom),
+                    Offset(right, bottom - length)
+                )
+            )
+
+            corners.forEach { corner ->
+                for (index in 0 until corner.lastIndex) {
+                    drawLine(
+                        color = Color.Black.copy(alpha = 0.45f),
+                        start = corner[index],
+                        end = corner[index + 1],
+                        strokeWidth = underlay,
+                        cap = StrokeCap.Round
+                    )
+                }
+                for (index in 0 until corner.lastIndex) {
+                    drawLine(
+                        color = lineColor.copy(alpha = lineAlpha),
+                        start = corner[index],
+                        end = corner[index + 1],
+                        strokeWidth = stroke,
+                        cap = StrokeCap.Round
+                    )
+                }
+            }
+        }
+
+        if (detected) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 14.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Text(
+                    text = stringResource(R.string.add_camera_cat_seen),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
+    }
 }

@@ -35,8 +35,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -75,6 +77,7 @@ import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.rememberCatDetection
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.ui.theme.frostBackdrop
 import com.khalied.cukinggo.util.hasCameraPermission
@@ -138,6 +141,7 @@ fun AddCatScreen(
     var cameraFailed by remember { mutableStateOf(false) }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val stickerState by viewModel.stickerState.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -179,12 +183,21 @@ fun AddCatScreen(
 
     val controller = remember {
         LifecycleCameraController(context).apply {
-            setEnabledUseCases(CameraController.IMAGE_CAPTURE)
+            // IMAGE_ANALYSIS dipakai deteksi cuking, tapi jepretnya tetap dari
+            // IMAGE_CAPTURE. Keduanya bisa hidup bersamaan di controller yang sama.
+            setEnabledUseCases(CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS)
             // Lensa utama, bukan kamera belakang pertama yang ditemukan sistem:
             // urutan itu bisa menunjuk ke lensa ultra-wide di sebagian HP.
             cameraSelector = standardBackCameraSelector()
         }
     }
+
+    // Deteksi cuma isyarat: layarnya memberi tahu saat cuking terlihat, tapi
+    // jepret tetap menunggu sentuhan pengguna.
+    val catDetected by rememberCatDetection(
+        controller = controller,
+        enabled = cameraGranted && captureFile == null
+    )
 
     // Kamera dilepas saat user sedang mereview foto supaya tidak jalan terus.
     DisposableEffect(lifecycleOwner, cameraGranted, captureFile == null) {
@@ -276,11 +289,15 @@ fun AddCatScreen(
                     CameraCaptureArea(
                         controller = controller,
                         cameraFailed = cameraFailed,
-                        onCapture = takePhoto
+                        onCapture = takePhoto,
+                        catDetected = catDetected
                     )
                 } else {
                     PhotoReview(
                         photoFile = captureFile!!,
+                        stickerState = stickerState,
+                        onMakeSticker = { viewModel.makeSticker(captureFile) },
+                        onRemoveSticker = viewModel::removeSticker,
                         name = name,
                         onNameChange = { name = it },
                         showNameField = viewModel.isNewCat,
@@ -304,6 +321,9 @@ fun AddCatScreen(
                             container.imageStorageHelper.discardCapture(videoCapture)
                             captureFile = null
                             videoCapture = null
+                            // Stiker dibuat dari foto yang barusan, jadi ia ikut
+                            // dilepas bersama fotonya.
+                            viewModel.removeSticker()
                             viewModel.clearError()
                         }
                     )
@@ -312,16 +332,31 @@ fun AddCatScreen(
                         is AddCatUiState.Error -> ErrorCard(
                             message = stringResource(state.messageRes),
                             onRetry = {
-                                viewModel.saveCat(captureFile, name, description, videoCapture)
+                                viewModel.saveCat(
+                                    captureFile = captureFile,
+                                    name = name,
+                                    description = description,
+                                    videoCapture = videoCapture,
+                                    stickerFile = stickerFile(stickerState)
+                                )
                             },
                             onDismiss = viewModel::clearError
                         )
 
                         else -> Button(
                             onClick = {
-                                viewModel.saveCat(captureFile, name, description, videoCapture)
+                                viewModel.saveCat(
+                                    captureFile = captureFile,
+                                    name = name,
+                                    description = description,
+                                    videoCapture = videoCapture,
+                                    stickerFile = stickerFile(stickerState)
+                                )
                             },
-                            enabled = !busy,
+                            // Stiker yang sedang dipotong ikut ditunggu: kalau
+                            // Simpan ditekan sekarang, hasil potongannya belum
+                            // ikut tersimpan.
+                            enabled = !busy && stickerState !is StickerUiState.Working,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -418,9 +453,16 @@ fun AddCatScreen(
     }
 }
 
+/** File stiker hanya ikut disimpan kalau pembuatannya memang berhasil. */
+private fun stickerFile(state: StickerUiState): File? =
+    (state as? StickerUiState.Ready)?.file
+
 @Composable
 private fun PhotoReview(
     photoFile: File,
+    stickerState: StickerUiState,
+    onMakeSticker: () -> Unit,
+    onRemoveSticker: () -> Unit,
     name: String,
     onNameChange: (String) -> Unit,
     /** Cuma ditanyakan untuk cuking baru: nama milik cukingnya, bukan penemuannya. */
@@ -436,6 +478,11 @@ private fun PhotoReview(
     onRetake: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Stiker yang sudah jadi langsung ditampilkan: itu hasil yang ditunggu
+    // pengguna, bukan fotonya lagi. Tombol "Lihat foto" mengembalikannya.
+    val sticker = stickerState as? StickerUiState.Ready
+    var showSticker by remember(sticker?.file) { mutableStateOf(sticker != null) }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -448,14 +495,17 @@ private fun PhotoReview(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            AsyncImage(
-                model = photoFile,
-                contentDescription = stringResource(R.string.cd_cat_photo),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(MaterialTheme.shapes.large)
+            StickerPreview(
+                photoFile = photoFile,
+                sticker = sticker,
+                showSticker = showSticker
+            )
+            StickerSection(
+                state = stickerState,
+                showingSticker = showSticker,
+                onMakeSticker = onMakeSticker,
+                onRemoveSticker = onRemoveSticker,
+                onTogglePreview = { showSticker = !showSticker }
             )
             if (showNameField) {
                 OutlinedTextField(
@@ -518,6 +568,154 @@ private fun PhotoReview(
                 TextButton(onClick = onRetake) {
                     Text(
                         text = stringResource(R.string.add_retake),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Foto atau stikernya, di tempat yang sama.
+ *
+ * Latar kotaknya warna permukaan, bukan kotak-kotak papan catur: yang perlu
+ * terlihat cuma bahwa latarnya hilang, dan pola papan catur akan bersaing dengan
+ * cukingnya sendiri.
+ */
+@Composable
+private fun StickerPreview(
+    photoFile: File,
+    sticker: StickerUiState.Ready?,
+    showSticker: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        if (showSticker && sticker != null) {
+            AsyncImage(
+                model = sticker.file,
+                contentDescription = stringResource(R.string.cd_sticker_preview),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp)
+            )
+        } else {
+            AsyncImage(
+                model = photoFile,
+                contentDescription = stringResource(R.string.cd_cat_photo),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+/**
+ * Tombol dan kabar seputar stiker.
+ *
+ * Stiker sifatnya tambahan: fotonya tetap wajib, stikernya boleh dilewati. Karena
+ * itu yang salah tidak pernah memblokir tombol Simpan, dan kegagalannya cuma
+ * dijelaskan di sini.
+ */
+@Composable
+private fun StickerSection(
+    state: StickerUiState,
+    showingSticker: Boolean,
+    onMakeSticker: () -> Unit,
+    onRemoveSticker: () -> Unit,
+    onTogglePreview: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        when (state) {
+            StickerUiState.None -> {
+                OutlinedButton(
+                    onClick = onMakeSticker,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text(
+                        text = stringResource(R.string.add_sticker_make),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.add_sticker_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            StickerUiState.Working -> Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.add_sticker_working),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            is StickerUiState.Ready -> {
+                InfoChip(
+                    text = stringResource(R.string.add_sticker_ready),
+                    iconRes = R.drawable.ic_paw,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                // Dua tombolnya ditaruh di baris sendiri, bukan di samping chip:
+                // di layar sempit atau saat huruf diperbesar, satu baris bertiga
+                // akan saling mendesak.
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(onClick = onTogglePreview) {
+                        Text(
+                            text = stringResource(
+                                if (showingSticker) {
+                                    R.string.add_sticker_see_photo
+                                } else {
+                                    R.string.add_sticker_see_sticker
+                                }
+                            ),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    TextButton(onClick = onRemoveSticker) {
+                        Text(
+                            text = stringResource(R.string.add_sticker_remove),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            is StickerUiState.Error -> {
+                Text(
+                    text = stringResource(state.messageRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                TextButton(onClick = onMakeSticker) {
+                    Text(
+                        text = stringResource(R.string.add_retry),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

@@ -35,6 +35,7 @@
     <string name="add_again_title">Tandai ketemu lagi</string>
     <string name="add_camera_hint">Arahkan ke cukingnya, lalu jepret 📸</string>
     <string name="add_camera_zoom_hint">Masih jauh? Cubit layarnya, atau pakai tombol zoom di atas.</string>
+    <string name="add_camera_cat_seen">Cuking terlihat, jepret kalau pas</string>
     <string name="add_capture">Jepret</string>
     <string name="add_retake">Ambil ulang</string>
     <string name="add_name_label">Nama cuking</string>
@@ -53,6 +54,15 @@
     <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
     <string name="add_error_save">Cukingnya gagal disimpan. Coba sekali lagi ya.</string>
     <string name="add_retry">Coba lagi</string>
+    <string name="add_sticker_make">Buat stiker</string>
+    <string name="add_sticker_working">Lagi motong latarnya…</string>
+    <string name="add_sticker_ready">Stiker siap</string>
+    <string name="add_sticker_see_photo">Lihat foto</string>
+    <string name="add_sticker_see_sticker">Lihat stiker</string>
+    <string name="add_sticker_remove">Hapus stiker</string>
+    <string name="add_sticker_hint">Latar fotonya dibuang di HP kamu, jadi yang tersisa cuma cukingnya.</string>
+    <string name="add_sticker_error_empty">Cukingnya belum kebaca. Kalau baru pertama kali, modelnya mungkin masih disiapkan. Coba lagi sebentar ya.</string>
+    <string name="add_sticker_error_failed">Stikernya gagal dibuat. Coba sekali lagi ya.</string>
     <string name="video_section_label">Video (opsional)</string>
     <string name="video_section_support">Fotonya tetap jadi wujud utama. Video cuma teman, kalau kamu sempat merekam.</string>
     <string name="video_add">Tambah video</string>
@@ -90,6 +100,8 @@
     <string name="detail_delete_confirm">Hapus</string>
     <string name="detail_goodbye_message">Cukingnya melambai pamit. Sampai ketemu lagi ya 🐾</string>
     <string name="detail_missing">Cukingnya sudah nggak ada di catatan.</string>
+    <string name="detail_preview_photo">Foto</string>
+    <string name="detail_preview_sticker">Stiker</string>
     <string name="detail_location_title">Lokasinya di peta</string>
     <string name="detail_trail_title">Jejak di peta</string>
     <string name="detail_trail_caption">Garis menghubungkan tiap tempat dia ketemu. Yang lebih terang berarti lebih baru.</string>
@@ -126,12 +138,15 @@
     <string name="share_option_photo_and_text_desc">Paling pas buat WhatsApp, Telegram, dan app yang baca caption-nya.</string>
     <string name="share_option_video_and_text">Video + teks</string>
     <string name="share_option_video_and_text_desc">Buat yang mau ikut mengirim gerak-gerik cukingnya, bukan cuma fotonya.</string>
+    <string name="share_option_sticker">Stiker transparan</string>
+    <string name="share_option_sticker_desc">Cuma cukingnya, tanpa latar. Ada app yang meratakan latarnya jadi putih, jadi hasilnya tergantung app tujuan.</string>
     <string name="share_option_text_only">Teks saja</string>
     <string name="share_option_text_only_desc">Buat Instagram dan app yang nggak baca caption foto.</string>
     <string name="share_option_copy_text">Salin teks</string>
     <string name="share_option_copy_text_desc">Tempel sendiri di caption atau kirim sebagai pesan biasa.</string>
     <string name="share_chooser_text_title">Bagikan teksnya lewat mana?</string>
     <string name="share_copy_done">Teksnya disalin. Tempel di caption Instagram ya 📋</string>
+    <string name="share_sticker_missing">Stikernya sudah nggak ada di HP.</string>
 
     <!-- Rekap mingguan -->
     <string name="weekly_open">Rekap minggu ini</string>
@@ -247,11 +262,42 @@
         <item>Yang penting kelihatan manis.</item>
     </string-array>
 
+    <!-- Paket stiker WhatsApp -->
+    <string name="sticker_pack_title">Stiker WhatsApp</string>
+    <string name="sticker_pack_subtitle">Semua stiker yang pernah kamu buat, dikumpulkan jadi satu paket.</string>
+    <string name="sticker_pack_pill_description">Stiker WhatsApp</string>
+    <string name="sticker_pack_count">%1$d dari %2$d stiker dipilih</string>
+    <string name="sticker_pack_pick_title">Pilih stiker</string>
+    <string name="sticker_pack_pick_hint">Ketuk stiker untuk memasukkan atau mengeluarkannya. Minimal 3, maksimal 30.</string>
+    <string name="sticker_pack_selection_full">Sudah 30 stiker dipilih. Keluarkan satu dulu kalau mau menambah yang lain.</string>
+    <string name="cd_sticker_selected">Masuk paket</string>
+    <string name="cd_sticker_not_selected">Tidak masuk paket</string>
+    <string name="sticker_pack_add">Tambahkan ke WhatsApp</string>
+    <string name="sticker_pack_update">Perbarui paket di WhatsApp</string>
+    <string name="sticker_pack_added">Paket ini sudah ada di WhatsApp. Kalau ada stiker baru, perbarui supaya ikut.</string>
+    <string name="sticker_pack_chooser">Tambahkan ke WhatsApp</string>
+    <string name="sticker_pack_size_note">Stiker diubah ke WebP 512 px di HP kamu, satu per satu dijaga di bawah 100 KB.</string>
+    <string name="sticker_pack_max_note">Satu paket maksimal 30 stiker. Yang paling baru ikut lebih dulu.</string>
+    <string name="sticker_pack_exporting">Menyiapkan paket…</string>
+    <string name="sticker_pack_loading">Menghitung stiker…</string>
+    <string name="sticker_pack_failed">Paketnya gagal disiapkan. Coba sekali lagi ya.</string>
+    <string name="sticker_pack_rejected_title">WhatsApp belum menerima paketnya</string>
+    <string name="sticker_pack_rejected_body">Alasan dari WhatsApp: %1$s</string>
+    <string name="sticker_pack_duplicate_title">WhatsApp duplikat belum bisa memakai paket ini</string>
+    <string name="sticker_pack_duplicate_body">WhatsApp duplikat berjalan terpisah dari app lain, dan CukingGo hanya terpasang di ruang utama. Jadi file stikernya tidak bisa diambil dari sana. Coba lagi, lalu pilih WhatsApp yang biasa kamu pakai di daftar aplikasi. Kalau butuh dua nomor, WhatsApp Business bisa membaca paket ini.</string>
+    <string name="sticker_pack_no_whatsapp">WhatsApp belum terpasang di HP ini, jadi paketnya belum bisa ditambahkan.</string>
+    <string name="sticker_pack_too_few_title">Butuh %1$d stiker dulu</string>
+    <string name="sticker_pack_too_few_body">Sekarang baru %1$d. Stiker dibuat saat kamu memeriksa foto setelah menjepret, lewat tombol "Buat stiker". Setelah cukup, paketnya bisa ditambahkan ke WhatsApp dari sini.</string>
+    <string name="sticker_pack_empty">Belum ada stiker sama sekali. Stiker dibuat saat memeriksa foto setelah menjepret.</string>
+    <string name="sticker_pack_accessibility">Stiker cuking</string>
+    <string name="sticker_pack_accessibility_named">Stiker cuking bernama %1$s</string>
+
     <!-- Umum -->
     <string name="action_cancel">Batal</string>
     <string name="action_close">Tutup</string>
     <string name="action_back">Kembali</string>
     <string name="cd_cat_photo">Foto cuking</string>
+    <string name="cd_sticker_preview">Stiker cuking tanpa latar</string>
     <string name="day_today">Hari ini</string>
     <string name="day_yesterday">Kemarin</string>
 </resources>

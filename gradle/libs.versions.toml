@@ -18,6 +18,9 @@ playServicesLocation = "21.4.0"
 osmdroid = "6.1.20"
 coil = "3.6.3"
 haze = "1.7.3"
+mlkitSubjectSegmentation = "16.0.0-beta1"
+mlkitImageLabeling = "17.0.9"
+exifinterface = "1.4.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +61,15 @@ androidx-camera-video = { group = "androidx.camera", name = "camera-video", vers
 # Location + map
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
+
+# Stiker: potong latar cuking di HP. Modelnya diunduh lewat Play Services
+# (unbundled), jadi yang masuk APK cuma kliennya.
+play-services-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "mlkitSubjectSegmentation" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
+
+# Deteksi cuking di pratinjau kamera. Modelnya ikut di APK (bundled), jadi
+# deteksinya tetap jalan tanpa unduhan dan tanpa Play Services.
+mlkit-image-labeling = { group = "com.google.mlkit", name = "image-labeling", version.ref = "mlkitImageLabeling" }
 
 # Image loading
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }

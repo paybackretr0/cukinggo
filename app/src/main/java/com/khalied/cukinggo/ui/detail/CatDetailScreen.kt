@@ -2,6 +2,7 @@ package com.khalied.cukinggo.ui.detail
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,6 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -70,6 +73,7 @@ import com.khalied.cukinggo.ui.theme.appCardOutline
 import com.khalied.cukinggo.ui.theme.frostBackdrop
 import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.util.catShareIntent
+import com.khalied.cukinggo.util.catStickerShareIntent
 import com.khalied.cukinggo.util.catTextShareIntent
 import com.khalied.cukinggo.util.catVideoShareIntent
 import com.khalied.cukinggo.util.blankToNull
@@ -314,23 +318,7 @@ private fun DetailContent(
         // di belakang bar kaca saat digulir, bukan terpotong di bawahnya.
         contentPadding = PaddingValues(top = topBarPadding)
     ) {
-        item {
-            // Foto penemuan yang sedang ditampilkan. Kartu di daftar memakai kunci
-            // yang sama, jadi begitu kartunya disentuh, yang bergerak ke sini cuma
-            // fotonya (lihat sharedCatPhoto).
-            AsyncImage(
-                model = File(selectedSighting.photoPath),
-                contentDescription = stringResource(R.string.cd_cat_photo),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .sharedCatPhoto(
-                        sightingId = selectedSighting.id,
-                        clip = MaterialTheme.shapes.extraLarge
-                    )
-            )
-        }
+        item { SightingMedia(sighting = selectedSighting) }
 
         // Video pendamping ditaruh tepat di bawah fotonya, bukan di bagian lain:
         // ia pasangan dari foto itu, dan yang mencari gerak-gerik cukingnya akan
@@ -556,6 +544,118 @@ private fun DetailContent(
             },
             onDismiss = { sightingToDelete = null }
         )
+    }
+}
+
+/**
+ * Foto penemuan, dengan pilihan melihat stikernya kalau stiker itu memang ada.
+ *
+ * Fotonya tetap yang tampil pertama, karena dialah wujud asli penemuan ini.
+ * Stiker cuma lapisan kedua yang dibuka kalau pengguna memang ingin melihatnya,
+ * dan pilihannya dikembalikan ke foto setiap kali riwayat memilih penemuan lain.
+ *
+ * Stiker digambar di atas warna permukaan, bukan di atas foto: satu-satunya hal
+ * yang perlu terlihat dari stiker adalah bahwa latarnya hilang.
+ */
+@Composable
+private fun SightingMedia(
+    sighting: CatSighting,
+    modifier: Modifier = Modifier
+) {
+    val stickerFile = remember(sighting.stickerPath) {
+        sighting.stickerPath?.let { path -> File(path).takeIf { it.isFile } }
+    }
+    var showSticker by remember(sighting.id) { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showSticker && stickerFile != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = stickerFile,
+                    contentDescription = stringResource(R.string.cd_sticker_preview),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
+        } else {
+            // Kartu di daftar memakai kunci yang sama, jadi begitu kartunya
+            // disentuh, yang bergerak ke sini cuma fotonya (lihat sharedCatPhoto).
+            AsyncImage(
+                model = File(sighting.photoPath),
+                contentDescription = stringResource(R.string.cd_cat_photo),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .sharedCatPhoto(
+                        sightingId = sighting.id,
+                        clip = MaterialTheme.shapes.extraLarge
+                    )
+            )
+        }
+
+        if (stickerFile != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MediaChoiceChip(
+                    label = stringResource(R.string.detail_preview_photo),
+                    selected = !showSticker,
+                    onClick = { showSticker = false }
+                )
+                MediaChoiceChip(
+                    label = stringResource(R.string.detail_preview_sticker),
+                    selected = showSticker,
+                    onClick = { showSticker = true }
+                )
+            }
+        }
+    }
+}
+
+/** Satu pilihan di antara foto dan stiker, dengan tinggi tap target 44dp. */
+@Composable
+private fun MediaChoiceChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.selectable(
+            selected = selected,
+            onClick = onClick,
+            role = Role.RadioButton
+        ),
+        shape = CircleShape,
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    ) {
+        Box(
+            modifier = Modifier
+                .heightIn(min = 44.dp)
+                .padding(horizontal = 18.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = label, style = MaterialTheme.typography.labelLarge)
+        }
     }
 }
 
@@ -842,6 +942,32 @@ private fun ShareOptionsDialog(
                         )
                     }
                 )
+                val stickerPath = sighting.stickerPath
+                val stickerAvailable = remember(stickerPath) {
+                    stickerPath != null && File(stickerPath).isFile
+                }
+                if (stickerPath != null && stickerAvailable) {
+                    ShareOptionRow(
+                        title = stringResource(R.string.share_option_sticker),
+                        description = stringResource(R.string.share_option_sticker_desc),
+                        onClick = {
+                            val intent = catStickerShareIntent(context, stickerPath)
+                            onDismiss()
+                            if (intent != null) {
+                                context.startActivity(Intent.createChooser(intent, chooserTitle))
+                            } else {
+                                // Filenya bisa hilang di antara dialog dibuka dan
+                                // tombolnya ditekan. Diam saja akan terbaca sebagai
+                                // tombol rusak, jadi keadaannya dijelaskan.
+                                Toast.makeText(
+                                    context,
+                                    R.string.share_sticker_missing,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    )
+                }
                 ShareOptionRow(
                     title = stringResource(R.string.share_option_text_only),
                     description = stringResource(R.string.share_option_text_only_desc),

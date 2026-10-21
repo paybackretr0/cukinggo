@@ -7,6 +7,9 @@ import com.khalied.cukinggo.data.repository.CatRepository
 import com.khalied.cukinggo.location.LocationHelper
 import com.khalied.cukinggo.util.ImageStorageHelper
 import com.khalied.cukinggo.location.NearbyAlerts
+import com.khalied.cukinggo.sticker.MlKitSubjectSegmenter
+import com.khalied.cukinggo.sticker.StickerMaker
+import com.khalied.cukinggo.whatsapp.StickerPackExporter
 import com.khalied.cukinggo.widget.CatWidgets
 
 /**
@@ -14,12 +17,24 @@ import com.khalied.cukinggo.widget.CatWidgets
  */
 class AppContainer(context: Context) {
 
-    private val appContext = context.applicationContext
+    /**
+     * Konteks app, dipakai layar yang perlu memeriksa WhatsApp dan menyiapkan
+     * paket stikernya. Bukan activity, jadi tidak menyimpan apa pun milik layar.
+     */
+    val appContext: Context = context.applicationContext
+
     private val database = CatDatabase.getInstance(appContext)
 
     val displayPreferences = DisplayPreferences(appContext)
     val imageStorageHelper = ImageStorageHelper(appContext)
     val locationHelper = LocationHelper(appContext)
+
+    // Satu pemisah latar dipakai ulang: membuat klien ML Kit per jepretan berarti
+    // memuat model berkali-kali untuk pekerjaan yang sama.
+    val stickerMaker = StickerMaker(MlKitSubjectSegmenter())
+    // Paket stiker WhatsApp ditulis dari master PNG yang sudah ada, jadi tidak
+    // butuh pemisah latar lagi.
+    val stickerPackExporter = StickerPackExporter(appContext)
     val catRepository = CatRepository(
         catDao = database.catDao(),
         catSightingDao = database.catSightingDao(),

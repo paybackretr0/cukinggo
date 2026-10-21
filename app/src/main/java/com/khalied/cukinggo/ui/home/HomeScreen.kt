@@ -158,6 +158,7 @@ fun HomeScreen(
     onSightingClick: (Long) -> Unit,
     onSeeAllCats: () -> Unit,
     onOpenWeeklyRecap: () -> Unit,
+    onOpenStickerPack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -499,6 +500,7 @@ fun HomeScreen(
                 nearbyActive = nearbyState == NearbyAlertState.ACTIVE,
                 onNearbyClick = { showNearbyDialog = true },
                 onAppearanceClick = { showAppearanceDialog = true },
+                onStickerPackClick = onOpenStickerPack,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .onSizeChanged { size -> headerHeightPx = size.height }
@@ -713,6 +715,34 @@ private fun NearbyPill(active: Boolean, onClick: () -> Unit, modifier: Modifier 
             Icon(
                 painter = painterResource(R.drawable.ic_bell),
                 contentDescription = stringResource(R.string.nearby_pill_description),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Jalan ke paket stiker WhatsApp.
+ *
+ * Pill ikon, sama seperti kabar dekat cuking, karena header ini sudah memuat
+ * judul dan dua kontrol lain; menambah satu tombol berteks lagi membuatnya
+ * penuh di layar sempit atau saat huruf diperbesar.
+ */
+@Composable
+private fun StickerPackPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Box(
+            modifier = Modifier.size(44.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_sticker),
+                contentDescription = stringResource(R.string.sticker_pack_pill_description),
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -959,6 +989,7 @@ private fun HomeHeaderBar(
     nearbyActive: Boolean,
     onNearbyClick: () -> Unit,
     onAppearanceClick: () -> Unit,
+    onStickerPackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -986,6 +1017,7 @@ private fun HomeHeaderBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        StickerPackPill(onClick = onStickerPackClick)
         NearbyPill(active = nearbyActive, onClick = onNearbyClick)
         AppearancePill(onClick = onAppearanceClick)
     }

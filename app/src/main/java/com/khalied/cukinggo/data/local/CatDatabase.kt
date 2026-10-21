@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CatEntity::class, CatSightingEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class CatDatabase : RoomDatabase() {
@@ -102,6 +102,17 @@ abstract class CatDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Kolom stiker ditambahkan sebagai kolom terakhir yang boleh null.
+         * Penemuan lama tidak punya stiker, dan itu memang keadaannya: stiker
+         * hanya dibuat kalau pengguna menekan tombolnya.
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cat_sightings ADD COLUMN stickerPath TEXT")
+            }
+        }
+
         @Volatile
         private var instance: CatDatabase? = null
 
@@ -112,7 +123,7 @@ abstract class CatDatabase : RoomDatabase() {
                     CatDatabase::class.java,
                     DB_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }

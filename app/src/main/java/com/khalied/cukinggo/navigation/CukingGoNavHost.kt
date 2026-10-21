@@ -30,6 +30,8 @@ import com.khalied.cukinggo.ui.addcat.AddCatScreen
 import com.khalied.cukinggo.ui.addcat.AddCatViewModel
 import com.khalied.cukinggo.ui.addcat.NEW_CAT_ID
 import com.khalied.cukinggo.ui.catlist.CatListScreen
+import com.khalied.cukinggo.ui.stickerpack.StickerPackScreen
+import com.khalied.cukinggo.ui.stickerpack.StickerPackViewModel
 import com.khalied.cukinggo.ui.catlist.CatListViewModel
 import com.khalied.cukinggo.ui.components.LocalAnimatedVisibilityScope
 import com.khalied.cukinggo.ui.components.LocalSharedTransitionScope
@@ -50,6 +52,9 @@ object Routes {
 
     /** Rekap tujuh hari terakhir, dibuka dari baris "Rekap minggu ini" di Home. */
     const val WEEKLY_RECAP = "weekly_recap"
+
+    /** Paket stiker WhatsApp, dibuka dari pil stiker di header Home. */
+    const val STICKER_PACK = "sticker_pack"
 
     /** Nama argumennya dipakai juga saat membaca nilainya dari back stack entry. */
     const val ARG_CAPTURE = "capture"
@@ -202,7 +207,8 @@ fun CukingGoNavHost(
                             navController.navigate(Routes.catDetail(sightingId))
                         },
                         onSeeAllCats = { navController.navigate(Routes.CAT_LIST) },
-                        onOpenWeeklyRecap = { navController.navigate(Routes.WEEKLY_RECAP) }
+                        onOpenWeeklyRecap = { navController.navigate(Routes.WEEKLY_RECAP) },
+                        onOpenStickerPack = { navController.navigate(Routes.STICKER_PACK) }
                     )
                 }
             }
@@ -272,6 +278,16 @@ fun CukingGoNavHost(
                     autoCapture = backStackEntry.arguments
                         ?.getBoolean(Routes.ARG_CAPTURE)
                         ?: false
+                )
+            }
+
+            composable(Routes.STICKER_PACK) {
+                val viewModel: StickerPackViewModel = viewModel(
+                    factory = StickerPackViewModel.factory(container)
+                )
+                StickerPackScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

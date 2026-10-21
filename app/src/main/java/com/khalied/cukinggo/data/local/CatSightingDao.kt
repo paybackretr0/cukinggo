@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.Flow
  */
 private const val SIGHTING_WITH_NAME =
     "SELECT s.id AS id, s.catId AS catId, c.name AS catName, s.photoPath AS photoPath, " +
-        "s.videoPath AS videoPath, " +
+        "s.videoPath AS videoPath, s.stickerPath AS stickerPath, " +
         "s.description AS description, s.latitude AS latitude, s.longitude AS longitude, " +
         "s.timestamp AS timestamp FROM cat_sightings s INNER JOIN cats c ON c.id = s.catId"
 
@@ -117,6 +117,17 @@ interface CatSightingDao {
     /** Video yang sedang dipakai satu penemuan, dibaca sebelum videonya diganti. */
     @Query("SELECT videoPath FROM cat_sightings WHERE id = :id")
     suspend fun getVideoPath(id: Long): String?
+
+    /**
+     * Mengganti atau melepas stiker satu penemuan. Null dipakai saat fotonya
+     * diganti, karena stiker lama sudah tidak menggambarkan foto yang baru.
+     */
+    @Query("UPDATE cat_sightings SET stickerPath = :stickerPath WHERE id = :id")
+    suspend fun updateStickerPath(id: Long, stickerPath: String?)
+
+    /** Stiker yang sedang dipakai satu penemuan, dibaca sebelum diganti atau dilepas. */
+    @Query("SELECT stickerPath FROM cat_sightings WHERE id = :id")
+    suspend fun getStickerPath(id: Long): String?
 
     @Query("DELETE FROM cat_sightings WHERE id = :id")
     suspend fun deleteSightingById(id: Long)

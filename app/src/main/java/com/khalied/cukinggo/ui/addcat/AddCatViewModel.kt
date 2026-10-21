@@ -11,6 +11,8 @@ import com.khalied.cukinggo.data.repository.CatRepository
 import com.khalied.cukinggo.di.AppContainer
 import com.khalied.cukinggo.domain.model.Cat
 import com.khalied.cukinggo.location.LocationHelper
+import com.khalied.cukinggo.sticker.StickerMaker
+import com.khalied.cukinggo.sticker.StickerResult
 import com.khalied.cukinggo.util.ImageStorageHelper
 import com.khalied.cukinggo.util.catStreak
 import com.khalied.cukinggo.util.streakToCelebrate
@@ -48,6 +50,25 @@ sealed interface AddCatUiState {
 }
 
 /**
+ * Keadaan pembuatan stiker, terpisah dari keadaan penyimpanan.
+ *
+ * Dipisah karena keduanya berjalan sendiri-sendiri: pengguna boleh membuat
+ * stiker, mengulanginya, atau melewatinya sama sekali sebelum menekan Simpan.
+ * Menyatukannya dengan [AddCatUiState] akan membuat "sedang memotong latar"
+ * terlihat seperti "sedang menyimpan".
+ */
+sealed interface StickerUiState {
+    /** Belum ada stiker, dan pengguna belum memintanya. */
+    data object None : StickerUiState
+
+    data object Working : StickerUiState
+
+    data class Ready(val file: File) : StickerUiState
+
+    data class Error(@StringRes val messageRes: Int) : StickerUiState
+}
+
+/**
  * Layar kamera melayani dua hal: menandai cuking baru, dan menambah penemuan
  * untuk cuking yang sudah ada. Yang membedakan cuma [catId], dan yang berbeda di
  * alurnya cuma nama: nama cuma ditanyakan saat cukingnya memang baru.
@@ -56,6 +77,7 @@ class AddCatViewModel(
     private val catRepository: CatRepository,
     private val locationHelper: LocationHelper,
     private val imageStorageHelper: ImageStorageHelper,
+    private val stickerMaker: StickerMaker,
     private val catId: Long = NEW_CAT_ID
 ) : ViewModel() {
 
@@ -75,6 +97,9 @@ class AddCatViewModel(
     private val _uiState = MutableStateFlow<AddCatUiState>(AddCatUiState.Idle)
     val uiState: StateFlow<AddCatUiState> = _uiState.asStateFlow()
 
+    private val _stickerState = MutableStateFlow<StickerUiState>(StickerUiState.None)
+    val stickerState: StateFlow<StickerUiState> = _stickerState.asStateFlow()
+
     /**
      * Ambil GPS saat simpan (tanpa input manual), pindahkan foto dan videonya ke
      * internal storage, lalu simpan catatannya ke Room.
@@ -82,11 +107,52 @@ class AddCatViewModel(
      * [videoCapture] null berarti pengguna tidak merekam apa-apa, dan itu memang
      * pilihan yang sah: videonya opsional.
      */
+    /**
+     * Memotong latar foto yang barusan dijepret.
+     *
+     * File hasilnya ditulis ke cache dulu. Stiker baru pindah ke storage
+     * permanen saat catatannya disimpan, jadi pengguna yang mengurungkan niat
+     * tidak meninggalkan stiker yatim.
+     */
+    fun makeSticker(captureFile: File?) {
+        if (captureFile == null || !captureFile.exists()) {
+            _stickerState.value = StickerUiState.Error(R.string.add_error_no_photo)
+            return
+        }
+        if (_stickerState.value is StickerUiState.Working) return
+
+        viewModelScope.launch {
+            _stickerState.value = StickerUiState.Working
+            val target = imageStorageHelper.createStickerTempFile()
+            when (val result = stickerMaker.makeSticker(captureFile, target)) {
+                is StickerResult.Ready -> _stickerState.value = StickerUiState.Ready(result.file)
+                is StickerResult.NothingDetected -> {
+                    imageStorageHelper.discardCapture(target)
+                    _stickerState.value = StickerUiState.Error(R.string.add_sticker_error_empty)
+                }
+                is StickerResult.Failed -> {
+                    imageStorageHelper.discardCapture(target)
+                    _stickerState.value = StickerUiState.Error(R.string.add_sticker_error_failed)
+                }
+            }
+        }
+    }
+
+    /** Melepas stiker yang sudah dibuat, misalnya karena pengguna ingin ambil ulang. */
+    fun removeSticker() {
+        val current = _stickerState.value
+        if (current is StickerUiState.Ready) {
+            imageStorageHelper.discardCapture(current.file)
+        }
+        _stickerState.value = StickerUiState.None
+    }
+
     fun saveCat(
         captureFile: File?,
         name: String,
         description: String,
-        videoCapture: File? = null
+        videoCapture: File? = null,
+        stickerFile: File? = null
     ) {
         if (captureFile == null || !captureFile.exists()) {
             _uiState.value = AddCatUiState.Error(R.string.add_error_no_photo)
@@ -127,6 +193,11 @@ class AddCatViewModel(
                         ?.takeIf { it.exists() }
                         ?.let { imageStorageHelper.moveVideoToInternalStorage(it) }
                 }
+                val stickerPath = withContext(Dispatchers.IO) {
+                    stickerFile
+                        ?.takeIf { it.exists() }
+                        ?.let { imageStorageHelper.moveStickerToInternalStorage(it) }
+                }
                 if (isNewCat) {
                     catRepository.addCat(
                         photoPath = photoPath,
@@ -134,7 +205,8 @@ class AddCatViewModel(
                         description = description,
                         latitude = location.latitude,
                         longitude = location.longitude,
-                        videoPath = videoPath
+                        videoPath = videoPath,
+                        stickerPath = stickerPath
                     )
                 } else {
                     catRepository.addSighting(
@@ -143,7 +215,8 @@ class AddCatViewModel(
                         description = description,
                         latitude = location.latitude,
                         longitude = location.longitude,
-                        videoPath = videoPath
+                        videoPath = videoPath,
+                        stickerPath = stickerPath
                     )
                 }
             }.onSuccess {
@@ -171,6 +244,7 @@ class AddCatViewModel(
                         catRepository = container.catRepository,
                         locationHelper = container.locationHelper,
                         imageStorageHelper = container.imageStorageHelper,
+                        stickerMaker = container.stickerMaker,
                         catId = catId
                     )
                 }

@@ -58,6 +58,24 @@ fun catVideoShareIntent(context: Context, videoPath: String, text: String): Inte
 }
 
 /**
+ * Intent "bagikan stiker": PNG transparan tanpa teks.
+ *
+ * Teks sengaja tidak ikut. App chat yang menerima gambar plus teks
+ * memperlakukannya sebagai foto dengan caption, sedangkan yang mau dikirim di
+ * sini adalah cukingnya saja. Null kalau filenya sudah tidak ada: stiker tanpa
+ * filenya tidak punya apa pun untuk dikirim, dan tombolnya memang tidak
+ * ditampilkan dalam keadaan itu.
+ */
+fun catStickerShareIntent(context: Context, stickerPath: String): Intent? {
+    val stickerUri = mediaUriFor(context, stickerPath) ?: return null
+    return Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, stickerUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+}
+
+/**
  * Intent "bagikan teks saja": isi pesannya tanpa foto.
  *
  * Ada karena sebagian app, Instagram di antaranya, mengabaikan teks yang

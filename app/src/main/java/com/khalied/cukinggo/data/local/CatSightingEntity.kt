@@ -34,6 +34,12 @@ data class CatSightingEntity(
     val photoPath: String,
     /** Video pendamping, kalau pengguna merekamnya. Null artinya penemuan ini foto saja. */
     val videoPath: String? = null,
+    /**
+     * Stiker cuking tanpa latar yang dibuat dari [photoPath]. Null artinya
+     * pengguna tidak membuat stiker untuk penemuan ini, atau fotonya sudah
+     * diganti sehingga stiker lama ikut dibuang.
+     */
+    val stickerPath: String? = null,
     val description: String?,
     val latitude: Double,
     val longitude: Double,
@@ -52,6 +58,7 @@ data class CatSightingRow(
     val catName: String?,
     val photoPath: String,
     val videoPath: String? = null,
+    val stickerPath: String? = null,
     val description: String?,
     val latitude: Double,
     val longitude: Double,
@@ -64,6 +71,7 @@ fun CatSightingRow.toDomain(): CatSighting = CatSighting(
     catName = catName,
     photoPath = photoPath,
     videoPath = videoPath,
+    stickerPath = stickerPath,
     description = description,
     latitude = latitude,
     longitude = longitude,
@@ -77,6 +85,7 @@ fun CatSightingEntity.toDomain(catName: String?): CatSighting = CatSighting(
     catName = catName,
     photoPath = photoPath,
     videoPath = videoPath,
+    stickerPath = stickerPath,
     description = description,
     latitude = latitude,
     longitude = longitude,

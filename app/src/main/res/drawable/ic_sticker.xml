@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!--
+      Garis luar persegi dengan sudut kanan atas terpotong, bentuk yang dipakai
+      WhatsApp untuk stiker. Digambar sebagai garis, bukan bidang penuh, supaya
+      lipatan sudutnya tetap terbaca di ukuran 20dp.
+    -->
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M5,3 h9.5 L21,9.5 V19 a2,2 0 0,1 -2,2 H5 a2,2 0 0,1 -2,-2 V5 a2,2 0 0,1 2,-2 z" />
+    <path
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="1.8"
+        android:strokeLineJoin="round"
+        android:pathData="M14.5,3.4 V9.5 H20.6" />
+</vector>

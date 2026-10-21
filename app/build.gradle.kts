@@ -116,6 +116,14 @@ dependencies {
     // Image loading from local file
     implementation(libs.coil.compose)
 
+    // Stiker: memisahkan cuking dari latarnya, dikerjakan di HP
+    implementation(libs.play.services.mlkit.subject.segmentation)
+    // Frame bidik: model label ikut di APK, jadi deteksi tetap offline
+    implementation(libs.mlkit.image.labeling)
+    // Orientasi foto dibaca lewat API AndroidX, bukan android.media, supaya
+    // hasilnya sama di semua versi Android
+    implementation(libs.androidx.exifinterface)
+
     // Frost UI: blur di belakang permukaan kaca, juga di bawah API 31
     implementation(libs.haze)
     implementation(libs.haze.materials)

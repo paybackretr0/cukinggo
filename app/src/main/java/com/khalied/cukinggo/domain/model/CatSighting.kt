@@ -20,6 +20,8 @@ data class CatSighting(
     val photoPath: String,
     /** File video pendamping. Null artinya penemuan ini foto saja. */
     val videoPath: String? = null,
+    /** Stiker cuking tanpa latar dari foto ini. Null artinya belum dibuat. */
+    val stickerPath: String? = null,
     /** Kegiatan cuking waktu ditemukan, ditulis apa adanya oleh pengguna. */
     val description: String?,
     val latitude: Double,

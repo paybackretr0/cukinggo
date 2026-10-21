@@ -44,6 +44,14 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
         </intent>
+        <!--
+          Paket stiker WhatsApp. Dua paket ini perlu disebut supaya app bisa
+          memeriksa apakah WhatsApp terpasang dan apakah paketnya sudah
+          ditambahkan; tanpa keduanya, jawabannya selalu "tidak" di Android 11
+          ke atas.
+        -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
     </queries>
 
     <!--
@@ -72,6 +80,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CukingGo"
         tools:targetApi="36">
+
+        <!--
+          Model pemisah latar untuk stiker diminta ikut terunduh setelah app
+          dipasang, bukan saat pengguna pertama kali menekan "Buat stiker".
+          Tanpa ini, permintaan pertama bisa datang sebelum modelnya siap dan
+          hasilnya kosong.
+        -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="subject_segment" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -138,6 +157,20 @@
         <receiver
             android:name=".location.NearbyAlertReceiver"
             android:exported="false" />
+
+        <!--
+          Provider stiker WhatsApp. Bedanya dengan FileProvider di bawah: yang ini
+          memang harus bisa dibaca app lain, karena WhatsApp-lah yang mengambil
+          stikernya. Batasnya bukan `exported=false`, tapi izin baca
+          `com.whatsapp.sticker.READ`: hanya WhatsApp yang memegangnya, dan yang
+          boleh diambil cuma file yang tercatat di manifest paket.
+        -->
+        <provider
+            android:name=".whatsapp.StickerContentProvider"
+            android:authorities="${applicationId}.stickercontentprovider"
+            android:enabled="true"
+            android:exported="true"
+            android:readPermission="com.whatsapp.sticker.READ" />
 
         <!--
           FileProvider dipakai widget untuk memberi URI content:// foto kucing ke

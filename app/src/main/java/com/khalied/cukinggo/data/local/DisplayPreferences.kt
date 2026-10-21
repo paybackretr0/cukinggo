@@ -42,9 +42,11 @@ class DisplayPreferences(context: Context) {
         _widgetSkinKey.value = key
     }
 
-    private companion object {
+    companion object {
+        /** Nama file preferensi app; dipakai juga oleh pilihan paket stiker. */
         const val FILE_NAME = "cukinggo_prefs"
-        const val KEY_THEME_MODE = "theme_mode"
-        const val KEY_WIDGET_SKIN = "widget_skin"
+
+        private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_WIDGET_SKIN = "widget_skin"
     }
 }
