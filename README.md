@@ -118,6 +118,38 @@ Ikon daftar Play Store ada di `store/ic_launcher_512.png`. Membuat ulangnya:
 bash tools/icon-export/export-icon.sh
 ```
 
+## Rilis otomatis ke closed testing (GitHub Actions)
+
+Workflow [`release.yml`](.github/workflows/release.yml) menguji, menandatangani, lalu mengunggah AAB ke track `alpha` (closed testing bawaan). Pemicunya push ke branch `prod`, atau tombol **Run workflow** di tab Actions; tombol itu punya opsi **dry run** yang cuma build dan uji tanpa mengunggah.
+
+Urutan langkahnya: JDK 21, Android SDK platform 37, `testDebugUnitTest` + `lintDebug` sebagai gerbang, `bundleRelease` bertanda tangan, `publishReleaseBundle`, lalu AAB disimpan sebagai artifact 14 hari. Nomor versi diambil dari Play (versi tertinggi + 1) lewat Gradle Play Publisher 4.1.1, jadi `versionCode` di [app/build.gradle.kts](app/build.gradle.kts) tidak perlu dinaikkan manual tiap rilis. Build lokal tanpa environment keystore tetap keluar tanpa tanda tangan dan tanpa menyentuh Play, sama seperti sebelumnya.
+
+Secret yang dibutuhkan (Settings → Secrets and variables → Actions):
+
+| Nama | Isi |
+|---|---|
+| `PLAY_CICD_ACCOUNT_JSON` | isi lengkap file JSON service account |
+| `KEYSTORE_BASE64` | `base64 -w0 upload.jks` (satu baris, tanpa baris baru) |
+| `KEYSTORE_PASSWORD` | password keystore upload |
+| `KEY_ALIAS` | alias kunci upload |
+| `KEY_PASSWORD` | password kunci upload |
+
+Yang harus beres di luar repo:
+
+- **Google Play Android Developer API** aktif di project GCP yang sama dengan service account.
+- Email service account diundang di **Play Console → Users and permissions**, dengan akses ke app ini dan izin pada track closed testing.
+- Rilis pertama app ini sudah pernah diunggah manual: Play tidak mengizinkan API untuk mendaftarkan app baru.
+
+Menjalankan unggahan dari laptop, kalau perlu:
+
+```bash
+ANDROID_PUBLISHER_CREDENTIALS="$(cat ~/play-cukinggo.json)" \
+  KEYSTORE_FILE=/path/upload.jks KEYSTORE_PASSWORD=... KEY_ALIAS=... KEY_PASSWORD=... \
+  ./gradlew :app:publishReleaseBundle
+```
+
+Jangan pernah commit file JSON itu atau keystore-nya: `.gitignore` sudah menutup `*.jks`, `*.keystore`, `play-credentials*.json`, dan `/app/release/`. Artefak lama yang sudah telanjur masuk repo dikeluarkan sekali dengan `git rm -r --cached app/release`.
+
 Script itu menggambar PNG-nya langsung dari geometri ikon adaptive di app memakai `java.awt`, jadi tidak perlu Android Studio, tidak perlu aplikasi desain, dan tidak ada dependensi atau koneksi internet. Yang dihasilkan juga bisa diperiksa ulang angkanya: jejak kakinya diukur dan dicetak, termasuk apakah ia masih utuh di dalam area aman ikon adaptive (66 dari 108, yang tidak pernah dipotong masking launcher).
 
 Ada **dua** file, dan kamu pilih satu untuk diunggah:

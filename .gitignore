@@ -13,3 +13,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Artefak rilis dibangun ulang oleh CI, bukan disimpan di repo
+/app/release/
+
+# Kunci tanda tangan dan kredensial Play tidak boleh masuk repo
+*.jks
+*.keystore
+play-credentials*.json

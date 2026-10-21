@@ -1,7 +1,18 @@
+import com.github.triplet.gradle.androidpublisher.ResolutionStrategy
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.play.publisher)
+}
+
+/**
+ * Keystore upload hanya ada saat CI menyediakannya lewat environment.
+ * Di laptop, build rilis tetap keluar tanpa tanda tangan seperti sebelumnya.
+ */
+val uploadKeystoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull?.let { path ->
+    file(path)
 }
 
 android {
@@ -20,11 +31,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (uploadKeystoreFile != null) {
+            create("upload") {
+                storeFile = uploadKeystoreFile
+                storePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
+                keyAlias = providers.environmentVariable("KEY_ALIAS").orNull
+                keyPassword = providers.environmentVariable("KEY_PASSWORD").orNull
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = true
             }
+            // Cuma terisi kalau keystore-nya ada; tanpa itu artefaknya unsigned.
+            signingConfig = signingConfigs.findByName("upload")
         }
     }
     compileOptions {
@@ -33,6 +57,25 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+}
+
+/*
+ * Publikasi rilis ke Play. Track `alpha` adalah closed testing bawaan.
+ *
+ * Kredensialnya dibaca dari environment ANDROID_PUBLISHER_CREDENTIALS (isi file
+ * JSON service account), jadi tidak ada file kunci yang perlu ditulis ke disk
+ * atau ikut ter-commit.
+ */
+play {
+    track.set("alpha")
+    defaultToAppBundles.set(true)
+    // Nomor versi diambil dari Play (tertinggi + 1), jadi CI tidak perlu menaikkan
+    // versionCode manual dan dua rilis tidak bisa bertabrakan. Hanya dinyalakan
+    // saat kredensialnya ada: tanpa kredensial, GPP menolak menyentuh nomor versi
+    // dan build rilis lokal jadi ikut gagal.
+    if (providers.environmentVariable("ANDROID_PUBLISHER_CREDENTIALS").isPresent) {
+        resolutionStrategy.set(ResolutionStrategy.AUTO)
     }
 }
 
