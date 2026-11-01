@@ -27,8 +27,8 @@ android {
         targetSdk = 36
         // Nomor ini untuk build lokal dan artifact; saat publish, Gradle Play
         // Publisher menimpanya dengan versi tertinggi di Play + 1.
-        versionCode = 7
-        versionName = "1.6"
+        versionCode = 8
+        versionName = "1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
