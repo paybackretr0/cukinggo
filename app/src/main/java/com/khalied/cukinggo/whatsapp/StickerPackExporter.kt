@@ -10,7 +10,7 @@ import android.os.Build
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.IceAccent
+import com.khalied.cukinggo.ui.theme.Ink
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -181,7 +181,9 @@ class StickerPackExporter(private val context: Context) {
         val side = StickerPackRules.TRAY_PX
         val icon = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(icon)
-        val circle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = IceAccent.toArgb() }
+        // Lingkaran tinta, bukan warna aksen: cakar di atasnya putih, dan putih
+        // di atas bidang terang cuma sekitar 1,3:1. Di atas tinta, cakarnya 18,9:1.
+        val circle = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ink.toArgb() }
         canvas.drawCircle(side / 2f, side / 2f, side / 2f, circle)
 
         val paw = ContextCompat.getDrawable(context, R.drawable.ic_paw)

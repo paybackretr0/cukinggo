@@ -66,12 +66,11 @@ import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.VideoSection
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.topBarContentPadding
 import com.khalied.cukinggo.ui.components.standardBackCameraSelector
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.hasCameraPermission
-import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
 
@@ -191,8 +190,6 @@ fun EditCatScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val hazeState = remember { HazeState() }
-
     Box(modifier = modifier.fillMaxSize()) {
         when (val state = uiState) {
                 EditCatUiState.Loading -> EditPlaceholder(
@@ -212,7 +209,6 @@ fun EditCatScreen(
                 is EditCatUiState.Ready -> Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .frostBackdrop(hazeState)
                         // Inset keyboard membungkus area gulir, bukan jadi padding
                         // di dalamnya: dengan begitu viewport-nya benar-benar
                         // menyusut di atas keyboard, dan field yang sedang diketik
@@ -227,8 +223,8 @@ fun EditCatScreen(
                         .padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Ruang di bawah bar kaca, sebagai isi yang ikut menggulir.
-                    Spacer(Modifier.height(glassTopBarPadding()))
+                    // Ruang di bawah bar atas, sebagai isi yang ikut menggulir.
+                    Spacer(Modifier.height(topBarContentPadding()))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.extraLarge,
@@ -412,8 +408,7 @@ fun EditCatScreen(
             onBack = onBack,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-            hazeState = hazeState
+                .fillMaxWidth()
         )
 
         if (showVideoRecorder) {

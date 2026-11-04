@@ -3,12 +3,12 @@ package com.khalied.cukinggo.widget
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.toArgb
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.FrostBg
-import com.khalied.cukinggo.ui.theme.FrostNightBg
-import com.khalied.cukinggo.ui.theme.FrostNightInk
-import com.khalied.cukinggo.ui.theme.FrostNightSurface
-import com.khalied.cukinggo.ui.theme.FrostSolidsurface
-import com.khalied.cukinggo.ui.theme.SteelText
+import com.khalied.cukinggo.ui.theme.Card
+import com.khalied.cukinggo.ui.theme.Ink
+import com.khalied.cukinggo.ui.theme.NightCanvas
+import com.khalied.cukinggo.ui.theme.NightCard
+import com.khalied.cukinggo.ui.theme.NightInk
+import com.khalied.cukinggo.ui.theme.Paper
 import java.time.LocalDate
 
 /**
@@ -154,16 +154,16 @@ private fun pick(isDark: Boolean, light: Int, dark: Int): Int = if (isDark) dark
 private fun fallbackArt(isDark: Boolean): Int =
     pick(isDark, R.drawable.widget_paw_light, R.drawable.widget_paw_dark)
 
-private fun captionColor(isDark: Boolean): Int = (if (isDark) FrostNightInk else SteelText).toArgb()
+private fun captionColor(isDark: Boolean): Int = (if (isDark) NightInk else Ink).toArgb()
 
 private fun bodyColor(isDark: Boolean): Int =
-    (if (isDark) FrostNightSurface else FrostSolidsurface).toArgb()
+    (if (isDark) NightCard else Card).toArgb()
 
-private fun windowBodyColor(isDark: Boolean): Int = (if (isDark) FrostNightBg else FrostBg).toArgb()
+private fun windowBodyColor(isDark: Boolean): Int = (if (isDark) NightCanvas else Paper).toArgb()
 
 /** Kumis digambar di atas foto, jadi warnanya diambil dari warna badan dan tepi. */
 private fun whiskerLineColor(isDark: Boolean): Int =
-    (if (isDark) FrostNightInk else FrostSolidsurface).toArgb()
+    (if (isDark) NightInk else Card).toArgb()
 
 private fun whiskerOutlineColor(isDark: Boolean): Int =
-    (if (isDark) FrostNightBg else SteelText).toArgb()
+    (if (isDark) NightCanvas else Ink).toArgb()

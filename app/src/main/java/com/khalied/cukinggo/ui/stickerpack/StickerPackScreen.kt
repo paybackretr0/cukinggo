@@ -51,14 +51,13 @@ import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.topBarContentPadding
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.whatsapp.StickerPackRejection
 import com.khalied.cukinggo.whatsapp.StickerPackRules
 import com.khalied.cukinggo.whatsapp.StickerSource
 import com.khalied.cukinggo.whatsapp.WhatsAppStickers
-import dev.chrisbanes.haze.HazeState
 import java.io.File
 
 /** Sisi satu kotak stiker: cukup untuk mengenali cukingnya, empat muat berjajar. */
@@ -84,7 +83,6 @@ fun StickerPackScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val hazeState = remember { HazeState() }
     var launchFailed by remember { mutableStateOf(false) }
     // Dibaca di sini, bukan di dalam lambda tombol: `context.getString` saat
     // diklik tidak ikut berganti kalau bahasa atau konfigurasi berubah.
@@ -113,12 +111,11 @@ fun StickerPackScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .frostBackdrop(hazeState)
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item { Spacer(Modifier.height(glassTopBarPadding())) }
+            item { Spacer(Modifier.height(topBarContentPadding())) }
 
             item {
                 Text(
@@ -289,7 +286,6 @@ fun StickerPackScreen(
         PlayfulTopBar(
             title = stringResource(R.string.sticker_pack_title),
             onBack = onBack,
-            hazeState = hazeState,
             modifier = Modifier.align(Alignment.TopCenter)
         )
     }

@@ -13,11 +13,12 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.khalied.cukinggo.navigation.CukingGoNavHost
 import com.khalied.cukinggo.ui.theme.CukingGoTheme
-import com.khalied.cukinggo.ui.theme.FrostBg
-import com.khalied.cukinggo.ui.theme.FrostNightBg
+import com.khalied.cukinggo.ui.theme.NightCanvas
+import com.khalied.cukinggo.ui.theme.Paper
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -42,11 +43,15 @@ class MainActivity : ComponentActivity() {
             val darkTheme = ThemeMode.fromKey(themeModeKey).isDark(isSystemInDarkTheme())
 
             // Latar window ikut pilihan tema, supaya tidak ada kedipan warna
-            // yang tidak sesuai saat pindah layar.
+            // yang tidak sesuai saat pindah layar. Ikon status bar ikut dibalik:
+            // di atas Paper ikon gelap, di atas NightCanvas ikon terang. Tanpa ini
+            // ikon bawaan sistem bisa hilang sama sekali di salah satu tema.
             SideEffect {
                 window.setBackgroundDrawable(
-                    ColorDrawable((if (darkTheme) FrostNightBg else FrostBg).toArgb())
+                    ColorDrawable((if (darkTheme) NightCanvas else Paper).toArgb())
                 )
+                WindowCompat.getInsetsController(window, window.decorView)
+                    .isAppearanceLightStatusBars = !darkTheme
             }
 
             CukingGoTheme(darkTheme = darkTheme) {

@@ -55,8 +55,9 @@ import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.location.LocationHelper
-import com.khalied.cukinggo.ui.theme.IceSoft
-import com.khalied.cukinggo.ui.theme.SteelText
+import com.khalied.cukinggo.ui.theme.Cyan
+import com.khalied.cukinggo.ui.theme.Ink
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.isOnline
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -566,11 +567,14 @@ fun CatMapView(
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 14.dp, end = 14.dp, top = 14.dp),
+                    .padding(start = 14.dp, end = 14.dp, top = 14.dp)
+                    .brutalShadow(offset = 3.dp),
                 shape = MaterialTheme.shapes.large,
-                color = IceSoft,
-                contentColor = SteelText,
-                shadowElevation = 3.dp
+                // Sian, bukan permukaan biasa: ini kabar, bukan isi peta, dan
+                // warnanya harus langsung terbaca sebagai pesan sekilas.
+                color = Cyan,
+                contentColor = Ink,
+                shadowElevation = 0.dp
             ) {
                 Row(
                     modifier = Modifier

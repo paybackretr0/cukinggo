@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.location.NearbyAlertState
 import com.khalied.cukinggo.location.NearbyRadius
+import com.khalied.cukinggo.ui.theme.brutalShadow
 
 /**
  * Setelan fitur "kabar kalau dekat kucing": menyalakan, memilih radius, dan
@@ -64,8 +65,10 @@ fun NearbyAlertDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.brutalShadow(),
         shape = MaterialTheme.shapes.extraLarge,
         containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
         title = {
             Text(
                 text = stringResource(R.string.nearby_dialog_title),
@@ -165,7 +168,7 @@ fun NearbyAlertDialog(
                     NearbyAlertState.ACTIVE -> onTurnOff
                     else -> onFixPermission
                 },
-                shape = MaterialTheme.shapes.extraLarge,
+                shape = MaterialTheme.shapes.small,
                 // Mematikan fitur ini satu-satunya aksi merusak di dialog, jadi
                 // warnanya peran error, bukan aksen biasa.
                 colors = ButtonDefaults.buttonColors(

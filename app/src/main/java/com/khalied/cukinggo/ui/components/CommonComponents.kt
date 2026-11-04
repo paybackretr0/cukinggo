@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -26,31 +25,42 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.khalied.cukinggo.R
+import com.khalied.cukinggo.ui.theme.Cyan
+import com.khalied.cukinggo.ui.theme.Ink
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.materials.HazeMaterials
+import com.khalied.cukinggo.ui.theme.appChipOutline
+import com.khalied.cukinggo.ui.theme.brutalShadow
 
-/** Chip kecil membulat untuk info lokasi/tanggal. */
+/**
+ * Chip kecil untuk info lokasi/tanggal.
+ *
+ * Bentuknya kotak bergaris, bukan pill: di arah ini semua bidang bersudut tajam,
+ * dan chip yang tetap membulat akan terbaca sebagai sisa tema lama. Isian
+ * bawaannya Cyan (aksen informasi) dengan teks Ink 12,7:1 — putih di atas aksen
+ * ini gagal ambang AA.
+ */
 @Composable
 fun InfoChip(
     text: String,
     modifier: Modifier = Modifier,
     iconRes: Int? = null,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+    containerColor: Color = Cyan,
+    contentColor: Color = Ink
 ) {
     Surface(
         modifier = modifier,
-        shape = CircleShape,
+        shape = MaterialTheme.shapes.small,
         color = containerColor,
-        contentColor = contentColor
+        contentColor = contentColor,
+        border = appChipOutline()
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
@@ -92,44 +102,50 @@ fun SwipeDeleteHint(modifier: Modifier = Modifier) {
     )
 }
 
-/** Tinggi bar atas kecil Material3; angka ini yang disisakan konten di bawahnya. */
+/** Tinggi bar atas kecil Material3; angka ini disisakan konten di bawahnya. */
 private val TOP_BAR_HEIGHT_DP = 64.dp
 
+/** Garis tinta di bawah bar judul, yang menandai batasnya dengan isi layar. */
+private val TOP_BAR_LINE_DP = 3.dp
+
 /**
- * Tinggi yang perlu disisakan konten supaya bar kaca bisa melayang di atasnya.
+ * Tinggi yang perlu disisakan konten supaya tidak tertutup bar judul.
  *
  * App ini edge-to-edge, jadi status bar ikut dihitung. Bar-nya sendiri
- * (TopAppBar) sudah menangani inset itu; angka ini dipakai konten yang akan lewat
- * di belakang bar.
+ * (TopAppBar) sudah menangani inset itu; angka ini dipakai konten yang akan
+ * menggulir di belakang bar.
  */
 @Composable
-fun glassTopBarPadding(): Dp =
+fun topBarContentPadding(): Dp =
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + TOP_BAR_HEIGHT_DP
 
 /**
  * Bar judul dengan tombol kembali.
  *
- * [hazeState] diisi kalau konten di layar ini memang lewat di belakang bar
- * (misalnya daftar yang digulir), supaya bar jadi permukaan kaca yang memblur
- * isi di belakangnya. Null berarti tidak ada yang perlu diblur, dan bar memakai
- * latar tema seperti biasa.
+ * Latarnya pekat, bukan kaca: isi layar yang menggulir di belakangnya harus
+ * benar-benar tertutup, dan garis tinta 3dp di bawahnya yang menandai batas itu.
+ * Garisnya digambar sendiri karena TopAppBar tidak punya parameter border, dan
+ * kalau ditambahkan sebagai elemen terpisah tingginya ikut berubah.
  */
-@OptIn(ExperimentalMaterial3Api::class, dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayfulTopBar(
     title: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    hazeState: HazeState? = null
+    modifier: Modifier = Modifier
 ) {
-    val barModifier = if (hazeState != null) {
-        modifier.hazeEffect(state = hazeState, style = HazeMaterials.ultraThin())
-    } else {
-        modifier
-    }
+    val lineColor = MaterialTheme.colorScheme.outline
     TopAppBar(
         title = { Text(text = title, style = MaterialTheme.typography.titleLarge) },
-        modifier = barModifier,
+        modifier = modifier.drawWithContent {
+            drawContent()
+            drawLine(
+                color = lineColor,
+                start = Offset(0f, size.height),
+                end = Offset(size.width, size.height),
+                strokeWidth = TOP_BAR_LINE_DP.toPx()
+            )
+        },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
@@ -139,11 +155,7 @@ fun PlayfulTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (hazeState != null) {
-                Color.Transparent
-            } else {
-                MaterialTheme.colorScheme.background
-            },
+            containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = MaterialTheme.colorScheme.primary,
             navigationIconContentColor = MaterialTheme.colorScheme.primary
         )
@@ -163,7 +175,9 @@ fun PermissionCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .brutalShadow(),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = appCardOutline()
@@ -199,7 +213,7 @@ fun PermissionCard(
             ) {
                 Button(
                     onClick = onRequest,
-                    shape = CircleShape,
+                    shape = MaterialTheme.shapes.small,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
