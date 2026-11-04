@@ -1,8 +1,24 @@
-# Add project specific R8 rules here.
-# AGP will combine all keep rule files in src/main/keepRules to pass to R8
+# Aturan keep R8 untuk app ini.
+# AGP menggabungkan semua file di src/main/keepRules untuk diteruskan ke R8.
 #
-# For more details, see
+# Untuk penjelasan formatnya, lihat:
 #   https://d.android.com/r/tools/r8/keep-rules
+
+# ML Kit mendaftarkan komponennya lewat nama class sebagai string di
+# <meta-data> manifest, contohnya:
+#   com.google.firebase.components:com.google.mlkit.vision.segmentation.subject.internal.SubjectSegmentationRegistrar
+# Class itu lalu dibuat dengan reflection, jadi R8 tidak melihat satu pun
+# pemakaiannya di kode. Tanpa aturan ini R8 membuang konstruktornya, komponennya
+# tidak pernah terdaftar, dan provider internal ML Kit tinggal null. Gejalanya:
+# NullPointerException di dalam ML Kit saat klien pertama dibuat, bukan pesan
+# yang menyebut registrar. Karena dulu klien itu dibuat di AppContainer, app
+# langsung mati sebelum layar pertama terbuka.
+-keep class com.google.mlkit.**.internal.*Registrar { *; }
+
+# Penemuan komponen di atas dijalankan oleh mesin Firebase Components, dan
+# provider yang dipakainya bisa kosong tanpa error kalau delegasinya hilang.
+# Yang dijaga di sini kelas mesinnya, bukan seluruh paket Firebase.
+-keep class com.google.firebase.components.** { *; }
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface

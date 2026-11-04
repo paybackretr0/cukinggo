@@ -31,7 +31,12 @@ class AppContainer(context: Context) {
 
     // Satu pemisah latar dipakai ulang: membuat klien ML Kit per jepretan berarti
     // memuat model berkali-kali untuk pekerjaan yang sama.
-    val stickerMaker = StickerMaker(MlKitSubjectSegmenter())
+    //
+    // Dibuat saat pertama dipakai, bukan saat app dibuka: klien ML Kit memanggil
+    // Play Services, dan apa pun yang gagal di sana tidak boleh membuat app tidak
+    // bisa dibuka sama sekali. Kalau pembuatan stiker yang gagal, yang hilang
+    // cuma fiturnya, bukan seluruh catatan cuking.
+    val stickerMaker: StickerMaker by lazy { StickerMaker(MlKitSubjectSegmenter()) }
     // Paket stiker WhatsApp ditulis dari master PNG yang sudah ada, jadi tidak
     // butuh pemisah latar lagi.
     val stickerPackExporter = StickerPackExporter(appContext)
