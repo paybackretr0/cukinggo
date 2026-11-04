@@ -76,12 +76,11 @@ import com.khalied.cukinggo.ui.components.PermissionCard
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoRecorder
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.topBarContentPadding
 import com.khalied.cukinggo.ui.components.rememberCatDetection
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.hasCameraPermission
-import dev.chrisbanes.haze.HazeState
 import com.khalied.cukinggo.util.openAppSettings
 import java.io.File
 import kotlinx.coroutines.delay
@@ -244,13 +243,10 @@ fun AddCatScreen(
 
     val busy = uiState is AddCatUiState.Locating || uiState is AddCatUiState.Saving
 
-    val hazeState = remember { HazeState() }
-
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .frostBackdrop(hazeState)
                 // Inset keyboard membungkus area gulir, bukan jadi padding di
                 // dalamnya: dengan begitu viewport-nya benar-benar menyusut di
                 // atas keyboard, dan field yang sedang diketik ikut terdorong
@@ -265,10 +261,10 @@ fun AddCatScreen(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Ruang di bawah bar kaca. Sengaja jadi isi yang ikut menggulir, bukan
+            // Ruang di bawah bar atas. Sengaja jadi isi yang ikut menggulir, bukan
             // padding wadah: dengan begitu kontennya benar-benar lewat di belakang
             // bar, bukan terpotong di bawahnya.
-            Spacer(Modifier.height(glassTopBarPadding()))
+            Spacer(Modifier.height(topBarContentPadding()))
                 if (!cameraGranted || !locationGranted) {
                     PermissionCard(
                         cameraGranted = cameraGranted,
@@ -402,8 +398,7 @@ fun AddCatScreen(
             onBack = onBack,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-            hazeState = hazeState
+                .fillMaxWidth()
         )
 
         // Perekam video menutupi seluruh layar, sama seperti perayaan di bawah:

@@ -85,11 +85,20 @@ private fun trailFor(catId: Long, sightings: List<CatSighting>): CatTrail? {
  * yang mana", ia tidak dipakai di permukaan UI yang lain, dan sengaja tetap
  * berbeda rona satu sama lain ketimbang diseragamkan jadi biru.
  */
+/**
+ * Palet jejak peta.
+ *
+ * Warna-warna ini sengaja bukan palet UI: syaratnya berbeda. Jejak digambar di
+ * atas tile OpenStreetMap yang selalu terang dan ramai, jadi yang dibutuhkan
+ * adalah empat warna pekat yang tetap berbeda dari jalan, bangunan, dan satu sama
+ * lain — bukan aksen yang enak dilihat di atas Paper. Karena itu tidak ada satu
+ * pun warna di sini yang dipakai sebagai isian komponen.
+ */
 private val TRAIL_COLORS = intArrayOf(
-    0xFF8B5E3C.toInt(), // PawBrown, sewarna dengan garis luar marker yang sudah ada
-    0xFF2F8C74.toInt(), // mint pekat
-    0xFFC4722F.toInt(), // peach pekat
-    0xFFC4506A.toInt() // pink pekat
+    0xFF2F5BFF.toInt(), // biru tinta
+    0xFF0E7C86.toInt(), // teal pekat
+    0xFFE8590C.toInt(), // jingga pekat
+    0xFF6A3DE8.toInt() // ungu pekat
 )
 
 /**

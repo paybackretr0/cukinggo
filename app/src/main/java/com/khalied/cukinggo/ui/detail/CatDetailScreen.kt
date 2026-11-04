@@ -66,12 +66,11 @@ import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.VideoPlayer
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.topBarContentPadding
 import com.khalied.cukinggo.ui.components.buildTrails
 import com.khalied.cukinggo.ui.components.sharedCatPhoto
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
-import dev.chrisbanes.haze.HazeState
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.catShareIntent
 import com.khalied.cukinggo.util.catStickerShareIntent
 import com.khalied.cukinggo.util.catTextShareIntent
@@ -172,9 +171,8 @@ fun CatDetailScreen(
         )
     }
 
-    // Sumber blur bar atas: konten yang lewat di belakangnya.
-    val hazeState = remember { HazeState() }
-    val topBarPadding = glassTopBarPadding()
+    // Tinggi bar atas yang harus disisakan isi layar di bawahnya.
+    val topBarPadding = topBarContentPadding()
 
     Box(modifier = modifier.fillMaxSize()) {
         // Saat berpamitan, isi layarnya dilepas sama sekali: catatannya sudah tidak
@@ -211,9 +209,7 @@ fun CatDetailScreen(
                             onDeleteSighting = viewModel::deleteSighting,
                             onDeleteRequest = { showDeleteDialog = true },
                             topBarPadding = topBarPadding,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .frostBackdrop(hazeState)
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
@@ -224,8 +220,7 @@ fun CatDetailScreen(
                 onBack = onBack,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .fillMaxWidth(),
-                hazeState = hazeState
+                    .fillMaxWidth()
             )
         }
 

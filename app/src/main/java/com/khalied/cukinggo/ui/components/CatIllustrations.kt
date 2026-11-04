@@ -55,10 +55,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.FrostDecor
-import com.khalied.cukinggo.ui.theme.SteelText
-import com.khalied.cukinggo.ui.theme.IceSoft
-import com.khalied.cukinggo.ui.theme.IceAccent
+import com.khalied.cukinggo.ui.theme.Cyan
+import com.khalied.cukinggo.ui.theme.Ink
+import com.khalied.cukinggo.ui.theme.Pink
+import com.khalied.cukinggo.ui.theme.Yellow
 import com.khalied.cukinggo.ui.theme.appCardOutline
 import kotlin.math.PI
 import kotlin.math.sin
@@ -95,8 +95,10 @@ fun SleepingCatIllustration(
     Canvas(modifier = modifier.size(size)) {
         val w = this.size.width
         val h = this.size.height
-        val bodyColor = IceAccent
-        val detailColor = SteelText
+        // Badan kuning dengan detail tinta: bidang datar dan garis gelap, sama
+        // seperti seluruh app, jadi ilustrasinya tidak terasa dari tema lain.
+        val bodyColor = Yellow
+        val detailColor = Ink
 
         // ekor
         rotate(degrees = tailAngle, pivot = Offset(w * 0.74f, h * 0.72f)) {
@@ -157,11 +159,11 @@ fun SleepingCatIllustration(
         )
 
         // hidung mungil
-        drawCircle(color = FrostDecor, radius = w * 0.018f, center = Offset(w * 0.275f, h * 0.575f))
+        drawCircle(color = Pink, radius = w * 0.018f, center = Offset(w * 0.275f, h * 0.575f))
 
         // belang badan
         drawArc(
-            color = IceSoft,
+            color = Cyan,
             startAngle = 250f,
             sweepAngle = 60f,
             useCenter = false,
@@ -329,8 +331,8 @@ fun CatSaveCelebration(
                     )
                 )
             ) {
-                // Isian `primary` (IceDeep), bukan IceAccent: labelnya teks,
-                // dan IceAccent di bawah 4,5:1 untuk teks.
+                // Isian `primary` (Ink) dengan teks Paper: lencana rentetan ini
+                // harus terbaca sebagai cap tinta, bukan hiasan warna.
                 InfoChip(
                     text = stringResource(R.string.streak_chip, streakDays),
                     iconRes = R.drawable.ic_flame,
@@ -452,7 +454,7 @@ private fun WavingCatScene(modifier: Modifier = Modifier) {
         // Bayangan yang sama seperti saat melompat: kakinya menjejak di titik yang
         // sama, jadi kedua perayaan ini terbaca terjadi di tempat yang sama.
         drawOval(
-            color = SteelText.copy(alpha = 0.14f),
+            color = Ink.copy(alpha = 0.14f),
             topLeft = Offset(w * 0.32f, h * 0.88f),
             size = Size(w * 0.42f, h * 0.045f)
         )
@@ -462,7 +464,7 @@ private fun WavingCatScene(modifier: Modifier = Modifier) {
 }
 
 /** Lima hati kecil yang keluar bergiliran dari sekitar badan cuking. */
-private fun DrawScope.drawHeartBurst(progress: Float, color: Color = FrostDecor) {
+private fun DrawScope.drawHeartBurst(progress: Float, color: Color = Pink) {
     val w = size.width
     val h = size.height
 
@@ -530,7 +532,7 @@ private fun DrawScope.drawJumpingCat(hop: Float) {
     // Bayangan di tanah ikut menyusut saat cukingnya naik; tanpa itu,
     // lompatannya cuma terbaca sebagai gambar yang bergeser naik-turun.
     drawOval(
-        color = SteelText.copy(alpha = 0.14f),
+        color = Ink.copy(alpha = 0.14f),
         topLeft = Offset(w * (0.32f + 0.06f * lift), groundY),
         size = Size(w * (0.42f - 0.18f * lift), h * 0.045f)
     )
@@ -568,8 +570,8 @@ private fun DrawScope.drawCat(
     tailAngle: Float,
     wavingPawAngle: Float?
 ) {
-    val bodyColor = IceAccent
-    val detailColor = SteelText
+    val bodyColor = Yellow
+    val detailColor = Ink
 
     // ekor
     rotate(degrees = tailAngle, pivot = Offset(w * 0.80f, h * 0.74f)) {
@@ -639,11 +641,11 @@ private fun DrawScope.drawCat(
     drawCircle(color = detailColor, radius = w * 0.02f, center = Offset(w * 0.36f, h * 0.565f))
 
     // hidung mungil
-    drawCircle(color = FrostDecor, radius = w * 0.015f, center = Offset(w * 0.30f, h * 0.625f))
+    drawCircle(color = Pink, radius = w * 0.015f, center = Offset(w * 0.30f, h * 0.625f))
 
     // belang badan
     drawArc(
-        color = IceSoft,
+        color = Cyan,
         startAngle = 250f,
         sweepAngle = 60f,
         useCenter = false,

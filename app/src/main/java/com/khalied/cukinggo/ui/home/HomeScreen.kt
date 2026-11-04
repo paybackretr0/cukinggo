@@ -26,9 +26,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.background
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -88,12 +90,13 @@ import com.khalied.cukinggo.ui.components.SwipeDeleteHint
 import com.khalied.cukinggo.ui.components.AppearancePickerDialog
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.components.buildTrails
-import com.khalied.cukinggo.ui.theme.FrostSolidsurface
+import com.khalied.cukinggo.ui.theme.Ink
+import com.khalied.cukinggo.ui.theme.Yellow
 import com.khalied.cukinggo.ui.theme.ThemeMode
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
-import com.khalied.cukinggo.ui.theme.frostSurface
-import dev.chrisbanes.haze.HazeState
+import com.khalied.cukinggo.ui.theme.appChipOutline
+import com.khalied.cukinggo.ui.theme.appSurface
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.widget.CatWidgets
 import com.khalied.cukinggo.widget.WidgetSkinMode
 import com.khalied.cukinggo.util.catStreak
@@ -187,10 +190,6 @@ fun HomeScreen(
 
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
-    // Sumber blur untuk permukaan kaca di layar ini. Isi layar di bawah FAB
-    // ditandai sebagai sumbernya, jadi yang diblur FAB adalah kartu-kartu yang
-    // lewat di belakangnya, bukan warna latar yang kosong.
-    val hazeState = remember { HazeState() }
 
     // Tinggi bar kaca diukur, bukan dipatok: judul dan subjudul bisa membungkus
     // jadi dua baris di layar sempit, dan daftar yang menyisakan angka tetap akan
@@ -338,21 +337,19 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = { PawFab(onClick = onAddCat, hazeState = hazeState) }
+        floatingActionButton = { PawFab(onClick = onAddCat) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Seluruh isi layar jadi satu daftar yang digulir, jadi kontennya
-            // benar-benar lewat di belakang bar atas dan efek kacanya terlihat.
-            // Tinggi peta dan kartu keadaan dipatok, bukan pakai weight, karena
-            // daftar yang menggulir tidak punya tinggi terbatas untuk dibagi.
+            // Seluruh isi layar jadi satu daftar yang digulir, dan bar atas yang
+            // pekat menutupinya saat lewat. Tinggi peta dan kartu keadaan dipatok,
+            // bukan pakai weight, karena daftar yang menggulir tidak punya tinggi
+            // terbatas untuk dibagi.
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .frostBackdrop(hazeState),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
@@ -365,8 +362,8 @@ fun HomeScreen(
                 // tidak ada yang menagih sebelum pengguna mulai sendiri.
                 if (streakDays > 0) {
                     item(key = "streak") {
-                        // Isian `primary` (IceDeep), bukan IceAccent: labelnya
-                        // teks, dan IceAccent di bawah 4,5:1 untuk teks.
+                        // Isian `primary` (Ink) dengan teks Paper: lencana rentetan
+                        // ini harus terbaca sebagai cap tinta, bukan hiasan warna.
                         InfoChip(
                             text = stringResource(R.string.streak_chip, streakDays),
                             iconRes = R.drawable.ic_flame,
@@ -403,15 +400,15 @@ fun HomeScreen(
                     }
                 }
 
-                // Peta tetap bidang pekat dengan border tipis, tanpa shadow:
-                // kaca di atas tile peta akan membuat petanya tidak terbaca.
+                // Peta tetap bidang pekat bergaris tebal: tile peta sudah ramai,
+                // jadi yang dibutuhkan cuma batas yang jelas, bukan hiasan.
                 item(key = "map") {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(HOME_MAP_HEIGHT_DP)
-                            .clip(MaterialTheme.shapes.extraLarge),
-                        color = FrostSolidsurface,
+                            .brutalShadow(),
+                        color = MaterialTheme.colorScheme.surface,
                         shape = MaterialTheme.shapes.extraLarge,
                         border = appCardOutline(),
                         shadowElevation = 0.dp
@@ -493,10 +490,9 @@ fun HomeScreen(
                 }
             }
 
-            // Bar kaca yang tetap di atas: daftar yang lewat di belakangnya yang
-            // diblur, jadi petanya sengaja tidak ikut (peta ada di dalam daftar).
+            // Bar atas yang tetap di tempat: latarnya pekat, dan garis tintanya
+            // yang menandai batas dengan daftar yang menggulir di bawahnya.
             HomeHeaderBar(
-                hazeState = hazeState,
                 nearbyActive = nearbyState == NearbyAlertState.ACTIVE,
                 onNearbyClick = { showNearbyDialog = true },
                 onAppearanceClick = { showAppearanceDialog = true },
@@ -560,7 +556,7 @@ private fun CatsPlaceholderCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.brutalShadow(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = appCardOutline()
@@ -573,9 +569,15 @@ private fun CatsPlaceholderCard(
 @Composable
 private fun CatsErrorCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier,
+        modifier = modifier.brutalShadow(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary)
+        colors = CardDefaults.cardColors(
+            // Status gagal memakai warna error, bukan aksen tersier: aksen dipakai
+            // untuk hal yang netral, sedangkan kartu ini harus terbaca sebagai
+            // masalah sejak dilihat.
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        ),
+        border = appCardOutline()
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
@@ -586,18 +588,18 @@ private fun CatsErrorCard(onRetry: () -> Unit, modifier: Modifier = Modifier) {
                 Text(
                     text = stringResource(R.string.error_load_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onTertiary,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                     textAlign = TextAlign.Center
                 )
                 Text(
                     text = stringResource(R.string.home_error_message),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiary,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                     textAlign = TextAlign.Center
                 )
                 Button(
                     onClick = onRetry,
-                    shape = CircleShape,
+                    shape = MaterialTheme.shapes.small,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.primary
@@ -690,8 +692,8 @@ private fun NearestCatCard(
 /**
  * Kontrol kabar "dekat kucing": bulat dan ikon saja supaya tidak menyempitkan
  * judul di sebelahnya. Warnanya berubah jadi `primary` waktu fiturnya aktif, jadi
- * statusnya kelihatan tanpa harus membuka dialog. `primary`, bukan IceAccent:
- * loncengnya ikon di atas isian itu, dan IceAccent cuma lolos 4,4:1 untuk teks
+ * statusnya kelihatan tanpa harus membuka dialog. `primary`, bukan aksen:
+ * loncengnya ikon di atas isian itu, dan bidang tinta adalah satu-satunya latar
  * kecil.
  *
  * Tinggi 44dp supaya tetap lolos tap target (R-03).
@@ -700,13 +702,18 @@ private fun NearestCatCard(
 private fun NearbyPill(active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.clickable(onClick = onClick),
-        shape = CircleShape,
-        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+        shape = MaterialTheme.shapes.small,
+        color = if (active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primaryContainer
+        },
         contentColor = if (active) {
             MaterialTheme.colorScheme.onPrimary
         } else {
             MaterialTheme.colorScheme.onPrimaryContainer
-        }
+        },
+        border = appChipOutline()
     ) {
         Box(
             modifier = Modifier.size(44.dp),
@@ -732,9 +739,10 @@ private fun NearbyPill(active: Boolean, onClick: () -> Unit, modifier: Modifier 
 private fun StickerPackPill(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.clickable(onClick = onClick),
-        shape = CircleShape,
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        border = appChipOutline()
     ) {
         Box(
             modifier = Modifier.size(44.dp),
@@ -757,9 +765,10 @@ private fun StickerPackPill(onClick: () -> Unit, modifier: Modifier = Modifier) 
 private fun AppearancePill(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.clickable(onClick = onClick),
-        shape = CircleShape,
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        border = appChipOutline()
     ) {
         // Tinggi minimal 44dp supaya lolos tap target (R-03).
         Box(
@@ -928,7 +937,7 @@ private fun TrailCatChip(
 ) {
     Surface(
         modifier = modifier.selectable(selected = selected, onClick = onClick),
-        shape = CircleShape,
+        shape = MaterialTheme.shapes.small,
         color = if (selected) {
             MaterialTheme.colorScheme.secondaryContainer
         } else {
@@ -938,7 +947,8 @@ private fun TrailCatChip(
             MaterialTheme.colorScheme.onSecondaryContainer
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
-        }
+        },
+        border = appChipOutline()
     ) {
         Row(
             modifier = Modifier
@@ -985,22 +995,28 @@ private fun TrailCatChip(
  */
 @Composable
 private fun HomeHeaderBar(
-    hazeState: HazeState,
     nearbyActive: Boolean,
     onNearbyClick: () -> Unit,
     onAppearanceClick: () -> Unit,
     onStickerPackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lineColor = MaterialTheme.colorScheme.outline
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .frostSurface(
-                state = hazeState,
-                shape = RectangleShape,
-                opacity = 0.72f,
-                borderAlpha = 0f
-            )
+            // Latar pekat + garis tinta di bawah: itu yang menggantikan kaca.
+            // Warnanya `background`, bukan `surface`, supaya bar ini terbaca
+            // sebagai bagian halaman, bukan kartu yang mengambang di atasnya.
+            .background(MaterialTheme.colorScheme.background)
+            .drawBehind {
+                drawLine(
+                    color = lineColor,
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 3.dp.toPx()
+                )
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -1053,7 +1069,7 @@ private fun RecentSightingsHeader(totalCount: Int, modifier: Modifier = Modifier
 @Composable
 private fun EmptyCatsCard(modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier,
+        modifier = modifier.brutalShadow(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = appCardOutline()
@@ -1093,7 +1109,7 @@ private fun EmptyCatsCard(modifier: Modifier = Modifier) {
  * lagi bisa dijamin (R-25).
  */
 @Composable
-private fun PawFab(onClick: () -> Unit, hazeState: HazeState) {
+private fun PawFab(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1108,10 +1124,12 @@ private fun PawFab(onClick: () -> Unit, hazeState: HazeState) {
     Row(
         modifier = Modifier
             .scale(scale)
-            .frostSurface(
-                state = hazeState,
+            // FAB ini satu-satunya tombol utama di layar, jadi ia yang memakai
+            // aksen paling terang; kartu di sekitarnya tetap putih.
+            .appSurface(
                 shape = MaterialTheme.shapes.extraLarge,
-                opacity = 0.72f
+                fill = Yellow,
+                shadowOffset = 5.dp
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -1125,15 +1143,16 @@ private fun PawFab(onClick: () -> Unit, hazeState: HazeState) {
         Icon(
             painter = painterResource(R.drawable.ic_paw),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = Ink,
             modifier = Modifier.size(22.dp)
         )
         Text(
             text = stringResource(R.string.fab_add_cat),
             style = MaterialTheme.typography.labelLarge,
-            // Teksnya ikut tema, bukan dipatok SteelText: kaca FAB kini gelap di
-            // tema malam, jadi teks gelap yang dipatok akan hilang di atasnya.
-            color = MaterialTheme.colorScheme.onSurface
+            // Tinta dipatok, bukan `onSurface`: isian FAB selalu kuning di kedua
+            // tema, jadi teksnya harus tetap gelap. Memakai warna tema membuat
+            // tombol ini putih di atas kuning pada tema malam (1,4:1).
+            color = Ink
         )
     }
 }

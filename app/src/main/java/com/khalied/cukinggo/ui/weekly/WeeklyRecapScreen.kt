@@ -48,19 +48,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.domain.model.CatSighting
-import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.topBarContentPadding
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
-import com.khalied.cukinggo.ui.theme.IceAccent
-import com.khalied.cukinggo.ui.theme.IceSoft
+import com.khalied.cukinggo.ui.theme.SurfaceMuted
+import com.khalied.cukinggo.ui.theme.Yellow
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.WeeklyRecap
 import com.khalied.cukinggo.util.formatShortDate
 import com.khalied.cukinggo.util.formatShortDay
-import dev.chrisbanes.haze.HazeState
 import java.io.File
 import java.time.LocalDate
 
@@ -91,10 +90,8 @@ fun WeeklyRecapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Sumber blur untuk bar kaca di atas, plus tinggi yang perlu disisakan daftar
-    // di bawahnya supaya isinya benar-benar lewat di belakang bar itu.
-    val hazeState = remember { HazeState() }
-    val topBarPadding = glassTopBarPadding()
+    // Tinggi bar atas yang perlu disisakan daftar di bawahnya.
+    val topBarPadding = topBarContentPadding()
 
     Box(modifier = modifier.fillMaxSize()) {
         when (val state = uiState) {
@@ -110,7 +107,7 @@ fun WeeklyRecapScreen(
                 recap = state.recap,
                 onSightingClick = onSightingClick,
                 topBarPadding = topBarPadding,
-                modifier = Modifier.frostBackdrop(hazeState)
+                modifier = Modifier
             )
         }
 
@@ -119,8 +116,7 @@ fun WeeklyRecapScreen(
             onBack = onBack,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-            hazeState = hazeState
+                .fillMaxWidth()
         )
     }
 }
@@ -286,10 +282,10 @@ private fun WeeklyChart(
                                         )
                                     )
                                     // Hari ini dibedakan warnanya, bukan cuma
-                                    // di-bold: aksen es penuh untuk hari ini,
-                                    // versi pucatnya untuk enam hari lain.
+                                    // di-bold: batang kuning penuh untuk hari ini,
+                                    // permukaan redup untuk enam hari lain.
                                     .background(
-                                        if (isToday) IceAccent else IceSoft
+                                        if (isToday) Yellow else SurfaceMuted
                                     )
                             )
                         }

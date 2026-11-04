@@ -174,7 +174,7 @@ Syarat Play Console untuk ikon daftar dan hasil pengukuran file pertama:
 | Ukuran 512 x 512 px | 512 x 512 |
 | PNG 32-bit | ya, 8 bit per kanal (RGBA) |
 | Ruang warna sRGB | ya, tiap file membawa keterangan sRGB sendiri |
-| Maksimal 1024 KB | 8 KB (varian besar 10 KB) |
+| Maksimal 1024 KB | 14 KB (varian besar 17 KB) |
 | Persegi penuh, tanpa sudut membulat dan tanpa bayangan | ya, dan 0 piksel tembus pandang |
 
 Angka-angka di tabel itu bukan dari hitungan di memori: script membuka lagi file PNG hasilnya, lalu mengukur ulang dari isi file yang benar-benar akan diunggah (ukuran, warna sudut dan bantalan, jumlah piksel tembus pandang, lebar jejak kaki, dan batas area aman).

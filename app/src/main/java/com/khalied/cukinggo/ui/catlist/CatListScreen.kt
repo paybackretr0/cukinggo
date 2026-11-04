@@ -37,11 +37,9 @@ import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.PlayfulTopBar
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
 import com.khalied.cukinggo.ui.components.SwipeDeleteHint
-import com.khalied.cukinggo.ui.components.glassTopBarPadding
+import com.khalied.cukinggo.ui.components.topBarContentPadding
 import com.khalied.cukinggo.ui.components.WalkingCatLoader
 import com.khalied.cukinggo.ui.theme.appCardOutline
-import com.khalied.cukinggo.ui.theme.frostBackdrop
-import dev.chrisbanes.haze.HazeState
 
 /**
  * Daftar seluruh cuking yang pernah ditandai, dimuat sehalaman demi sehalaman.
@@ -63,8 +61,7 @@ fun CatListScreen(
     val refreshState = sightings.loadState.refresh
     val appendState = sightings.loadState.append
 
-    val hazeState = remember { HazeState() }
-    val topBarPadding = glassTopBarPadding()
+    val topBarPadding = topBarContentPadding()
     // Chip jumlahnya disembunyikan selama angkanya belum kebaca, bukan
     // ditampilkan sebagai 0: angka 0 di layar terbaca seperti "koleksimu
     // kosong", padahal catatannya cuma belum selesai dihitung.
@@ -84,7 +81,7 @@ fun CatListScreen(
                 onDelete = viewModel::deleteSighting,
                 count = count,
                 topBarPadding = topBarPadding,
-                modifier = Modifier.frostBackdrop(hazeState)
+                modifier = Modifier
             )
 
             // Paging bilang tidak ada apa-apa lagi: memang koleksinya kosong.
@@ -101,8 +98,7 @@ fun CatListScreen(
             onBack = onBack,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-            hazeState = hazeState
+                .fillMaxWidth()
         )
     }
 }

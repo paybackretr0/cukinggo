@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +40,7 @@ import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.domain.model.CatSighting
 import com.khalied.cukinggo.ui.theme.appCardOutline
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.formatDayLabel
 import com.khalied.cukinggo.util.formatTime
 import java.io.File
@@ -74,8 +74,14 @@ fun CatListCard(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
+            // Sudut tajam dan bayangan keras. Material3 tidak punya parameter
+            // border untuk dialog, jadi garis tepinya tidak dipasang di sini;
+            // siluet bayangannya yang menjaga dialog ini tetap satu bahasa
+            // dengan kartu di belakangnya.
+            modifier = Modifier.brutalShadow(),
             shape = MaterialTheme.shapes.extraLarge,
             containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 0.dp,
             title = {
                 Text(
                     text = stringResource(R.string.home_delete_confirm_title),
@@ -148,17 +154,18 @@ fun CatListCard(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .brutalShadow()
                 .clickable(onClick = onClick)
                 // Satu kartu dibaca TalkBack sebagai satu simpul: judul dan tanggal
                 // cukup sekali, tidak diulang per elemen di dalamnya.
                 .semantics(mergeDescendants = true) {},
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
-                // Bidang pekat, bukan translusen seperti kartu kaca yang lain:
-                // kartu ini punya latar swipe di belakangnya, dan kartu bening
-                // membuat isi latar itu tembus, sehingga kartu yang diam terlihat
-                // seperti membawa ikon hapus. Kepekatan kartu di daftar ini yang
-                // memisahkan isi kartu dari isyarat sapuannya.
+                // Bidang pekat, bukan translusen: kartu ini punya latar swipe di
+                // belakangnya, dan kartu bening membuat isi latar itu tembus,
+                // sehingga kartu yang diam terlihat seperti membawa ikon hapus.
+                // Kepekatan kartu di daftar ini yang memisahkan isi kartu dari
+                // isyarat sapuannya.
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             border = appCardOutline()
@@ -184,7 +191,7 @@ fun CatListCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(64.dp)
-                        .sharedCatPhoto(sightingId = sighting.id, clip = RoundedCornerShape(18.dp))
+                        .sharedCatPhoto(sightingId = sighting.id, clip = MaterialTheme.shapes.small)
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(

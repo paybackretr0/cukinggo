@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.ui.theme.ThemeMode
+import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.widget.WidgetSkinMode
 
 /**
@@ -42,8 +44,10 @@ fun AppearancePickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = Modifier.brutalShadow(),
         shape = MaterialTheme.shapes.extraLarge,
         containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
         title = {
             Text(
                 text = stringResource(R.string.appearance_title),
@@ -95,13 +99,20 @@ fun AppearancePickerDialog(
     )
 }
 
+/**
+ * Judul kelompok pilihan.
+ *
+ * Satu-satunya tempat di app ini yang memakai huruf besar berjarak: isinya label
+ * kelompok, bukan kalimat, dan di daftar tujuh baris ini batas antar-kelompok
+ * perlu terlihat tanpa menambah garis.
+ */
 @Composable
 private fun SectionLabel(text: String) {
     Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.4.sp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
     )
 }
 

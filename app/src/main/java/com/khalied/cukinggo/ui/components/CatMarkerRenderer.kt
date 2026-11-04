@@ -10,10 +10,9 @@ import android.graphics.Typeface
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.res.ResourcesCompat
 import com.khalied.cukinggo.R
-import com.khalied.cukinggo.ui.theme.IceDeep
-import com.khalied.cukinggo.ui.theme.IceSoft
-import com.khalied.cukinggo.ui.theme.SteelText
-import com.khalied.cukinggo.ui.theme.IceAccent
+import com.khalied.cukinggo.ui.theme.Cyan
+import com.khalied.cukinggo.ui.theme.Ink
+import com.khalied.cukinggo.ui.theme.Yellow
 
 /**
  * Marker peta digambar sendiri supaya tidak butuh aset eksternal:
@@ -66,8 +65,11 @@ object CatMarkerRenderer {
             cx, cy, radius + size * 0.025f,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
-                strokeWidth = size * 0.025f
-                color = SteelText.copy(alpha = 0.45f).toArgb()
+                strokeWidth = size * 0.03f
+                // Garis tinta penuh, bukan abu-abu transparan: di arah ini tepi
+                // marker harus setegas garis di seluruh app, termasuk di atas
+                // tile peta yang terang.
+                color = Ink.toArgb()
             }
         )
 
@@ -99,7 +101,7 @@ object CatMarkerRenderer {
             cx, cy, radius,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = IceDeep.toArgb()
+                color = Ink.toArgb()
             }
         )
         canvas.drawCircle(
@@ -114,8 +116,8 @@ object CatMarkerRenderer {
             cx, cy, radius + size * 0.025f,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
-                strokeWidth = size * 0.025f
-                color = SteelText.copy(alpha = 0.45f).toArgb()
+                strokeWidth = size * 0.03f
+                color = Ink.toArgb()
             }
         )
 
@@ -146,7 +148,7 @@ object CatMarkerRenderer {
 
         canvas.drawCircle(
             center, center, size * 0.44f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = IceSoft.copy(alpha = 0.22f).toArgb() }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Cyan.copy(alpha = 0.45f).toArgb() }
         )
         canvas.drawCircle(
             center, center + size * 0.015f, size * 0.24f,
@@ -156,9 +158,12 @@ object CatMarkerRenderer {
             center, center, size * 0.24f,
             Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFFFFF.toInt() }
         )
+        // Inti tinta, bukan biru pucat: titik "kamu di sini" harus terbaca sebagai
+        // titik yang tegas, dan halo siannya sudah cukup membedakannya dari marker
+        // cuking yang berupa foto.
         canvas.drawCircle(
             center, center, size * 0.155f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = IceSoft.toArgb() }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Ink.toArgb() }
         )
         return output
     }
@@ -178,7 +183,7 @@ object CatMarkerRenderer {
             ears,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.FILL
-                color = IceAccent.toArgb()
+                color = Yellow.toArgb()
             }
         )
         canvas.drawPath(
@@ -187,7 +192,9 @@ object CatMarkerRenderer {
                 style = Paint.Style.STROKE
                 strokeWidth = size * 0.045f
                 strokeJoin = Paint.Join.ROUND
-                color = 0xFFFFFFFF.toInt()
+                // Telinga kuning dibatasi tinta, bukan putih: putih hanya jadi
+                // celah tipis antara foto dan garis luar, sekali saja.
+                color = Ink.toArgb()
             }
         )
     }

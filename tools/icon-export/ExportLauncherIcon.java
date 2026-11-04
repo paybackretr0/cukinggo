@@ -26,8 +26,8 @@ import org.w3c.dom.Node;
  * penuh tanpa sudut membulat, karena masking dan shadow dipasang oleh Play sendiri.
  *
  * Geometrinya bukan gambar baru. Angka di bawah ini transkripsi dari
- *   app/src/main/res/drawable/ic_launcher_foreground.xml  (jejak kaki, InkSoft)
- *   app/src/main/res/drawable/ic_launcher_background.xml  (latar PeachAccent solid)
+ *   app/src/main/res/drawable/ic_launcher_foreground.xml  (jejak kaki, Ink)
+ *   app/src/main/res/drawable/ic_launcher_background.xml  (latar kuning pudar solid)
  * termasuk skala 2.8 dan geser 20.4 milik grup-nya.
  *
  * Menjalankannya: lihat tools/icon-export/export-icon.sh
@@ -59,11 +59,16 @@ public final class ExportLauncherIcon {
      */
     private static final double LARGE_MARGIN = 0.97;
 
-    /** PeachAccent, warna latar ikon. */
-    private static final Color BACKGROUND = new Color(0xFF, 0xB2, 0x7A);
+    /**
+     * Kuning pudar, warna latar ikon.
+     *
+     * Bukan limau aksen app: ikon ini duduk di layar utama bersama ikon lain, dan
+     * bidang limau di situ terbaca lebih keras daripada isinya sendiri.
+     */
+    private static final Color BACKGROUND = new Color(0xFF, 0xE9, 0xA8);
 
-    /** InkSoft, warna jejak kaki. */
-    private static final Color FOREGROUND = new Color(0x3A, 0x2E, 0x26);
+    /** Ink, warna jejak kaki. Di atas kuning pudar ia 15,7:1. */
+    private static final Color FOREGROUND = new Color(0x11, 0x11, 0x11);
 
     /**
      * Lima bentuk jejak kaki: cx, cy, rx, ry dalam koordinat grup (sebelum skala).

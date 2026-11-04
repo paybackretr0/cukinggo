@@ -8,59 +8,66 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 /**
- * Frost UI: latar dingin, permukaan kaca, aksen biru es.
+ * NeoBrutalism: latar Paper, permukaan Card, tinta sebagai garis sekaligus teks.
  *
- * Warna di sini adalah "lantai"-nya saja. Permukaan kaca sendiri dibentuk oleh
- * `Modifier.frostSurface()` yang menambahkan transparansi, blur, dan border tipis
- * di atasnya.
+ * Yang diatur di sini cuma "lantai" warnanya. Garis tebal dan bayangan keras
+ * dipasang oleh `Modifier.appSurface()` / `Modifier.brutalShadow()`, karena
+ * keduanya mengubah gambar dan ukuran, bukan sekadar warna.
+ *
+ * `primary` diisi Ink, bukan warna aksen: di app ini primary dipakai sebagai
+ * warna judul dan isian tombol bawaan Material, dan tinta dengan teks Paper
+ * adalah pasangan paling terbaca (18,9:1) sekaligus bahasa neo-brutalism.
+ * Aksennya masuk lewat `primaryContainer`/`secondary`/`tertiary`, yang memang
+ * hanya dipakai di tempat yang memintanya.
  */
 private val LightColors = lightColorScheme(
-    // primary dipakai sebagai warna teks judul di seluruh app, jadi yang dipakai
-    // IceDeep, bukan IceAccent: IceAccent di atas latar dingin cuma 2,3:1, di
-    // bawah ambang AA. IceAccent tetap jadi aksen dekoratif.
-    primary = IceDeep,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFD5E9F5),
-    onPrimaryContainer = SteelText,
-    secondary = MistGray,
-    onSecondary = Color.White,
-    secondaryContainer = FrostVariant,
-    onSecondaryContainer = SteelText,
-    tertiary = Color(0xFFB8D4E8),
-    onTertiary = SteelText,
-    background = FrostBg,
-    onBackground = SteelText,
-    surface = GlassSurface,
-    onSurface = SteelText,
-    surfaceVariant = FrostVariant,
-    onSurfaceVariant = Color(0xFF4A5D70),
-    outline = MistGray,
-    error = Color(0xFFC0392B),
-    onError = Color.White,
-    // Satu-satunya warna hangat yang tersisa, dan hanya untuk status merusak
-    // (hapus, matikan kabar dekat), sesuai batas Frost UI.
-    errorContainer = Color(0xFFF6DAD6),
-    onErrorContainer = Color(0xFF4A110B)
+    primary = Ink,
+    onPrimary = Paper,
+    primaryContainer = Yellow,
+    onPrimaryContainer = Ink,
+    secondary = Blue,
+    onSecondary = Paper,
+    secondaryContainer = Cyan,
+    onSecondaryContainer = Ink,
+    tertiary = Yellow,
+    onTertiary = Ink,
+    background = Paper,
+    onBackground = Ink,
+    surface = Card,
+    onSurface = Ink,
+    surfaceVariant = SurfaceMuted,
+    onSurfaceVariant = Muted,
+    outline = Ink,
+    error = ErrorRed,
+    onError = Paper,
+    // Satu-satunya warna hangat yang tersisa, dan hanya untuk status merusak.
+    errorContainer = Color(0xFFFFD9D6),
+    onErrorContainer = Color(0xFF410002)
 )
 
+/**
+ * Tema malam memakai netral yang sama, bukan biru gelap: yang berubah cuma
+ * terang-gelapnya, jadi garis tinta menjadi tinta terang dan bayangannya ikut.
+ */
 private val DarkColors = darkColorScheme(
-    primary = FrostNightAccent,
-    onPrimary = Color(0xFF082033),
-    primaryContainer = Color(0xFF23425A),
-    onPrimaryContainer = FrostNightInk,
-    secondary = FrostNightMuted,
-    onSecondary = Color(0xFF0F1720),
-    secondaryContainer = Color(0xFF2A3B4A),
-    onSecondaryContainer = FrostNightInk,
-    tertiary = Color(0xFF3E5A72),
-    onTertiary = FrostNightInk,
-    background = FrostNightBg,
-    onBackground = FrostNightInk,
-    surface = FrostNightSurface,
-    onSurface = FrostNightInk,
-    surfaceVariant = Color(0xFF243241),
-    onSurfaceVariant = FrostNightMuted,
-    outline = FrostNightMuted,
+    primary = NightInk,
+    onPrimary = NightCanvas,
+    primaryContainer = Yellow,
+    // Teks di atas kuning tetap tinta gelap: aksennya terang di kedua tema.
+    onPrimaryContainer = Ink,
+    secondary = Cyan,
+    onSecondary = Ink,
+    secondaryContainer = Color(0xFF1F3A44),
+    onSecondaryContainer = NightInk,
+    tertiary = Yellow,
+    onTertiary = Ink,
+    background = NightCanvas,
+    onBackground = NightInk,
+    surface = NightCard,
+    onSurface = NightInk,
+    surfaceVariant = NightMutedSurface,
+    onSurfaceVariant = NightMuted,
+    outline = NightInk,
     error = Color(0xFFFF8A80),
     onError = Color(0xFF3A0A06),
     errorContainer = Color(0xFF5C1A14),
@@ -79,3 +86,4 @@ fun CukingGoTheme(
         content = content
     )
 }
+

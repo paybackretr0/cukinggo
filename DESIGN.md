@@ -9,6 +9,137 @@
 Reading this as: app catatan cuking untuk pemakaian harian pecinta cuking (Android, offline-first),
 dalam bahasa visual playful/hand-drawn ala jurnal stiker, dial **ENERGY 2 / RHYTHM 2 / MOTION 2**.
 
+## Arah baru: NeoBrutalism (permintaan pemilik, sesi 2026-11-04)
+
+> **Ini menggantikan Frost UI di bawah.** Kaca buram, palet dingin, dan tipografi
+> ringan tidak dipakai lagi. Bagian Frost UI tetap disimpan sebagai riwayat
+> keputusan beserta alasannya, bukan sebagai arah yang berlaku.
+> Mode antislop: **DURING** (sama seperti sesi sebelumnya).
+
+Reading this as: app catatan cuking untuk pemakaian harian di jalan (Android,
+offline-first), dalam bahasa visual neo-brutalism (garis tinta tebal, blok warna
+datar, bayangan keras tanpa blur), dial **ENERGY 3 / RHYTHM 2 / MOTION 2**.
+
+Alasan dial-nya: neo-brutalism memang arah yang berteriak (ENERGY 3); tata letak
+layarnya tidak dirombak, ini reskin dan bukan redesign struktur (RHYTHM 2); dan
+gerak yang sudah ada — perayaan setelah menyimpan, foto yang menyambung antar
+layar, marker peta yang pop-in — dibiarkan apa adanya (MOTION 2).
+
+### Token warna
+
+| Token | Nilai | Peran | Kontras terukur |
+|---|---|---|---|
+| `Ink` | `#111111` | garis tepi, teks utama, bayangan keras | 17,83:1 di atas Paper |
+| `Paper` | `#FFF8E7` | latar halaman | — |
+| `Card` | `#FFFFFF` | permukaan kartu dan dialog | 18,88:1 untuk Ink |
+| `SurfaceMuted` | `#F3ECDC` | kolom isian, permukaan sekunder | 15,1:1 untuk Ink |
+| `Muted` | `#4A4A4A` | teks sekunder | 8,37:1 di atas Paper |
+| `Yellow` | `#FFD43B` | satu aksen untuk semua: FAB, lencana rentetan, batang "hari ini", ilustrasi, chip saringan | 13,25:1 untuk Ink |
+| `Cyan` | `#7FE3F0` | chip informasi (koordinat, jarak) | 12,72:1 untuk Ink |
+| `Pink` | `#FF8FBF` | aksen lembut: hati, penanda hapus | 8,93:1 untuk Ink |
+| `Blue` | `#2F5BFF` | isian tombol sekunder dan tautan | 4,88:1 untuk Paper |
+| `Error` | `#B3261E` | status gagal | 6,17:1 di atas Paper |
+| `NightCanvas` | `#121212` | latar tema malam | 17,18:1 untuk NightInk |
+| `NightCard` | `#1C1C1C` | permukaan tema malam | 15,63:1 untuk NightInk |
+
+**Aturan yang menjaga kontras tanpa hitung ulang:** semua isian aksen
+(Yellow/Cyan/Pink) selalu membawa teks `Ink`, tidak pernah teks putih.
+Teks putih hanya di atas `Ink` atau `Blue`.
+
+### Tipografi
+
+- **Inter variable** untuk judul, bobot **Black 900** lewat `FontVariation`,
+  tracking rapat. File yang dibundel memang variable font (punya tabel `fvar`),
+  jadi bobot beratnya asli, bukan tebal sintetis yang menggemukkan bentuk huruf.
+- **Manrope** untuk teks isi, Normal/SemiBold. Tidak ada font baru yang diunduh:
+  aset tetap 100% offline dan lisensinya sudah ada di `licenses/`.
+- **Uppercase** hanya untuk label seksi di dialog Tampilan, tidak dipakai di
+  tempat lain, karena hampir semua teks app ini adalah kalimat berbahasa
+  Indonesia dan uppercase akan membuatnya lebih lambat dibaca.
+
+### Bentuk, garis, dan bayangan
+
+- Sudut **0dp** di semua komponen (`AppShapes`). Sudut tajam inilah yang membuat
+  permukaan terbaca sebagai stempel, bukan kartu lunak.
+- Garis tepi **3dp `Ink`** untuk kartu/panel, **2dp** untuk chip dan lencana.
+- Bayangan **keras, 4dp, tanpa blur**, digambar oleh `Modifier.brutalShadow()`
+  memakai `Shape.createOutline`: ia yang menggantikan peran elevation, jadi
+  hierarki tetap terbaca walau tidak ada kabut abu-abu.
+- Latar polos. Tidak ada grid, titik, atau pola (R-07).
+
+### Motif identitas
+
+Satu gesture yang diulang di seluruh app: **stempel tinta** — bidang datar,
+garis tepi tebal, dan bayangan yang menggeser ke kanan bawah. Motif ini yang
+membuat kartu cuking, chip, kartu widget, dan gelembung peta terasa satu
+keluarga. Rotasi/miring sengaja tidak dipakai: teks catatan panjang dan peta
+jadi sulit dibaca kalau dimiringkan.
+
+### Keputusan dan alasan (R-31, satu baris per keputusan)
+
+- **Kaca dicabut seluruhnya, bukan diredupkan:** arah baru tidak memakai
+  transparansi, dan menyisakan satu-dua permukaan kaca hanya akan terbaca
+  sebagai sisa tema lama. Konsekuensinya dependency Haze ikut dibuang.
+- **Override R-10 dicabut:** aturan aslinya membatasi blur di 1-2 elemen;
+  karena blur tidak dipakai sama sekali, aturannya kembali berlaku tanpa
+  pengecualian.
+- **Bayangan digambar sendiri, bukan `Modifier.shadow()`:** `Modifier.shadow()`
+  selalu menghasilkan blur, sedangkan yang dibutuhkan siluet solid yang
+  posisinya bisa dihitung.
+- **Border 3dp tetap dipakai walau sudah ada bayangan:** bayangan hanya muncul
+  di dua sisi, jadi tanpa garis penuh bidangnya kehilangan tepi di sisi atas
+  dan kiri.
+- **Warna aksen selalu berpasangan dengan `Ink`,** bukan putih: semua aksen di
+  tabel ini terang, dan putih di atasnya gagal 4,5:1 sementara `Ink` lolos
+  8,9:1 sampai 13,3:1.
+- **Sudut 0dp untuk semua, tanpa pengecualian bentuk bulat:** satu bahasa bentuk
+  lebih mudah dijaga daripada campuran tajam-dan-bulat yang gampang melenceng
+  di layar berikutnya. Lingkaran tetap ada hanya untuk foto dan tombol jepret.
+- **Widget ikut di-restyle di sesi yang sama:** widget tinggal di layar utama
+  bersebelahan dengan app, jadi membiarkannya bergaya kaca berarti dua identitas
+  terlihat berdampingan.
+- **Ikon launcher dan ikon daftar Play ikut diganti di sesi yang sama:** keduanya
+  masih peach dari identitas jurnal lama, jadi kalau dibiarkan, ikon di layar
+  utama justru memakai warna yang sudah tidak ada di dalam app.
+- **Latar ikon kuning pudar (#FFE9A8), bukan kuning penuh milik aksen:** ikon
+  duduk di layar utama bersama ikon app lain, dan bidang kuning penuh di situ
+  terbaca lebih keras daripada isinya sendiri. Ikon jadi versi tenang dari warna
+  yang sama, bukan warna lain; jejak kaki tinta di atasnya tetap 15,7:1.
+- **Tanpa rim di tepi jejak kaki:** rim cream hanya berguna di atas bidang pekat,
+  sedangkan di atas kuning pudar ia tidak terlihat dan cuma mengecilkan bentuk.
+- **Satu aksen (kuning) untuk seluruh app, bukan dua:** sebelumnya aksi utama
+  memakai limau dan chip memakai kuning; dua warna sehue yang berdampingan
+  terbaca sebagai kesalahan produksi, bukan sebagai dua tingkat. Limau juga hijau
+  dingin di atas Paper yang hangat, dan suaranya lebih kasar daripada yang
+  dibutuhkan produk ini.
+- **Aksen di dalam app tetap pekat, tidak ikut dipudarkan seperti ikon:** aksen
+  yang pudar cuma 1,14:1 terhadap Paper, jadi FAB berhenti jadi titik fokus dan
+  layar kehilangan satu-satunya penanda aksi utama.
+- **PNG daftar Play dibuat ulang dari tool yang sama:** sebelumnya tool itu masih
+  mematok peach sementara drawable-nya sudah biru, jadi menjalankannya akan
+  menghasilkan dua versi warna yang berbeda. Sekarang keduanya satu sumber.
+- **Bayangan hanya untuk permukaan yang berdiri sendiri:** kartu daftar, kartu
+  peta, FAB, kartu keadaan kosong/gagal, dan dialog. Panel di dalam form serta
+  baris statistik cukup bergaris tebal tanpa bayangan, karena menumpuk bayangan
+  di dalam satu kartu membuat hierarkinya rata (R-12).
+- **Teks dan alur tidak diubah:** sesi ini mengganti kulit, bukan perilaku;
+  setiap layar harus tetap punya keadaan loading, kosong, gagal, dan terisi
+  yang sudah ada sebelumnya (R-27).
+
+### Batas yang diketahui
+
+Kontras di atas dihitung untuk teks di atas permukaan app. Teks yang menempel
+di atas peta tetap perlu diperiksa dari tangkapan layar, karena tile
+OpenStreetMap berganti-ganti terang dan gelap di bawahnya.
+
+Satu hal yang belum bisa dipenuhi: `AlertDialog` Material3 tidak punya parameter
+border, dan `Modifier.border()` yang dipasang lewat `modifier`-nya tidak terlihat
+karena latar dialog digambar sesudahnya. Dialog karena itu hanya memakai sudut
+tajam dan bayangan keras, tanpa garis tinta. Kalau garisnya nanti tetap
+dibutuhkan, isinya harus dipindah ke `Dialog` + `Box(Modifier.appSurface())`,
+bukan ditambal dari luar.
+
+
 ## Arah baru: Frost UI (permintaan pemilik, sesi 2026-10-01)
 
 > **Ini menggantikan identitas, palet, dan tipografi di bawah.** Bagian Identitas,

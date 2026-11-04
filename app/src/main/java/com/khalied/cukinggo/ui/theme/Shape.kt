@@ -5,13 +5,19 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /**
- * Sudut medium-large untuk permukaan kaca: cukup membulat supaya tepinya lembut,
- * tapi tidak sampai pill. Frost UI meminta 16-24dp, jadi langit-langitnya 24dp.
+ * Semua sudut 0dp.
+ *
+ * Arah NeoBrutalism memakai sudut tajam sebagai bahasa bentuk. Satu-satunya
+ * lengkung yang tersisa adalah lingkaran foto dan tombol jepret, dan itu dibuat
+ * langsung di komponennya. Kalau di sini masih ada 12-24dp, tiap komponen baru
+ * akan diam-diam kembali membulat dan identitasnya jadi setengah jadi.
  */
+private val Sharp = RoundedCornerShape(0.dp)
+
 val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(12.dp),
-    small = RoundedCornerShape(16.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(22.dp),
-    extraLarge = RoundedCornerShape(24.dp)
+    extraSmall = Sharp,
+    small = Sharp,
+    medium = Sharp,
+    large = Sharp,
+    extraLarge = Sharp
 )
