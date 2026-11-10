@@ -21,3 +21,12 @@ java -Djava.awt.headless=true -cp "$BUILD_DIR" ExportLauncherIcon "store/ic_laun
 
 # 2) pilihan dengan jejak kaki diperbesar, tetap di dalam area aman
 java -Djava.awt.headless=true -cp "$BUILD_DIR" ExportLauncherIcon "store/ic_launcher_512_besar.png" large
+
+# 3) ikon PNG kecil, satu file per kerapatan launcher Android (48 sampai 192 px).
+#    Geometri dan skalanya sama dengan ikon adaptive, cuma kanvasnya lebih kecil.
+for pair in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+    density="${pair%%:*}"
+    pixels="${pair##*:}"
+    java -Djava.awt.headless=true -DiconSize="$pixels" -cp "$BUILD_DIR" \
+        ExportLauncherIcon "store/png/ic_launcher_${density}.png"
+done

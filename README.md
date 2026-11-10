@@ -167,6 +167,8 @@ Ada **dua** file, dan kamu pilih satu untuk diunggah:
 | `store/ic_launcher_512.png` | 40% lebar ikon, sama persis dengan ikon di layar utama | kamu mau ikon di daftar Play identik dengan yang dilihat pengguna di HP-nya |
 | `store/ic_launcher_512_besar.png` | 55% lebar ikon, batas amannya 57% | kamu merasa yang pertama kekecilan saat ditampilkan di daftar Play, karena halaman spesifikasi ikon Google Play justru menyarankan memakai ruang aset sepenuhnya |
 
+Script yang sama juga menulis ikon PNG kecil ke `store/png/`: `ic_launcher_mdpi.png` (48), `hdpi` (72), `xhdpi` (96), `xxhdpi` (144), dan `xxxhdpi` (192). Geometri dan skalanya sama persis dengan ikon adaptive, cuma kanvasnya lebih kecil, dan tiap file juga dicetak hasil ukurnya (jejak kaki masih utuh di dalam area aman, nol piksel tembus pandang). Ini aset gambar biasa untuk dipakai di luar app — bukan pengganti ikon di `res/`, yang tetap adaptive icon vektor.
+
 Syarat Play Console untuk ikon daftar dan hasil pengukuran file pertama:
 
 | Syarat | Hasil |

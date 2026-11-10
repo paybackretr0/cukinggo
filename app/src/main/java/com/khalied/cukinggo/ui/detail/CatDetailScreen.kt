@@ -301,6 +301,9 @@ private fun DetailContent(
     // Penemuan yang sedang ditanyakan mau dihapus, null berarti tidak ada
     // pertanyaan yang terbuka.
     var sightingToDelete by remember { mutableStateOf<CatSighting?>(null) }
+    // Sama seperti di Home: peta ada di dalam daftar yang menggulir, dan guliran itu
+    // yang lebih dulu memangsa geseran jari di atas peta. Alasannya di CatMapView.
+    var mapGestureActive by remember { mutableStateOf(false) }
 
     val shareMessage = shareMessageFor(selectedSighting)
 
@@ -309,6 +312,9 @@ private fun DetailContent(
             .navigationBarsPadding()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
+        // Daftar ini berhenti menggulir selagi jari ada di peta, supaya geseran dan
+        // pinch sampai ke osmdroid utuh.
+        userScrollEnabled = !mapGestureActive,
         // contentPadding, bukan padding biasa: kontennya harus tetap bisa lewat
         // di belakang bar kaca saat digulir, bukan terpotong di bawahnya.
         contentPadding = PaddingValues(top = topBarPadding)
@@ -362,7 +368,11 @@ private fun DetailContent(
         }
 
         item {
-            CatLocationMap(cat = cat, onSightingClick = onSelectSighting)
+            CatLocationMap(
+                cat = cat,
+                onSightingClick = onSelectSighting,
+                onGestureActive = { active -> mapGestureActive = active }
+            )
         }
 
         item {
@@ -676,6 +686,7 @@ private fun MediaChoiceChip(
 private fun CatLocationMap(
     cat: Cat,
     onSightingClick: (CatSighting) -> Unit,
+    onGestureActive: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Satu tempat bukan perjalanan, jadi tidak ada garis yang perlu dijelaskan.
@@ -712,7 +723,8 @@ private fun CatLocationMap(
                 showLocateButton = false,
                 // Seluruh perjalanannya yang mau dilihat di kartu ini, jadi petanya
                 // dipaskan ke bentangnya, bukan ke tempat terakhir saja.
-                fitToContent = true
+                fitToContent = true,
+                onGestureActive = onGestureActive
             )
         }
         if (hasTrail) {

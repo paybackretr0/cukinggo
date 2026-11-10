@@ -44,7 +44,15 @@ import org.w3c.dom.Node;
  */
 public final class ExportLauncherIcon {
 
-    private static final int SIZE = 512;
+    /** Sisi bawaan: 512, angka yang diminta halaman ikon Play Console. */
+    private static final int DEFAULT_SIZE = 512;
+
+    /**
+     * Sisi gambar yang benar-benar digambar. Bisa diubah lewat -DiconSize=<piksel>,
+     * jadi program yang sama juga menghasilkan ikon kecil (48 sampai 192 px) tanpa
+     * perlu menggambar ulang geometrinya.
+     */
+    private static int size = DEFAULT_SIZE;
 
     /** Sama dengan viewportWidth/Height di kedua drawable. */
     private static final double VIEWPORT = 108.0;
@@ -85,6 +93,11 @@ public final class ExportLauncherIcon {
     };
 
     public static void main(String[] args) throws Exception {
+        size = Integer.getInteger("iconSize", DEFAULT_SIZE);
+        if (size <= 0) {
+            throw new IllegalArgumentException("iconSize harus lebih besar dari 0");
+        }
+
         File target = new File(args.length > 0 ? args[0] : "store/ic_launcher_512.png");
         boolean larger = args.length > 1 && args[1].equals("large");
         double largeScale = largestSafeScale() * LARGE_MARGIN;
@@ -101,17 +114,17 @@ public final class ExportLauncherIcon {
 
         // ARGB supaya hasilnya PNG 32-bit, tapi seluruh kanvas diisi rata, jadi
         // tidak ada satu pun piksel yang tembus pandang.
-        BufferedImage image = new BufferedImage(SIZE, SIZE, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
         g.setColor(BACKGROUND);
-        g.fillRect(0, 0, SIZE, SIZE);
+        g.fillRect(0, 0, size, size);
 
         g.setColor(FOREGROUND);
-        double unit = SIZE / VIEWPORT;
+        double unit = size / VIEWPORT;
         for (double[] shape : PAW) {
             double cx = (shape[0] * scale + shiftX) * unit;
             double cy = (shape[1] * scale + shiftY) * unit;
@@ -131,27 +144,27 @@ public final class ExportLauncherIcon {
         // Dibaca ulang dari file, bukan dari gambar di memori, supaya yang diperiksa
         // benar-benar isi file PNG yang akan diunggah.
         BufferedImage written = ImageIO.read(target);
-        if (written == null || written.getWidth() != SIZE || written.getHeight() != SIZE) {
+        if (written == null || written.getWidth() != size || written.getHeight() != size) {
             throw new IllegalStateException("file PNG-nya tidak terbaca atau ukurannya salah");
         }
 
         int[] box = foregroundBounds(written);
-        double safeEdge = SIZE * (1 - 66.0 / VIEWPORT) / 2;
+        double safeEdge = size * (1 - 66.0 / VIEWPORT) / 2;
 
         System.out.println("file      : " + target.getAbsolutePath());
-        System.out.println("ukuran    : " + SIZE + "x" + SIZE);
+        System.out.println("ukuran    : " + size + "x" + size);
         System.out.println("byte      : " + target.length());
         System.out.println("skala     : " + String.format("%.3f", scale)
             + (larger
                 ? "  (batas aman " + String.format("%.3f", largestSafeScale()) + ", diambil 97%-nya)"
                 : "  (sama dengan ikon adaptive)"));
         System.out.println("sudut     : " + hex(written.getRGB(2, 2)));
-        int padPixelY = (int) Math.round((16.0 * scale + shiftY) * SIZE / VIEWPORT);
-        System.out.println("bantalan  : " + hex(written.getRGB(SIZE / 2, padPixelY)));
+        int padPixelY = (int) Math.round((16.0 * scale + shiftY) * size / VIEWPORT);
+        System.out.println("bantalan  : " + hex(written.getRGB(size / 2, padPixelY)));
         System.out.println("transparan: " + countTransparent(written) + " piksel");
         System.out.println("jejak kaki: x " + box[0] + ".." + box[2] + ", y " + box[1] + ".." + box[3]);
-        System.out.println("lebar     : " + String.format("%.1f", 100.0 * (box[2] - box[0] + 1) / SIZE) + "% dari sisi ikon");
-        System.out.println("area aman : " + (int) safeEdge + ".." + (int) (SIZE - safeEdge)
+        System.out.println("lebar     : " + String.format("%.1f", 100.0 * (box[2] - box[0] + 1) / size) + "% dari sisi ikon");
+        System.out.println("area aman : " + (int) safeEdge + ".." + (int) (size - safeEdge)
             + (isInsideSafeZone(box, safeEdge) ? "  (jejak kaki seluruhnya di dalam)" : "  DI LUAR AREA AMAN"));
     }
 
@@ -240,12 +253,12 @@ public final class ExportLauncherIcon {
 
     /** Kotak terkecil yang memuat seluruh piksel jejak kaki: x0, y0, x1, y1. */
     private static int[] foregroundBounds(BufferedImage image) {
-        int x0 = SIZE;
-        int y0 = SIZE;
+        int x0 = size;
+        int y0 = size;
         int x1 = -1;
         int y1 = -1;
-        for (int y = 0; y < SIZE; y++) {
-            for (int x = 0; x < SIZE; x++) {
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
                 if ((image.getRGB(x, y) & 0xFFFFFF) == (FOREGROUND.getRGB() & 0xFFFFFF)) {
                     x0 = Math.min(x0, x);
                     y0 = Math.min(y0, y);
@@ -263,7 +276,7 @@ public final class ExportLauncherIcon {
      * harus tetap berada di dalam area itu.
      */
     private static boolean isInsideSafeZone(int[] box, double safeEdge) {
-        return box[0] >= safeEdge && box[1] >= safeEdge && box[2] <= SIZE - safeEdge && box[3] <= SIZE - safeEdge;
+        return box[0] >= safeEdge && box[1] >= safeEdge && box[2] <= size - safeEdge && box[3] <= size - safeEdge;
     }
 
     private static String hex(int argb) {

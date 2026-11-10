@@ -2,6 +2,7 @@ package com.khalied.cukinggo.ui.components
 
 import android.Manifest
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
@@ -10,6 +11,7 @@ import android.location.Location
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.view.MotionEvent
 import android.view.animation.OvershootInterpolator
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -170,12 +172,23 @@ fun CatMapView(
     modifier: Modifier = Modifier,
     showLocateButton: Boolean = true,
     fitToContent: Boolean = false,
-    highlightCatId: Long? = null
+    highlightCatId: Long? = null,
+    /**
+     * Kabar bahwa jari sedang berada di peta: true saat disentuh, false saat lepas.
+     *
+     * Pemanggil memakainya untuk mematikan guliran daftar di sekeliling peta.
+     * `MapView` di bawah ini View Android biasa, sedangkan daftar di luarnya milik
+     * Compose, dan dua sistem gesture itu tidak saling tahu: tanpa kabar ini,
+     * `LazyColumn` yang lebih dulu memangsa geseran jari, jadi petanya terasa berat
+     * digeser dan baru bergeser setelah jarinya diulang.
+     */
+    onGestureActive: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val container = remember(context) { context.appContainer }
     val currentOnSightingClick by rememberUpdatedState(onSightingClick)
+    val currentOnGestureActive by rememberUpdatedState(onGestureActive)
     val density = context.resources.displayMetrics.density
     val markerSizePx = remember(density) { (MARKER_SIZE_DP * density).toInt().coerceAtLeast(32) }
 
@@ -193,7 +206,16 @@ fun CatMapView(
             controller.setZoom(14.0)
             controller.setCenter(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
             overlays.add(CopyrightOverlay(context))
+
+            // Jari yang menyentuh peta memegang kendali atas halaman di luarnya.
+            observeFinger { isDown -> currentOnGestureActive(isDown) }
         }
+    }
+
+    // Kalau peta dilepas saat jari masih menempel, kuncinya jangan sampai
+    // tertinggal mati: daftar di luar peta akan berhenti bisa digulir.
+    DisposableEffect(mapView) {
+        onDispose { currentOnGestureActive(false) }
     }
 
     // Latar peta saat tile belum termuat: osmdroid menggambar pola kotak abu-abu
@@ -703,4 +725,23 @@ private suspend fun animateMarkerPopIn(
     }
     animator.start()
     delay(440L)
+}
+
+/**
+ * Mengabarkan bahwa jari ada di peta, tanpa ikut menangani sentuhannya.
+ *
+ * Selalu mengembalikan false supaya event tetap sampai ke `MapView`: geser, pinch,
+ * dan ketukan marker tetap urusan osmdroid. `performClick` sengaja tidak dipanggil
+ * walau lint menagihnya, karena peta bukan tombol, dan mengumumkan klik di sini
+ * cuma menambah suara palsu di TalkBack.
+ */
+@SuppressLint("ClickableViewAccessibility")
+private fun MapView.observeFinger(onActive: (Boolean) -> Unit) {
+    setOnTouchListener { _, event ->
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> onActive(true)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> onActive(false)
+        }
+        false
+    }
 }
