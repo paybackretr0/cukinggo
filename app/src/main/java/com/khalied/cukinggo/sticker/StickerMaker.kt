@@ -1,16 +1,13 @@
 package com.khalied.cukinggo.sticker
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
-import androidx.exifinterface.media.ExifInterface
+import com.khalied.cukinggo.util.decodeUprightPhoto
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -66,7 +63,7 @@ class StickerMaker(private val segmenter: SubjectSegmenter) {
     suspend fun makeSticker(source: File, target: File): StickerResult =
         withContext(Dispatchers.Default) {
             val decoded = try {
-                decodeUpright(source)
+                decodeUprightPhoto(source, MAX_SEGMENT_SIDE)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
@@ -102,72 +99,6 @@ class StickerMaker(private val segmenter: SubjectSegmenter) {
                 decoded.recycle()
             }
         }
-
-    /**
-     * Foto dibaca dengan sampel yang cukup kecil, lalu diputar sesuai EXIF.
-     *
-     * Kamera menyimpan hasilnya dengan penanda orientasi, bukan dengan piksel
-     * yang sudah diputar. Tanpa langkah ini stiker bisa keluar miring 90 derajat
-     * walau di galeri fotonya terlihat tegak.
-     */
-    private fun decodeUpright(source: File): Bitmap? {
-        val boundsOnly = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(source.absolutePath, boundsOnly)
-        if (boundsOnly.outWidth <= 0 || boundsOnly.outHeight <= 0) return null
-
-        var sampleSize = 1
-        while (max(boundsOnly.outWidth, boundsOnly.outHeight) / sampleSize > MAX_SEGMENT_SIDE) {
-            sampleSize *= 2
-        }
-
-        val bitmap = BitmapFactory.decodeFile(
-            source.absolutePath,
-            BitmapFactory.Options().apply { inSampleSize = sampleSize }
-        ) ?: return null
-
-        val upright = applyExifRotation(source, bitmap)
-        val longestSide = max(upright.width, upright.height)
-        if (longestSide <= MAX_SEGMENT_SIDE) return upright
-
-        val scale = MAX_SEGMENT_SIDE.toFloat() / longestSide
-        val scaled = Bitmap.createScaledBitmap(
-            upright,
-            (upright.width * scale).roundToInt(),
-            (upright.height * scale).roundToInt(),
-            true
-        )
-        if (scaled !== upright) upright.recycle()
-        return scaled
-    }
-
-    private fun applyExifRotation(source: File, bitmap: Bitmap): Bitmap {
-        val orientation = runCatching {
-            ExifInterface(source).getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                ExifInterface.ORIENTATION_NORMAL
-            )
-        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
-
-        val matrix = Matrix()
-        when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
-            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
-            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
-            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
-            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
-            ExifInterface.ORIENTATION_TRANSPOSE -> {
-                matrix.postRotate(90f)
-                matrix.postScale(-1f, 1f)
-            }
-            ExifInterface.ORIENTATION_TRANSVERSE -> {
-                matrix.postRotate(270f)
-                matrix.postScale(-1f, 1f)
-            }
-            else -> return bitmap
-        }
-
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    }
 
     /**
      * Potongan diletakkan di tengah kanvas persegi, tanpa memotong apa pun.

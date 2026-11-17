@@ -5,8 +5,6 @@ import android.content.Context
 import com.khalied.cukinggo.di.AppContainer
 import com.khalied.cukinggo.location.NearbyAlertNotifier
 import com.khalied.cukinggo.location.NearbyAlerts
-import org.osmdroid.config.Configuration
-import java.io.File
 
 class CukingGoApp : Application() {
 
@@ -16,7 +14,6 @@ class CukingGoApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        configureOsmdroid()
 
         // Channel notifikasi dibuat sejak app dibuka, bukan menunggu dialog kabar
         // dekat dibuka dulu: pengaturannya jadi sudah terlihat di Pengaturan HP
@@ -26,18 +23,6 @@ class CukingGoApp : Application() {
         // ini, sinkronisasinya cuma terjadi saat Home dibuka atau saat datanya
         // berubah, dan area yang belum tersinkron tidak akan pernah berbunyi.
         NearbyAlerts.syncAsync(this)
-    }
-
-    /**
-     * Cache tile peta disimpan di storage internal aplikasi supaya osmdroid tidak
-     * butuh permission storage sama sekali.
-     */
-    private fun configureOsmdroid() {
-        val config = Configuration.getInstance()
-        config.load(this, getSharedPreferences("osmdroid", Context.MODE_PRIVATE))
-        config.userAgentValue = packageName
-        config.osmdroidBasePath = File(cacheDir, "osmdroid")
-        config.osmdroidTileCache = File(cacheDir, "osmdroid/tiles")
     }
 }
 

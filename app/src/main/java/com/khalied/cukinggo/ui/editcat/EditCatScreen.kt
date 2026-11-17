@@ -155,7 +155,8 @@ fun EditCatScreen(
     // menunggu sentuhan pengguna.
     val catDetected by rememberCatDetection(
         controller = controller,
-        enabled = capturing && cameraGranted
+        enabled = capturing && cameraGranted,
+        detector = container.catDetector
     )
 
     val takePhoto = {

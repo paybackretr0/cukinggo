@@ -23,17 +23,18 @@ import java.util.concurrent.Executors
  * mereview foto. Kamera tetap hidup untuk pratinjau, tapi tidak ada frame yang
  * dianalisis, jadi tidak ada baterai yang terbuang untuk sesuatu yang tidak
  * dilihat siapa pun.
+ *
+ * [detector] dipinjam dari `AppContainer`, bukan dibuat di sini. Layar yang sama
+ * juga memakainya untuk memeriksa foto hasil jepretan, dan model label tidak
+ * boleh dimuat dua kali hanya karena dua pemanggilnya berbeda tempat.
  */
 @Composable
 fun rememberCatDetection(
     controller: LifecycleCameraController,
-    enabled: Boolean
+    enabled: Boolean,
+    detector: CatDetector
 ): State<Boolean> {
     val visible = remember { mutableStateOf(false) }
-    // Model dimuat saat frame pertama dibutuhkan, bukan saat layar dibuka: layar
-    // ganti foto juga memakai komponen ini, dan di sana kamera belum tentu
-    // dipanggil sama sekali.
-    val detector = remember { lazy(LazyThreadSafetyMode.NONE) { CatDetector() } }
     val presence = remember { CatPresence() }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
@@ -42,7 +43,7 @@ fun rememberCatDetection(
             controller.setImageAnalysisAnalyzer(
                 executor,
                 CatFrameAnalyzer(
-                    detector = detector.value,
+                    detector = detector,
                     presence = presence,
                     onVisibilityChanged = { visible.value = it }
                 )
@@ -55,13 +56,11 @@ fun rememberCatDetection(
         }
     }
 
-    // Ditutup saat layar ini benar-benar ditinggalkan, bukan saat deteksi
-    // dimatikan sementara: kembali dari review foto tidak perlu memuat model
-    // dari awal lagi.
+    // Executor-nya milik layar ini, jadi tetap ditutup saat layar benar-benar
+    // ditinggalkan. Detektornya tidak ikut ditutup karena bukan milik layar.
     DisposableEffect(Unit) {
         onDispose {
             controller.clearImageAnalysisAnalyzer()
-            if (detector.isInitialized()) detector.value.close()
             executor.shutdown()
         }
     }

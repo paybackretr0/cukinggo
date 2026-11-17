@@ -17,7 +17,7 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Internet: hanya untuk download tile peta OpenStreetMap -->
+    <!-- Internet: hanya untuk mengambil gambar peta (tile) dari Google -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -90,6 +90,16 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="subject_segment" />
+
+        <!--
+          Kunci API Google Maps. Nilainya datang dari Gradle (environment atau
+          local.properties), dan kuncinya sendiri dibatasi di Google Cloud Console
+          lewat nama paket + sidik SHA-1 sertifikat penandatangan. Tanpa pembatasan
+          itu kunci di dalam APK bisa dipakai app lain atas nama project ini.
+        -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
 
         <activity
             android:name=".MainActivity"

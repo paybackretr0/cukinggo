@@ -8,6 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.data.repository.CatRepository
+import com.khalied.cukinggo.detect.PhotoCatChecker
+import com.khalied.cukinggo.detect.PhotoCheck
+import com.khalied.cukinggo.detect.blocksSave
 import com.khalied.cukinggo.di.AppContainer
 import com.khalied.cukinggo.domain.model.Cat
 import com.khalied.cukinggo.location.LocationHelper
@@ -18,7 +21,9 @@ import com.khalied.cukinggo.util.catStreak
 import com.khalied.cukinggo.util.streakToCelebrate
 import java.io.File
 import java.time.LocalDate
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +83,12 @@ class AddCatViewModel(
     private val locationHelper: LocationHelper,
     private val imageStorageHelper: ImageStorageHelper,
     private val stickerMaker: StickerMaker,
+    /**
+     * Dibuat saat dipanggil, bukan saat ViewModel dibuat: membangun klien ML Kit
+     * memanggil Play Services, dan layar ini harus tetap bisa dibuka walau
+     * pemeriksaan fotonya nanti tidak tersedia.
+     */
+    private val photoCatChecker: () -> PhotoCatChecker,
     private val catId: Long = NEW_CAT_ID
 ) : ViewModel() {
 
@@ -100,13 +111,48 @@ class AddCatViewModel(
     private val _stickerState = MutableStateFlow<StickerUiState>(StickerUiState.None)
     val stickerState: StateFlow<StickerUiState> = _stickerState.asStateFlow()
 
+    private val _photoCheck = MutableStateFlow<PhotoCheck>(PhotoCheck.Idle)
+
+    /** Hasil pemeriksaan foto yang sedang ditampilkan di layar review. */
+    val photoCheck: StateFlow<PhotoCheck> = _photoCheck.asStateFlow()
+
+    private var photoCheckJob: Job? = null
+
+    /** Nomor urut pemeriksaan yang sedang berlaku, lihat [checkPhoto]. */
+    private var photoCheckToken = 0
+
     /**
-     * Ambil GPS saat simpan (tanpa input manual), pindahkan foto dan videonya ke
-     * internal storage, lalu simpan catatannya ke Room.
+     * Memeriksa satu foto, menggantikan pemeriksaan sebelumnya.
      *
-     * [videoCapture] null berarti pengguna tidak merekam apa-apa, dan itu memang
-     * pilihan yang sah: videonya opsional.
+     * Job lama dibatalkan dulu. Pembatalan itu belum tentu langsung sampai ke
+     * ML Kit, jadi hasilnya juga diperiksa lewat nomor urut: tanpa itu, jawaban
+     * foto pertama bisa mendarat setelah pengguna sudah ambil ulang dan menimpa
+     * jawaban foto kedua.
      */
+    fun checkPhoto(file: File?) {
+        photoCheckJob?.cancel()
+        val token = ++photoCheckToken
+
+        if (file == null) {
+            _photoCheck.value = PhotoCheck.Idle
+            return
+        }
+
+        photoCheckJob = viewModelScope.launch {
+            _photoCheck.value = PhotoCheck.Checking
+            val result = try {
+                photoCatChecker().check(file)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                // Klien ML Kit yang tidak bisa dibangun juga berakhir di sini,
+                // sebagai "tidak bisa diperiksa" dan bukan sebagai penolakan.
+                PhotoCheck.Failed(error)
+            }
+            if (token == photoCheckToken) _photoCheck.value = result
+        }
+    }
+
     /**
      * Memotong latar foto yang barusan dijepret.
      *
@@ -147,17 +193,45 @@ class AddCatViewModel(
         _stickerState.value = StickerUiState.None
     }
 
+    /**
+     * Ambil GPS saat simpan (tanpa input manual), pindahkan foto dan videonya ke
+     * internal storage, lalu simpan catatannya ke Room.
+     *
+     * [videoCapture] null berarti pengguna tidak merekam apa-apa, dan itu memang
+     * pilihan yang sah: videonya opsional.
+     *
+     * [saveAnyway] melewati aturan "foto harus berisi cuking". Nilainya cuma
+     * datang dari satu tombol yang sengaja ditekan pengguna, karena model label
+     * bisa meleset dan momen yang sudah lewat tidak bisa dijepret ulang.
+     */
     fun saveCat(
         captureFile: File?,
         name: String,
         description: String,
         videoCapture: File? = null,
-        stickerFile: File? = null
+        stickerFile: File? = null,
+        saveAnyway: Boolean = false
     ) {
         if (captureFile == null || !captureFile.exists()) {
             _uiState.value = AddCatUiState.Error(R.string.add_error_no_photo)
             return
         }
+
+        // Aturan ini ditegakkan di sini, bukan cuma lewat tombol yang
+        // dinonaktifkan: jalur "Coba lagi" di kartu galat memanggil fungsi yang
+        // sama, jadi tombol tidak pernah cukup jadi satu-satunya penjaga.
+        val check = _photoCheck.value
+        if (!saveAnyway && check.blocksSave()) {
+            _uiState.value = AddCatUiState.Error(
+                if (check is PhotoCheck.Checking) {
+                    R.string.add_error_photo_checking
+                } else {
+                    R.string.add_error_no_cat
+                }
+            )
+            return
+        }
+
         if (_uiState.value is AddCatUiState.Locating || _uiState.value is AddCatUiState.Saving) return
 
         viewModelScope.launch {
@@ -245,6 +319,7 @@ class AddCatViewModel(
                         locationHelper = container.locationHelper,
                         imageStorageHelper = container.imageStorageHelper,
                         stickerMaker = container.stickerMaker,
+                        photoCatChecker = { container.photoCatChecker },
                         catId = catId
                     )
                 }

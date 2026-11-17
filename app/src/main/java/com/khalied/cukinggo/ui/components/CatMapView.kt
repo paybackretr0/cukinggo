@@ -2,16 +2,11 @@ package com.khalied.cukinggo.ui.components
 
 import android.Manifest
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Paint
-import android.graphics.drawable.BitmapDrawable
 import android.location.Location
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
 import android.view.MotionEvent
+import android.view.View
 import android.view.animation.OvershootInterpolator
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,9 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +48,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.maps.model.RoundCap
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
 import com.khalied.cukinggo.domain.model.CatSighting
@@ -64,30 +69,26 @@ import com.khalied.cukinggo.util.isOnline
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.osmdroid.events.MapListener
-import org.osmdroid.events.ScrollEvent
-import org.osmdroid.events.ZoomEvent
-import org.osmdroid.tileprovider.MapTileProviderBase
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.CustomZoomButtonsController
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.CopyrightOverlay
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
 
 private const val DEFAULT_LAT = -6.2
 private const val DEFAULT_LNG = 106.816666
 private const val MARKER_SIZE_DP = 52f
 
 /** Di bawah zoom ini marker foto diganti gelembung angka supaya tidak saling nabrak. */
-private const val PHOTO_ZOOM_THRESHOLD = 14.0
+private const val PHOTO_ZOOM_THRESHOLD = 14f
 
 /** Zoom minimal saat peta "diantar" ke lokasi user. */
-private const val MY_LOCATION_ZOOM = 16.0
+private const val MY_LOCATION_ZOOM = 16f
 
 /** Zoom saat peta diantar ke satu titik saja, misalnya satu catatan cuking. */
-private const val POINT_ZOOM = 16.0
+private const val POINT_ZOOM = 16f
+
+/**
+ * Batas zoom peta. Bawahnya Indonesia sudah tidak terbaca sebagai negara, atasnya
+ * tile Google tidak punya gambar lagi.
+ */
+private const val MIN_ZOOM = 4f
+private const val MAX_ZOOM = 20f
 
 private const val POP_IN_START_SCALE = 0.05f
 
@@ -99,6 +100,15 @@ private const val AUTO_LOCATION_TIMEOUT_MILLIS = 5_000L
 
 private const val MESSAGE_VISIBLE_MILLIS = 3_500L
 
+/**
+ * Jarak antar pemeriksaan koneksi selama peta terbuka.
+ *
+ * Google Maps tidak memberi kabar saat tile-nya gagal, jadi satu-satunya sinyal
+ * jujur yang tersisa adalah "HP-nya punya internet atau tidak". Dua detik cukup
+ * cepat untuk terasa langsung, dan cukup jarang untuk tidak membebani apa pun.
+ */
+private const val CONNECTIVITY_CHECK_MILLIS = 2_000L
+
 /** Lebar garis jejak dalam dp: cukup untuk terbaca di atas gambar peta. */
 private const val TRAIL_WIDTH_DP = 5f
 
@@ -109,6 +119,12 @@ private const val TRAIL_WIDTH_DP = 5f
  * jadi 2dp saja, bukan dua kali lipat.
  */
 private const val TRAIL_HIGHLIGHT_WIDTH_DP = 7f
+
+/** Jejak digambar paling bawah di antara lapisan yang kita tambahkan sendiri. */
+private const val TRAIL_Z_INDEX = 1f
+
+/** Titik lokasi user di atas jejak, tapi tetap di bawah marker cuking. */
+private const val USER_DOT_Z_INDEX = 2f
 
 /**
  * Kekuatan warna jejak yang sedang tidak disorot.
@@ -128,22 +144,16 @@ private const val TRAIL_ALPHA_DIMMED = 0x33
 private const val TRAIL_ALPHA_OLDEST = 0x66
 private const val TRAIL_ALPHA_NEWEST = 0xFF
 
-/**
- * Satu dua tile gagal itu wajar (misal tile di tepi area), jadi kabar peta baru
- * muncul kalau kegagalannya menumpuk tanpa satu pun tile berhasil dimuat.
- */
-private const val TILE_FAILURE_THRESHOLD = 3
-
 /** Satu marker di peta: foto satu penemuan, atau gelembung angka berisi beberapa penemuan. */
 private data class MarkerSpec(
     val key: String,
-    val point: GeoPoint,
+    val point: LatLng,
     val sighting: CatSighting?,
     val count: Int
 )
 
 /**
- * Peta OpenStreetMap (osmdroid).
+ * Peta Google (Maps SDK untuk Android), digambar di dalam `MapView` biasa.
  *
  * Zoom dekat  -> marker berupa foto penemuan, disambung garis jejak tiap cuking.
  * Zoom jauh   -> penemuan dikelompokkan per grid dan ditampilkan sebagai angka jumlahnya.
@@ -173,64 +183,76 @@ fun CatMapView(
     showLocateButton: Boolean = true,
     fitToContent: Boolean = false,
     highlightCatId: Long? = null,
-    /**
-     * Kabar bahwa jari sedang berada di peta: true saat disentuh, false saat lepas.
-     *
-     * Pemanggil memakainya untuk mematikan guliran daftar di sekeliling peta.
-     * `MapView` di bawah ini View Android biasa, sedangkan daftar di luarnya milik
-     * Compose, dan dua sistem gesture itu tidak saling tahu: tanpa kabar ini,
-     * `LazyColumn` yang lebih dulu memangsa geseran jari, jadi petanya terasa berat
-     * digeser dan baru bergeser setelah jarinya diulang.
-     */
-    onGestureActive: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val container = remember(context) { context.appContainer }
     val currentOnSightingClick by rememberUpdatedState(onSightingClick)
-    val currentOnGestureActive by rememberUpdatedState(onGestureActive)
     val density = context.resources.displayMetrics.density
     val markerSizePx = remember(density) { (MARKER_SIZE_DP * density).toInt().coerceAtLeast(32) }
+    val mapBaseColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
 
-    // Jumlah kegagalan tile berturut-turut, dipakai untuk kabar "peta belum bisa dimuat".
-    var consecutiveTileFailures by remember { mutableStateOf(0) }
+    // Peta baru ada setelah Google Play Services menyerahkan objeknya, dan
+    // beberapa efek di bawah memang harus menunggu itu. Null berarti "belum siap".
+    var googleMap by remember { mutableStateOf<GoogleMap?>(null) }
 
     val mapView = remember {
-        MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setMultiTouchControls(true)
-            setTilesScaledToDpi(true)
-            minZoomLevel = 4.0
-            maxZoomLevel = 20.0
-            zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
-            controller.setZoom(14.0)
-            controller.setCenter(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
-            overlays.add(CopyrightOverlay(context))
-
-            // Jari yang menyentuh peta memegang kendali atas halaman di luarnya.
-            observeFinger { isDown -> currentOnGestureActive(isDown) }
+        HoldableMapView(context).apply {
+            // Latar View ini yang terlihat sebelum tile pertama datang, jadi ia
+            // diisi warna permukaan kartu, bukan kotak abu-abu bawaan library.
+            setBackgroundColor(mapBaseColor)
         }
     }
 
-    // Kalau peta dilepas saat jari masih menempel, kuncinya jangan sampai
-    // tertinggal mati: daftar di luar peta akan berhenti bisa digulir.
-    DisposableEffect(mapView) {
-        onDispose { currentOnGestureActive(false) }
-    }
-
-    // Latar peta saat tile belum termuat: osmdroid menggambar pola kotak abu-abu
-    // bawaan library yang tidak nyambung dengan palet app, padahal itu yang tampil
-    // pertama kali peta dibuka (dan terus tampil kalau offline). Diganti isian datar
-    // dari color role, jadi area peta tetap terbaca sebagai bagian dari app ini.
-    val mapBaseColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
     LaunchedEffect(mapView, mapBaseColor) {
         mapView.setBackgroundColor(mapBaseColor)
-        mapView.overlayManager.tilesOverlay?.apply {
-            setLoadingBackgroundColor(mapBaseColor)
-            // Warna garis disamakan supaya sisa pola kotak library hilang total.
-            setLoadingLineColor(mapBaseColor)
+    }
+
+    // Siklus hidup MapView diurus di sini, karena Compose tidak tahu apa-apa soal
+    // Surface yang dipakai peta untuk menggambar.
+    DisposableEffect(mapView) {
+        mapView.onCreate(null)
+        mapView.onStart()
+        mapView.onResume()
+        mapView.getMapAsync { map ->
+            map.uiSettings.apply {
+                isZoomControlsEnabled = false
+                // Peta ini selalu 2D: memutar dan memiringkan bidangnya cuma
+                // membuat jejak cuking terlihat melengkung tanpa menambah arti.
+                isRotateGesturesEnabled = false
+                isTiltGesturesEnabled = false
+                isCompassEnabled = false
+                isMapToolbarEnabled = false
+                isMyLocationButtonEnabled = false
+            }
+            map.setMinZoomPreference(MIN_ZOOM)
+            map.setMaxZoomPreference(MAX_ZOOM)
+            map.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(LatLng(DEFAULT_LAT, DEFAULT_LNG), PHOTO_ZOOM_THRESHOLD)
+            )
+            map.setOnMarkerClickListener { marker ->
+                val spec = marker.tag as? MarkerSpec ?: return@setOnMarkerClickListener false
+                val sighting = spec.sighting
+                if (sighting != null) {
+                    currentOnSightingClick(sighting.id)
+                } else {
+                    // Gelembung angka: zoom masuk ke area itu.
+                    map.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            spec.point,
+                            (map.cameraPosition.zoom + 2f).coerceAtMost(MAX_ZOOM)
+                        )
+                    )
+                }
+                true
+            }
+            googleMap = map
         }
-        mapView.invalidate()
+        onDispose {
+            mapView.onPause()
+            mapView.onStop()
+            mapView.onDestroy()
+        }
     }
 
     // --- status lokasi user ---
@@ -246,23 +268,7 @@ fun CatMapView(
     val locationUnknownMessage = stringResource(R.string.home_location_unknown)
     val locationPermissionMessage = stringResource(R.string.home_location_permission)
 
-    // osmdroid melaporkan hasil tiap permintaan tile lewat Handler: MAPTILE_SUCCESS_ID
-    // atau MAPTILE_FAIL_ID. Itu sinyal asli "tile gagal dimuat", jadi tidak perlu menebak.
-    DisposableEffect(mapView) {
-        val tileRequestHandler = object : Handler(Looper.getMainLooper()) {
-            override fun handleMessage(message: Message) {
-                when (message.what) {
-                    MapTileProviderBase.MAPTILE_SUCCESS_ID -> consecutiveTileFailures = 0
-                    MapTileProviderBase.MAPTILE_FAIL_ID -> consecutiveTileFailures += 1
-                }
-                mapView.invalidate()
-            }
-        }
-        mapView.tileProvider.setTileRequestCompleteHandler(tileRequestHandler)
-        onDispose { /* handler ikut selesai bersama mapView-nya */ }
-    }
-
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> {
@@ -277,45 +283,53 @@ fun CatMapView(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            mapView.onDetach()
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val showMyLocation: (Location, Boolean) -> Unit = { location, moveCamera ->
-        val point = GeoPoint(location.latitude, location.longitude)
-        val marker = myLocationMarker ?: Marker(mapView).apply {
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-            icon = BitmapDrawable(mapView.resources, CatMarkerRenderer.userDot(markerSizePx))
-            mapView.overlays.add(this)
-        }
-        marker.position = point
-        myLocationMarker = marker
-        if (moveCamera) {
-            if (mapView.zoomLevelDouble < MY_LOCATION_ZOOM) {
-                mapView.controller.setZoom(MY_LOCATION_ZOOM)
+        val map = googleMap
+        if (map != null) {
+            val position = LatLng(location.latitude, location.longitude)
+            val existing = myLocationMarker
+            if (existing != null) {
+                existing.position = position
+            } else {
+                myLocationMarker = map.addMarker(
+                    MarkerOptions()
+                        .position(position)
+                        .anchor(0.5f, 0.5f)
+                        .icon(
+                            BitmapDescriptorFactory.fromBitmap(
+                                CatMarkerRenderer.userDot(markerSizePx)
+                            )
+                        )
+                        .zIndex(USER_DOT_Z_INDEX)
+                )
             }
-            mapView.controller.animateTo(point)
+            if (moveCamera) {
+                map.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        position,
+                        map.cameraPosition.zoom.coerceAtLeast(MY_LOCATION_ZOOM)
+                    )
+                )
+            }
         }
-        mapView.invalidate()
     }
 
     val hideMyLocation: () -> Unit = {
-        myLocationMarker?.let { marker ->
-            mapView.overlays.remove(marker)
-            myLocationMarker = null
-            mapView.invalidate()
-        }
+        myLocationMarker?.remove()
+        myLocationMarker = null
     }
 
     // Titik lokasi tampil sendiri saat izin sudah diberikan, tanpa perlu tekan tombol.
     // Dipakai posisi terakhir yang diketahui dulu (instan), baru GPS singkat kalau kosong.
-    LaunchedEffect(hasLocationPermission, locationRefreshKey) {
+    LaunchedEffect(hasLocationPermission, locationRefreshKey, googleMap) {
         if (!hasLocationPermission) {
             hideMyLocation()
             return@LaunchedEffect
         }
+        if (googleMap == null) return@LaunchedEffect
         val location = container.locationHelper.lastKnownLocation()
             ?: container.locationHelper.getCurrentLocation(AUTO_LOCATION_TIMEOUT_MILLIS)
         if (location != null) {
@@ -366,19 +380,32 @@ fun CatMapView(
         }
     }
 
-    // --- marker kucing: foto di zoom dekat, angka di zoom jauh ---
-    var zoomLevel by remember { mutableStateOf(mapView.zoomLevelDouble) }
-    DisposableEffect(mapView) {
-        val listener = object : MapListener {
-            override fun onScroll(event: ScrollEvent?): Boolean = false
-
-            override fun onZoom(event: ZoomEvent?): Boolean {
-                zoomLevel = event?.zoomLevel ?: mapView.zoomLevelDouble
-                return false
-            }
+    // --- kabar offline ---
+    // Maps SDK tidak punya panggilan balik untuk "tile gagal", jadi yang dipakai
+    // adalah kenyataan yang bisa diperiksa sendiri: ada internet atau tidak.
+    var isOffline by remember { mutableStateOf(!context.isOnline()) }
+    LaunchedEffect(mapView) {
+        while (true) {
+            isOffline = !context.isOnline()
+            delay(CONNECTIVITY_CHECK_MILLIS)
         }
-        mapView.addMapListener(listener)
-        onDispose { mapView.removeMapListener(listener) }
+    }
+
+    // --- marker kucing: foto di zoom dekat, angka di zoom jauh ---
+    var zoomLevel by remember { mutableStateOf(PHOTO_ZOOM_THRESHOLD) }
+    DisposableEffect(googleMap) {
+        val map = googleMap
+        if (map == null) {
+            onDispose { }
+        } else {
+            map.setOnCameraMoveListener {
+                zoomLevel = map.cameraPosition.zoom
+                // Menyentuh peta juga membatalkan sorotan kamera? Tidak: yang
+                // digeser pengguna tidak dikembalikan, dan memang tidak ada yang
+                // mengembalikannya kecuali sorotannya berganti.
+            }
+            onDispose { map.setOnCameraMoveListener(null) }
+        }
     }
 
     val showPhotos = zoomLevel >= PHOTO_ZOOM_THRESHOLD
@@ -396,36 +423,28 @@ fun CatMapView(
     val animatedKeys = remember { mutableSetOf<String>() }
     var hasFramedOnce by remember { mutableStateOf(false) }
 
-    LaunchedEffect(specs, mapView) {
+    LaunchedEffect(specs, googleMap, markerSizePx) {
+        val map = googleMap ?: return@LaunchedEffect
         val currentKeys = specs.map { it.key }.toSet()
         markers.filterKeys { it !in currentKeys }.forEach { (key, marker) ->
-            mapView.overlays.remove(marker)
+            marker.remove()
             markers.remove(key)
         }
 
         val added = specs.filter { it.key !in markers }
         added.forEach { spec ->
-            val marker = Marker(mapView).apply {
-                position = spec.point
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
-                val sighting = spec.sighting
-                if (sighting != null) {
-                    setOnMarkerClickListener { _, _ ->
-                        currentOnSightingClick(sighting.id)
-                        true
-                    }
-                } else {
-                    setOnMarkerClickListener { _, _ ->
-                        // Gelembung angka: zoom masuk ke area itu.
-                        mapView.controller.animateTo(spec.point)
-                        mapView.controller.setZoom(
-                            (mapView.zoomLevelDouble + 2.0).coerceAtMost(mapView.maxZoomLevel)
-                        )
-                        true
-                    }
-                }
-            }
-            mapView.overlays.add(marker)
+            // Gelembung angka dipasang lebih dulu sebagai pengganti sesaat: marker
+            // Google tidak bisa ditambahkan tanpa ikon, dan foto marker butuh
+            // pembacaan file yang tidak boleh menahan frame.
+            val placeholder = CatMarkerRenderer.countMarker(context, spec.count, markerSizePx)
+            val marker = map.addMarker(
+                MarkerOptions()
+                    .position(spec.point)
+                    .anchor(0.5f, 0.5f)
+                    .icon(BitmapDescriptorFactory.fromBitmap(placeholder))
+                    .zIndex(USER_DOT_Z_INDEX + 1f)
+            ) ?: return@forEach
+            marker.tag = spec
             markers[spec.key] = marker
         }
 
@@ -436,16 +455,16 @@ fun CatMapView(
                 // Marker foto penemuan baru tetap jadi "momen bintang": pop-in bertahap.
                 val shouldAnimate = spec.sighting != null && animatedKeys.add(spec.key)
                 if (shouldAnimate) {
-                    marker.icon = BitmapDrawable(mapView.resources, render(POP_IN_START_SCALE))
+                    marker.setIcon(
+                        BitmapDescriptorFactory.fromBitmap(render(POP_IN_START_SCALE))
+                    )
                     delay(index * 70L)
-                    animateMarkerPopIn(mapView, marker, render)
+                    animateMarkerPopIn(marker, render)
                 } else {
-                    marker.icon = BitmapDrawable(mapView.resources, render(1f))
+                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(render(1f)))
                 }
             }
         }
-
-        mapView.invalidate()
     }
 
     // --- kamera: diantar sekali saat peta dibuka, lalu tiap kali sorotannya berganti ---
@@ -453,7 +472,8 @@ fun CatMapView(
     // pertama datang saat datanya masih kosong. Efek sampingnya: kalau ada catatan
     // baru sewaktu sorotannya menyala, petanya dipaskan ulang ke jejak itu, dan itu
     // memang yang diharapkan karena jejaknya barusan bertambah.
-    LaunchedEffect(highlightCatId, sightings) {
+    LaunchedEffect(highlightCatId, sightings, googleMap) {
+        val map = googleMap ?: return@LaunchedEffect
         if (sightings.isEmpty()) return@LaunchedEffect
 
         // Melepas sorotan sengaja tidak menggeser peta: yang dilihat pengguna setelah
@@ -476,26 +496,25 @@ fun CatMapView(
         // bentang seluruh catatannya; kalau tidak, tempat yang paling akhir dicatat.
         val focus = if (highlightCatId != null || fitToContent) trailFocus(targets) else null
         val point = if (focus != null) {
-            GeoPoint(focus.latitude, focus.longitude)
+            LatLng(focus.latitude, focus.longitude)
         } else {
             val newest = sightings.first()
-            GeoPoint(newest.latitude, newest.longitude)
+            LatLng(newest.latitude, newest.longitude)
         }
+        val zoom = (focus?.zoom ?: POINT_ZOOM.toDouble()).toFloat()
 
-        // Zoom dulu, baru titiknya, supaya peta tidak sempat melompat dua kali.
-        mapView.controller.setZoom(focus?.zoom ?: POINT_ZOOM)
         if (isFirstFraming) {
             // Pembingkaian pertama dipasang langsung, bukan dianimasikan: peta baru
             // dibuat di titik bawaannya (Jakarta), jadi menganimasikannya berarti
             // petanya terbang dulu dari Jakarta ke lokasi cukingnya tiap kali layar
             // ini dibuka. Gerakan itu tidak menjelaskan apa pun, sedangkan yang
             // dibutuhkan justru petanya sudah berada di tempat yang benar.
-            mapView.controller.setCenter(point)
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(point, zoom))
         } else {
             // Perubahan berikutnya memang perlu dianimasikan: sorotannya berganti
             // saat petanya sudah terlihat, dan lompatan mendadak di situ terbaca
             // seperti peta yang digambar ulang.
-            mapView.controller.animateTo(point)
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(point, zoom))
         }
     }
 
@@ -508,17 +527,20 @@ fun CatMapView(
     }
     val trailOverlays = remember { mutableListOf<Polyline>() }
 
-    LaunchedEffect(trails, mapView, highlightCatId) {
-        trailOverlays.forEach { overlay -> mapView.overlays.remove(overlay) }
+    LaunchedEffect(trails, googleMap, highlightCatId, density) {
+        val map = googleMap ?: return@LaunchedEffect
+        trailOverlays.forEach { overlay -> overlay.remove() }
         trailOverlays.clear()
 
-        // Disisipkan tepat di atas lapisan latar tapi di bawah semua marker: garis
-        // jejak itu konteks buat titik-titiknya, bukan sebaliknya.
-        var insertAt = 1
         trails.forEach { trail ->
             val isEmphasised = highlightCatId == null || trail.catId == highlightCatId
             val color = trailColorFor(trail.catId)
             val segmentCount = trail.points.size - 1
+            val widthDp = if (highlightCatId != null && isEmphasised) {
+                TRAIL_HIGHLIGHT_WIDTH_DP
+            } else {
+                TRAIL_WIDTH_DP
+            }
             trail.points.zipWithNext().forEachIndexed { index, (from, to) ->
                 val strength = if (isEmphasised) {
                     TRAIL_ALPHA_OLDEST +
@@ -526,29 +548,24 @@ fun CatMapView(
                 } else {
                     TRAIL_ALPHA_DIMMED
                 }
-                val polyline = Polyline(mapView, false, false).apply {
-                    // Dua angka false di atas: tidak menutup lingkaran, dan tidak
-                    // geodesik. Yang kedua itu yang bikin ruasnya garis lurus antara
-                    // dua catatan, bukan lengkung mengikuti permukaan bumi.
-                    setPoints(
-                        listOf(
-                            GeoPoint(from.latitude, from.longitude),
-                            GeoPoint(to.latitude, to.longitude)
+                val polyline = map.addPolyline(
+                    PolylineOptions()
+                        // Dua titik, bukan geodesik: ruasnya garis lurus antara dua
+                        // catatan, sama seperti sebelumnya, karena yang dicatat cuma
+                        // titik ketemunya, bukan rute perjalanannya.
+                        .add(
+                            LatLng(from.latitude, from.longitude),
+                            LatLng(to.latitude, to.longitude)
                         )
-                    )
-                    outlinePaint.color = (strength shl 24) or (color and 0x00FFFFFF)
-                    outlinePaint.strokeWidth = if (highlightCatId != null && isEmphasised) {
-                        TRAIL_HIGHLIGHT_WIDTH_DP * density
-                    } else {
-                        TRAIL_WIDTH_DP * density
-                    }
-                    outlinePaint.strokeCap = Paint.Cap.ROUND
-                }
-                mapView.overlays.add(insertAt++, polyline)
+                        .color((strength shl 24) or (color and 0x00FFFFFF))
+                        .width(widthDp * density)
+                        .startCap(RoundCap())
+                        .endCap(RoundCap())
+                        .zIndex(TRAIL_Z_INDEX)
+                )
                 trailOverlays.add(polyline)
             }
         }
-        mapView.invalidate()
     }
 
     Box(modifier = modifier) {
@@ -582,10 +599,10 @@ fun CatMapView(
             }
         }
 
-        // Kabar peta: muncul kalau tile gagal menumpuk, hilang sendiri begitu ada
-        // satu tile yang berhasil, jadi tidak perlu tombol tutup.
-        if (consecutiveTileFailures >= TILE_FAILURE_THRESHOLD) {
-            val isOffline = remember(consecutiveTileFailures) { !context.isOnline() }
+        // Kabar peta: muncul selama HP tidak punya internet, dan hilang sendiri
+        // begitu koneksinya kembali. Tombolnya memeriksa ulang saat itu juga,
+        // karena menunggu dua detik terasa seperti tombol yang tidak bekerja.
+        if (isOffline) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -606,22 +623,11 @@ fun CatMapView(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = stringResource(
-                            if (isOffline) {
-                                R.string.map_offline_notice
-                            } else {
-                                R.string.map_tiles_failed_notice
-                            }
-                        ),
+                        text = stringResource(R.string.map_offline_notice),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall
                     )
-                    TextButton(
-                        onClick = {
-                            consecutiveTileFailures = 0
-                            mapView.invalidate()
-                        }
-                    ) {
+                    TextButton(onClick = { isOffline = !context.isOnline() }) {
                         Text(
                             text = stringResource(R.string.add_retry),
                             color = MaterialTheme.colorScheme.primary
@@ -638,7 +644,9 @@ fun CatMapView(
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 14.dp, end = 76.dp, bottom = 14.dp)
+                // 48dp, bukan 14dp: logo "Google" yang wajib terlihat di kiri
+                // bawah peta tidak boleh tertutup pill ini.
+                .padding(start = 14.dp, end = 76.dp, bottom = 48.dp)
         ) {
             // Pill ini memang melayang di atas peta, jadi shadow-nya beralasan
             // (satu-satunya tempat shadow dipakai selain kartu peta dan FAB).
@@ -691,7 +699,7 @@ private fun buildMarkerSpecs(
         return sightings.map { sighting ->
             MarkerSpec(
                 key = "sighting_${sighting.id}",
-                point = GeoPoint(sighting.latitude, sighting.longitude),
+                point = LatLng(sighting.latitude, sighting.longitude),
                 sighting = sighting,
                 count = 1
             )
@@ -701,26 +709,20 @@ private fun buildMarkerSpecs(
     return clusterSightings(sightings, zoomLevel).map { cluster ->
         MarkerSpec(
             key = "cluster_${cluster.cellLatitude}_${cluster.cellLongitude}_$zoomLevel",
-            point = GeoPoint(cluster.latitude, cluster.longitude),
+            point = LatLng(cluster.latitude, cluster.longitude),
             sighting = null,
             count = cluster.count
         )
     }
 }
 
-private suspend fun animateMarkerPopIn(
-    mapView: MapView,
-    marker: Marker,
-    render: (Float) -> Bitmap
-) {
-    val resources = mapView.resources
+private suspend fun animateMarkerPopIn(marker: Marker, render: (Float) -> Bitmap) {
     val animator = ValueAnimator.ofFloat(0f, 1f).apply {
         duration = 420L
         interpolator = OvershootInterpolator(1.4f)
         addUpdateListener { animation ->
             val scale = (animation.animatedValue as Float).coerceAtLeast(POP_IN_START_SCALE)
-            marker.icon = BitmapDrawable(resources, render(scale))
-            mapView.invalidate()
+            marker.setIcon(BitmapDescriptorFactory.fromBitmap(render(scale)))
         }
     }
     animator.start()
@@ -728,20 +730,41 @@ private suspend fun animateMarkerPopIn(
 }
 
 /**
- * Mengabarkan bahwa jari ada di peta, tanpa ikut menangani sentuhannya.
+ * `MapView` yang menahan gesturnya sendiri supaya tidak direbut daftar di luarnya.
  *
- * Selalu mengembalikan false supaya event tetap sampai ke `MapView`: geser, pinch,
- * dan ketukan marker tetap urusan osmdroid. `performClick` sengaja tidak dipanggil
- * walau lint menagihnya, karena peta bukan tombol, dan mengumumkan klik di sini
- * cuma menambah suara palsu di TalkBack.
+ * `setOnTouchListener` tidak bisa dipakai untuk ini: sentuhan peta ditangani View di
+ * dalam `MapView`, jadi jalur listener milik `MapView` sendiri tidak pernah dilewati
+ * dan listener-nya tidak pernah dipanggil. Semua sentuhan tetap lewat
+ * `dispatchTouchEvent`, jadi permintaan tahannya dipasang di situ.
  */
-@SuppressLint("ClickableViewAccessibility")
-private fun MapView.observeFinger(onActive: (Boolean) -> Unit) {
-    setOnTouchListener { _, event ->
+private class HoldableMapView(context: Context) : MapView(context) {
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> onActive(true)
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> onActive(false)
+            MotionEvent.ACTION_DOWN -> keepGestureFromParent(keep = true)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                keepGestureFromParent(keep = false)
         }
-        false
+        return super.dispatchTouchEvent(event)
+    }
+}
+
+/**
+ * Meminta induk di luar peta tidak menyela gestur yang mulai di peta.
+ *
+ * Peta ini View Android biasa di dalam interop Compose, sedangkan daftar di luarnya
+ * digulir oleh Compose. Tanpa permintaan ini, daftar memangsa geseran beberapa frame
+ * setelah jari turun, jadi peta terasa perlu digeser dua kali: geseran pertama
+ * memindah halaman, baru yang kedua memindah peta. Interop Compose memahami
+ * `requestDisallowInterceptTouchEvent` dan menandai geseran sesudahnya sebagai
+ * terpakai, sehingga daftar tidak mulai menggulir sama sekali.
+ *
+ * Ditelusuri sepanjang rantai induk, bukan cuma induk langsung, karena yang
+ * memahami permintaan ini adalah wadah interop Compose, bukan tetangga terdekatnya.
+ */
+private fun View.keepGestureFromParent(keep: Boolean) {
+    var parent = parent
+    while (parent != null) {
+        parent.requestDisallowInterceptTouchEvent(keep)
+        parent = parent.parent
     }
 }

@@ -57,6 +57,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -67,6 +70,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.khalied.cukinggo.R
 import com.khalied.cukinggo.appContainer
+import com.khalied.cukinggo.detect.PhotoCheck
+import com.khalied.cukinggo.detect.blocksSave
 import com.khalied.cukinggo.ui.components.CameraCaptureArea
 import com.khalied.cukinggo.ui.components.CatSaveCelebration
 import com.khalied.cukinggo.ui.components.InfoChip
@@ -141,6 +146,7 @@ fun AddCatScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val stickerState by viewModel.stickerState.collectAsStateWithLifecycle()
+    val photoCheck by viewModel.photoCheck.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -195,7 +201,8 @@ fun AddCatScreen(
     // jepret tetap menunggu sentuhan pengguna.
     val catDetected by rememberCatDetection(
         controller = controller,
-        enabled = cameraGranted && captureFile == null
+        enabled = cameraGranted && captureFile == null,
+        detector = container.catDetector
     )
 
     // Kamera dilepas saat user sedang mereview foto supaya tidak jalan terus.
@@ -217,6 +224,10 @@ fun AddCatScreen(
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     captureFile = file
+                    // Pemeriksaan dimulai di sini, bukan lewat efek di composition:
+                    // kalau menunggu satu frame, ada jeda singkat ketika Simpan
+                    // sudah aktif padahal fotonya belum diperiksa.
+                    viewModel.checkPhoto(file)
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -242,6 +253,35 @@ fun AddCatScreen(
     }
 
     val busy = uiState is AddCatUiState.Locating || uiState is AddCatUiState.Saving
+
+    // Satu tempat untuk semua pemanggilan simpan, supaya jalur biasa dan jalur
+    // "simpan saja" tidak bisa berbeda isinya tanpa ketahuan.
+    val save: (Boolean) -> Unit = { saveAnyway ->
+        viewModel.saveCat(
+            captureFile = captureFile,
+            name = name,
+            description = description,
+            videoCapture = videoCapture,
+            stickerFile = stickerFile(stickerState),
+            saveAnyway = saveAnyway
+        )
+    }
+
+    // Ambil ulang dipakai dari dua tempat: tautan di kartu foto, dan tombol utama
+    // saat pemeriksaan menolak fotonya. Satu lambda supaya keduanya tidak bisa
+    // berbeda dalam hal apa yang dibuang.
+    val retake = {
+        container.imageStorageHelper.discardCapture(captureFile)
+        container.imageStorageHelper.discardCapture(videoCapture)
+        captureFile = null
+        videoCapture = null
+        // Stiker dibuat dari foto yang barusan, jadi ia ikut dilepas bersama
+        // fotonya. Hasil pemeriksaan foto itu juga tidak berlaku lagi untuk
+        // jepretan berikutnya.
+        viewModel.removeSticker()
+        viewModel.checkPhoto(null)
+        viewModel.clearError()
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -291,6 +331,7 @@ fun AddCatScreen(
                 } else {
                     PhotoReview(
                         photoFile = captureFile!!,
+                        photoCheck = photoCheck,
                         stickerState = stickerState,
                         onMakeSticker = { viewModel.makeSticker(captureFile) },
                         onRemoveSticker = viewModel::removeSticker,
@@ -312,66 +353,91 @@ fun AddCatScreen(
                             container.imageStorageHelper.discardCapture(videoCapture)
                             videoCapture = null
                         },
-                        onRetake = {
-                            container.imageStorageHelper.discardCapture(captureFile)
-                            container.imageStorageHelper.discardCapture(videoCapture)
-                            captureFile = null
-                            videoCapture = null
-                            // Stiker dibuat dari foto yang barusan, jadi ia ikut
-                            // dilepas bersama fotonya.
-                            viewModel.removeSticker()
-                            viewModel.clearError()
-                        }
+                        onRetake = retake,
+                        // Tombol utama sudah jadi "Jepret ulang" saat fotonya
+                        // ditolak, jadi tautan di kartu tidak perlu muncul lagi.
+                        showRetakeLink = photoCheck !is PhotoCheck.NoCat
                     )
 
                     when (val state = uiState) {
                         is AddCatUiState.Error -> ErrorCard(
                             message = stringResource(state.messageRes),
-                            onRetry = {
-                                viewModel.saveCat(
-                                    captureFile = captureFile,
-                                    name = name,
-                                    description = description,
-                                    videoCapture = videoCapture,
-                                    stickerFile = stickerFile(stickerState)
-                                )
-                            },
+                            onRetry = { save(false) },
                             onDismiss = viewModel::clearError
                         )
 
-                        else -> Button(
-                            onClick = {
-                                viewModel.saveCat(
-                                    captureFile = captureFile,
-                                    name = name,
-                                    description = description,
-                                    videoCapture = videoCapture,
-                                    stickerFile = stickerFile(stickerState)
-                                )
-                            },
-                            // Stiker yang sedang dipotong ikut ditunggu: kalau
-                            // Simpan ditekan sekarang, hasil potongannya belum
-                            // ikut tersimpan.
-                            enabled = !busy && stickerState !is StickerUiState.Working,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = MaterialTheme.shapes.extraLarge,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    if (viewModel.isNewCat) {
-                                        R.string.add_save
-                                    } else {
-                                        R.string.add_again_save
+                        else -> {
+                            // Foto yang ditolak pemeriksaan tidak diberi tombol
+                            // simpan yang mati: tombol utamanya berganti jadi
+                            // jepret ulang, dan "Simpan saja" tetap ada sebagai
+                            // jalan keluar. Dua pilihan, dua-duanya bisa ditekan.
+                            val rejected = photoCheck is PhotoCheck.NoCat
+                            val blocked = photoCheck.blocksSave()
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (blocked) {
+                                    Text(
+                                        text = stringResource(
+                                            if (photoCheck is PhotoCheck.Checking) {
+                                                R.string.add_photo_checking_hint
+                                            } else {
+                                                R.string.add_photo_no_cat_hint
+                                            }
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Button(
+                                    onClick = { if (rejected) retake() else save(false) },
+                                    // Stiker yang sedang dipotong ikut ditunggu: kalau
+                                    // Simpan ditekan sekarang, hasil potongannya belum
+                                    // ikut tersimpan. Pemeriksaan yang belum selesai
+                                    // juga menahan, dengan alasannya tertulis di atas.
+                                    // Untuk foto yang sudah ditolak, tombol ini justru
+                                    // hidup karena tugasnya sekarang jepret ulang.
+                                    enabled = when {
+                                        busy -> false
+                                        rejected -> true
+                                        else -> !blocked &&
+                                            stickerState !is StickerUiState.Working
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                ) {
+                                    Text(
+                                        text = stringResource(
+                                            when {
+                                                rejected -> R.string.add_retake
+                                                viewModel.isNewCat -> R.string.add_save
+                                                else -> R.string.add_again_save
+                                            }
+                                        ),
+                                        style = MaterialTheme.typography.labelLarge
+                                    )
+                                }
+
+                                // Jalan keluar yang disengaja, bukan tombol utama:
+                                // model label bisa meleset, dan foto yang ditolak
+                                // tidak selalu bisa dijepret ulang.
+                                if (rejected) {
+                                    TextButton(
+                                        onClick = { save(true) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.add_save_anyway),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
                                     }
-                                ),
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                                }
+                            }
                         }
                     }
                 }
@@ -455,6 +521,7 @@ private fun stickerFile(state: StickerUiState): File? =
 @Composable
 private fun PhotoReview(
     photoFile: File,
+    photoCheck: PhotoCheck,
     stickerState: StickerUiState,
     onMakeSticker: () -> Unit,
     onRemoveSticker: () -> Unit,
@@ -471,6 +538,11 @@ private fun PhotoReview(
     onAddVideo: () -> Unit,
     onRemoveVideo: () -> Unit,
     onRetake: () -> Unit,
+    /**
+     * Tautan jepret ulang di kartu. Disembunyikan saat tombol utama di bawah
+     * sudah menjadi jepret ulang, supaya tidak ada dua tombol bertugas sama.
+     */
+    showRetakeLink: Boolean,
     modifier: Modifier = Modifier
 ) {
     // Stiker yang sudah jadi langsung ditampilkan: itu hasil yang ditunggu
@@ -495,6 +567,7 @@ private fun PhotoReview(
                 sticker = sticker,
                 showSticker = showSticker
             )
+            PhotoCheckStatus(photoCheck)
             StickerSection(
                 state = stickerState,
                 showingSticker = showSticker,
@@ -556,17 +629,79 @@ private fun PhotoReview(
                 onAddVideo = onAddVideo,
                 onRemoveVideo = onRemoveVideo
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onRetake) {
-                    Text(
-                        text = stringResource(R.string.add_retake),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+            if (showRetakeLink) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onRetake) {
+                        Text(
+                            text = stringResource(R.string.add_retake),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Kabar hasil pemeriksaan foto, tepat di bawah fotonya.
+ *
+ * Ditaruh di sini, bukan cuma di dekat tombol Simpan, karena yang dibicarakan
+ * adalah foto yang sedang dilihat pengguna. Keterangan lengkap dan jalan keluar
+ * "Simpan saja" tetap muncul lagi di dekat tombol, tempat keputusannya diambil.
+ */
+@Composable
+private fun PhotoCheckStatus(
+    state: PhotoCheck,
+    modifier: Modifier = Modifier
+) {
+    // LiveRegion: jawabannya datang belakangan, dan pembaca layar perlu
+    // mengumumkannya tanpa pengguna harus menyapu layar lagi untuk mencari tahu.
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite }
+    ) {
+        when (state) {
+            PhotoCheck.Idle -> Unit
+
+            PhotoCheck.Checking -> Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(R.string.add_photo_checking),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            PhotoCheck.HasCat -> InfoChip(
+                text = stringResource(R.string.add_photo_has_cat),
+                iconRes = R.drawable.ic_paw,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            PhotoCheck.NoCat -> InfoChip(
+                text = stringResource(R.string.add_photo_no_cat),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            )
+
+            is PhotoCheck.Failed -> Text(
+                text = stringResource(R.string.add_photo_check_failed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

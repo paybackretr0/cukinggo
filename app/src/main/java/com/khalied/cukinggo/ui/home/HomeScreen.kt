@@ -178,11 +178,6 @@ fun HomeScreen(
         latestSightings.associateBy { sighting -> sighting.catId }
     }
     var highlightedCatId by remember { mutableStateOf<Long?>(null) }
-    // Peta tinggal di dalam daftar yang menggulir, jadi guliran itu yang lebih dulu
-    // memangsa geseran jari di atas peta. Kuncinya dimatikan selagi jari menyentuh
-    // peta; alasannya di CatMapView.
-    var mapGestureActive by remember { mutableStateOf(false) }
-
     // Cuking yang disorot bisa terhapus dari layar lain, dan sorotannya tidak boleh
     // tertinggal menunjuk ke cuking yang sudah tidak ada.
     LaunchedEffect(trails) {
@@ -360,7 +355,6 @@ fun HomeScreen(
                     top = headerSpace,
                     bottom = 96.dp
                 ),
-                userScrollEnabled = !mapGestureActive,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // Rentetan harian hanya muncul kalau sudah jalan. Widget pun begitu:
@@ -422,8 +416,7 @@ fun HomeScreen(
                             sightings = sightings,
                             onSightingClick = onSightingClick,
                             modifier = Modifier.fillMaxSize(),
-                            highlightCatId = highlightedCatId,
-                            onGestureActive = { active -> mapGestureActive = active }
+                            highlightCatId = highlightedCatId
                         )
                     }
                 }
