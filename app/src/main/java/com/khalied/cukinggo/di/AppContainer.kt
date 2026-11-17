@@ -4,6 +4,8 @@ import android.content.Context
 import com.khalied.cukinggo.data.local.CatDatabase
 import com.khalied.cukinggo.data.local.DisplayPreferences
 import com.khalied.cukinggo.data.repository.CatRepository
+import com.khalied.cukinggo.detect.CatDetector
+import com.khalied.cukinggo.detect.PhotoCatChecker
 import com.khalied.cukinggo.location.LocationHelper
 import com.khalied.cukinggo.util.ImageStorageHelper
 import com.khalied.cukinggo.location.NearbyAlerts
@@ -40,6 +42,20 @@ class AppContainer(context: Context) {
     // Paket stiker WhatsApp ditulis dari master PNG yang sudah ada, jadi tidak
     // butuh pemisah latar lagi.
     val stickerPackExporter = StickerPackExporter(appContext)
+
+    /**
+     * Satu detektor untuk dua pemakai: frame bidik di layar kamera, dan
+     * pemeriksaan foto yang barusan dijepret. Kalau masing-masing membuat klien
+     * sendiri, model label dimuat dua kali untuk jawaban yang sama.
+     *
+     * Lazy seperti [stickerMaker]: klien ML Kit memanggil Play Services, dan
+     * layar yang tidak pernah membuka kamera tidak perlu membayarnya. Instance
+     * ini hidup selama proses app, jadi tidak ada yang menutupnya; itu memang
+     * beda dari versi sebelumnya yang ikut ditutup saat layar kamera pergi.
+     */
+    val catDetector: CatDetector by lazy { CatDetector() }
+
+    val photoCatChecker: PhotoCatChecker by lazy { PhotoCatChecker(catDetector) }
     val catRepository = CatRepository(
         catDao = database.catDao(),
         catSightingDao = database.catSightingDao(),

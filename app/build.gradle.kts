@@ -1,4 +1,5 @@
 import com.github.triplet.gradle.androidpublisher.ResolutionStrategy
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -14,6 +15,26 @@ plugins {
 val uploadKeystoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull?.let { path ->
     file(path)
 }
+
+/**
+ * Kunci API Google Maps tidak pernah ditulis di sini. Sumbernya dua: environment
+ * `MAPS_API_KEY` (jalur CI) atau `local.properties` di laptop. Nama paket dan
+ * sidik SHA-1 yang membatasi kunci itu diatur di Google Cloud Console, bukan di
+ * repo ini.
+ *
+ * Kalau kosong, build tetap jalan dan hanya petanya yang tampil abu-abu di HP,
+ * dengan pesan galat dari Maps SDK di logcat. Rilis tanpa kunci berarti peta
+ * rusak untuk semua pengguna, jadi nilainya wajib ada saat menyiapkan artifact.
+ */
+val localProperties = Properties().apply {
+    rootProject.file("local.properties")
+        .takeIf { it.exists() }
+        ?.inputStream()
+        ?.use { input -> load(input) }
+}
+val mapsApiKey: String = providers.environmentVariable("MAPS_API_KEY").orNull
+    ?: localProperties.getProperty("MAPS_API_KEY")
+    ?: ""
 
 android {
     namespace = "com.khalied.cukinggo"
@@ -31,6 +52,10 @@ android {
         versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Dibaca manifest lewat ${MAPS_API_KEY}; placeholder ini yang menyambungkan
+        // kuncinya tanpa menyentuh file manifest yang ikut git.
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     signingConfigs {
@@ -116,9 +141,10 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.video)
 
-    // Location + map (OpenStreetMap, no API key needed)
+    // Lokasi + peta Google. Tile-nya dari Google dan butuh kunci API, tapi
+    // pemuatan peta di app (Maps SDK untuk Android) tidak ditagih per muatan.
     implementation(libs.play.services.location)
-    implementation(libs.osmdroid.android)
+    implementation(libs.play.services.maps)
 
     // Image loading from local file
     implementation(libs.coil.compose)

@@ -647,8 +647,8 @@ terlihat kalau si cuking pindah dari tempat A ke tempat B. Dial app tetap dipaka
 
 Keputusan dan alasan (R-31, satu baris per keputusan):
 
-- **Garisnya lurus antar catatan, bukan mengikuti jalan:** app ini offline-first (foto lokal, Room, osmdroid), jadi rute yang mengikuti jalan menuntut layanan routing pihak ketiga plus internet; selain itu yang tercatat memang cuma titik penemuannya, bukan rute perjalanannya, jadi garis lurus juga yang paling jujur. Dikonfirmasi pemilik lewat pilihan "garis lurus antar titik".
-- **Dua konstanta `false` di `Polyline(mapView, false, false)` diperiksa langsung di bytecode AAR osmdroid 6.1.20, bukan ditebak:** yang kedua berarti tidak geodesik, dan itulah yang membuat ruasnya lurus; kalau salah, garisnya melengkung mengikuti permukaan bumi tanpa terlihat jelas salahnya di layar kecil.
+- **Garisnya lurus antar catatan, bukan mengikuti jalan:** rute yang mengikuti jalan menuntut Directions API yang ditagih per permintaan plus internet; selain itu yang tercatat memang cuma titik penemuannya, bukan rute perjalanannya, jadi garis lurus juga yang paling jujur. Dikonfirmasi pemilik lewat pilihan "garis lurus antar titik".
+- **Ruas jejak tetap lurus di Maps SDK, dan itu sifat bawaannya:** `PolylineOptions` menghubungkan titik yang diberikan dengan garis lurus di bidang peta, dan yang membuatnya melengkung hanya `geodesic(true)`, yang tidak dipakai. Satu ruas tetap satu `Polyline` dua titik, jadi kekuatan warna per ruas tidak berubah.
 - **Jejak hanya digambar di zoom dekat, sama seperti marker foto:** di zoom jauh penemuan sudah diganti gelembung angka, dan garis yang menghubungkan titik-titik yang tidak lagi terlihat justru menyesatkan.
 - **Arah jejak dibaca dari kekuatan warna ruasnya, bukan dari panah atau nomor urut:** ruas tertua paling pudar dan ruas terbaru paling pekat, jadi tidak perlu marker tambahan yang menutupi foto cukingnya, dan tidak ada panah dekoratif yang harus dipertanggungjawabkan (R-08).
 - **Warna jejak diambil dari id cuking dan tetap:** kalau warnanya diambil dari urutan di daftar, daftar yang berubah setiap ada catatan baru akan membuat jejak yang sama berpindah warna dan terbaca seperti jejak cuking lain.
@@ -897,6 +897,59 @@ yang dipilih adalah menjelaskan keadaan itu dan mengarahkan ke WhatsApp biasa
 atau WhatsApp Business, bukan berpura-pura bisa. Jalur WhatsApp Business dan
 kemunculan stiker di tray chat belum dilihat. Bentuk ikon tray dan teks pembaca
 layar juga belum dicoba di HP.
+
+## Peta Google, dan stiker susulan (permintaan pemilik, sesi 2026-11-16)
+
+Reading this as: dua perubahan yang menyentuh kebiasaan lama, bukan tampilan baru.
+Peta tetap satu kartu di Home dan satu kartu di Detail, stiker tetap satu turunan
+foto, dan dial tidak berubah (**ENERGY 2 / RHYTHM 2 / MOTION 2**).
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Peta pindah ke Google Maps SDK, atas permintaan pemilik:** tile-nya punya nama tempat yang dikenali pengguna, dan itu yang diminta; ongkosnya kunci API, project Cloud dengan billing aktif, dan gambar peta yang diminta ke Google. Data cuking tetap di HP.
+- **Pemuatan peta di app tidak ditagih per muatan, dan itu diperiksa di halaman resmi Google, bukan diingat:** daftar harga Google Maps Platform (16 Nov 2026) menulis SKU **Maps SDK** sebagai *unlimited*, sedangkan Dynamic Maps untuk web ditagih 7 dolar per 1.000 muatan setelah 10.000 gratis; Places dan Geocoding juga ditagih. Billing tetap wajib aktif untuk membuat kunci, jadi kuota per API dipasang supaya SKU lain tidak terpakai tanpa sengaja.
+- **Kunci API tidak ditulis di repo:** nilainya dibaca dari environment `MAPS_API_KEY` atau `local.properties` (keduanya di luar git), lalu disuntik ke manifest lewat placeholder `${MAPS_API_KEY}`.
+- **Kunci dibatasi nama paket + sidik SHA-1 sertifikat:** tanpa itu kunci di dalam APK bisa dipakai app lain atas nama project ini. Tiga sidik yang relevan: debug (build lokal), upload (CI), dan app signing Play (yang dipakai pengguna).
+- **Kabar "peta belum bisa dimuat" sekarang dari koneksi, bukan dari kegagalan tile:** Maps SDK tidak membuka panggilan balik saat tile gagal, jadi satu-satunya sinyal jujur yang tersisa adalah "HP punya internet atau tidak"; kalimat "server tile bermasalah" karena itu dihapus, bukan dipalsukan.
+- **Peta tetap 2D: rotasi dan kemiringan dimatikan:** jejak cuking tidak lebih jelas kalau bidangnya dimiringkan, dan peta yang bisa diputar gampang berputar tanpa sengaja saat dipakai satu tangan.
+- **Logo Google tidak ditutup apa pun:** pill pesan singkat dinaikkan 48dp dari bawah kiri, karena di situlah logo wajib itu digambar.
+- **Marker, gelembung angka, dan jejak memakai renderer yang sudah ada:** bitmappenya tetap `CatMarkerRenderer`, cuma pembungkusnya berubah jadi `BitmapDescriptorFactory.fromBitmap`; warna, lebar, dan kekuatan ruas jejak tidak diubah, jadi peta baru tidak mengubah arti gambarannya.
+- **Stiker sekarang bisa dibuat dari foto lama, bukan cuma setelah menjepret:** tombol "Buat stiker dari foto ini" ada di layar Detail selama foto itu belum punya stiker, dan memakai pipeline yang sama (model yang sama, kanvas 512 px yang sama), jadi tidak ada dua rasa stiker di app ini.
+- **Tombolnya hilang begitu stikernya ada:** menggantikan stiker yang sudah ada bukan yang diminta, dan pilihan Foto/Stiker di atas foto sudah cukup untuk memakai yang ada.
+- **Geseran di peta tidak lagi direbut daftar di luarnya:** `MapView` meminta induknya tidak menyela gestur sejak jari turun, lewat `dispatchTouchEvent`, karena `setOnTouchListener` memang tidak pernah dipanggil (sentuhan peta ditangani View di dalam `MapView`). Mematikan `userScrollEnabled` saja terlambat satu frame, dan satu frame itu cukup bagi daftar untuk sudah mulai menggulir.
+
+Batas yang diketahui: peta baru terbukti di emulator Pixel 8a (tile, marker foto,
+gelembung angka, jejak di layar Detail, tombol lokasi), belum di HP sungguhan.
+Pembatasan kunci di Cloud Console belum dikerjakan pemilik saat dicatat, dan sidik
+SHA-1 sertifikat app signing Play baru bisa diambil dari Play Console. Peta tetap
+terang di mode gelap app, sama seperti sebelumnya, karena gaya gelap Maps SDK
+butuh gaya peta sendiri yang belum dibuat. Kabar offline belum dicoba dengan mode
+pesawat.
+
+## Foto tanpa cuking tidak bisa disimpan (permintaan pemilik, sesi 2026-11-16)
+
+Reading this as: satu aturan baru di layar review foto, bukan layar baru. Foto tetap
+polaroid, tombol simpannya tetap satu, dan dial tidak berubah
+(**ENERGY 2 / RHYTHM 2 / MOTION 2**).
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Yang diperiksa adalah file jepretan, bukan frame pratinjau:** frame bidik sengaja melewati sebagian frame (batas lima analisis per detik, histeresis dua frame untuk menyala), jadi isyarat "terlihat" di pratinjau bukan bukti tentang foto yang benar-benar akan disimpan.
+- **Aturannya ditegakkan di `saveCat`, bukan cuma di tombol:** jalur "Coba lagi" di kartu galat memanggil fungsi yang sama, jadi tombol yang dinonaktifkan tidak pernah cukup jadi satu-satunya penjaga.
+- **Foto yang belum selesai diperiksa juga menahan tombol:** tanpa itu ada jeda singkat saat Simpan sudah bisa ditekan padahal jawabannya belum ada, dan yang tersimpan adalah foto yang belum lolos apa pun.
+- **Pemeriksaan yang gagal tidak menahan:** model atau perangkat yang bermasalah bukan bukti foto ini tidak berisi cuking, dan memblokir di situ berarti satu bug Play Services membuat orang kehilangan catatan yang sah.
+- **Foto yang ditolak mengganti tombol utamanya jadi "Jepret ulang", bukan membiarkannya mati:** sebelumnya yang terlihat adalah tombol simpan yang tidak bisa ditekan plus satu jalan keluar di bawahnya, dan dua tombol itu terbaca sebagai dua tombol yang sama. Sekarang dua-duanya hidup dan arahnya jelas: jepret ulang, atau simpan saja. Tautan jepret ulang di dalam kartu foto disembunyikan saat itu terjadi, karena tugasnya sudah pindah ke tombol utama dan dua tombol dengan tugas sama persis cuma membingungkan.
+- **"Simpan saja" tetap bukan tombol utama, dan tetap cuma muncul saat hasilnya "tidak ada cuking":** label otomatis bisa meleset, dan foto yang ditolak tidak selalu bisa dijepret ulang karena cukingnya sudah pergi. Saat masih dicek atau saat pemeriksaannya gagal, tombol itu tidak muncul karena tidak ada yang perlu dilewati.
+- **Hasilnya ditulis di bawah foto, bukan cuma di dekat tombol:** yang dibicarakan adalah foto yang sedang dilihat pengguna, dan dia perlu tahu sebelum sempat mengisi form. Keterangan lengkap plus jalan keluarnya tetap muncul lagi di dekat tombol, tempat keputusannya diambil.
+- **Warna statusnya memakai peran tema, bukan warna baru:** "kelihatan" memakai `primaryContainer`, "tidak kebaca" memakai `errorContainer`, dan keduanya sudah punya pasangan teks yang lolos ambang kontras. Itu juga yang membuat status ini ikut benar di mode gelap.
+- **Klien deteksi diangkat ke `AppContainer`, bukan dibuat per layar:** frame bidik dan pemeriksaan foto memakai model yang sama, dan memuatnya dua kali cuma menambah waktu tunggu. Konsekuensinya klien itu hidup selama proses app dan tidak ditutup saat layar kamera pergi.
+- **Pembacaan foto dipindah ke `util/PhotoDecoding.kt`:** pemisah latar stiker dan pemeriksa foto butuh langkah yang sama (putar sesuai EXIF, kecilkan dengan sampel), dan salinan kedua dari kode itu gampang lupa diperbaiki di satu sisi saja.
+
+Batas yang diketahui: aturannya terbukti lewat build dan lima unit test, belum lewat klik di HP.
+Label model dicocokkan persis ke kata `cat`, jadi foto anak kucing yang cuma dilabeli
+`Kitten` akan ditolak dan harus lewat "Simpan saja". Model label juga tidak punya
+jawaban "pasti bukan kucing": skor rendah dan tidak ada label kucing sama-sama berakhir
+sebagai "tidak kebaca". Berapa lama pemeriksaan terasa di HP lambat belum diukur.
 
 ## Override yang perlu keputusan pemilik produk
 

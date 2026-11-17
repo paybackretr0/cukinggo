@@ -6,16 +6,17 @@ Spesifikasi produknya ada di [`spesifikasi-app-penanda-kucing.md`](spesifikasi-a
 
 ## Fitur
 
-- **Peta cuking** (osmdroid / OpenStreetMap, tanpa API key)
+- **Peta cuking** (Google Maps, butuh kunci API yang dibatasi nama paket + SHA-1)
   - Marker berupa **foto cuking** saat zoom dekat, otomatis berubah jadi **gelembung angka** saat zoom jauh supaya marker tidak saling menabrak. Tap gelembung untuk zoom ke area itu.
   - **Garis jejak** tiap cuking di zoom dekat: catatan-catatannya disambung lurus, dari tempat yang paling lama ke yang paling baru. Ruasnya makin pekat warnanya mendekati catatan terbaru, jadi arah perjalanannya terbaca tanpa panah atau nomor urut. Warnanya diambil dari id cuking, jadi jejak yang sama selalu bergaris warna yang sama, dan pastelnya sengaja dipekatkan karena garis ini harus kontras di atas tile peta yang selalu terang. Ketemu lagi di tempat yang sama tidak menambah titik, jadi garisnya tidak menumpuk di satu lokasi.
   - **Pemilih cuking di atas peta**: satu baris chip berisi cuking yang punya jejak (plus chip "Semua jejak"), dipakai menyorot satu perjalanan tanpa membuka halaman detailnya. Jejak yang disorot jadi lebih pekat dan tebal, jejak lain diredupkan tapi tetap terlihat, dan kamera diantar ke jejak itu. Chipnya membawa foto cukingnya, jadi cuking yang belum dinamai tetap bisa dibedakan. Barisnya muncul hanya kalau ada minimal dua cuking yang punya jejak.
   - Animasi pop-in hanya untuk marker baru, bukan tiap kali peta digeser.
   - Titik **"kamu di sini"** muncul sendiri begitu izin lokasi aktif, dan tombol target untuk mengantar kamera ke posisimu.
-  - Kabar kecil kalau tile peta gagal dimuat, dengan kalimat berbeda untuk offline vs server bermasalah, plus tombol "Coba lagi".
+  - Kabar kecil selama HP tidak punya internet, dengan tombol "Coba lagi" yang memeriksa ulang saat itu juga. Sinyalnya dari koneksi HP, bukan dari kegagalan tile: Maps SDK tidak memberi kabar saat tile-nya gagal.
 - **Tambah cuking**: kamera in-app (CameraX), frame ala polaroid, kolom **nama panggilan** opsional (dengan contoh seperti "si Kumis"), kolom catatan opsional, dan tombol "Simpan & Tandain!". Lokasi diambil otomatis saat menyimpan.
 - **Frame bidik yang mengenali cuking**: sudut bingkai di pratinjau kamera menguat dan muncul baris "Cuking terlihat, jepret kalau pas" begitu model di HP menemukan cuking di frame, plus satu getar saat isyaratnya menyala. Jepretnya tetap manual, dan model label ikut di APK sehingga deteksi jalan tanpa internet. Frame dianalisis paling banyak lima kali per detik supaya pratinjau tetap mulus, dan isyaratnya baru padam setelah tiga frame berturut tidak menemukan cuking supaya tidak berkedip.
-- **Stiker cuking dari foto**: setelah menjepret, tombol "Buat stiker" memotong latar fotonya di HP lalu menaruh cukingnya di kanvas transparan 512 px. Sebelum disimpan, stiker bisa dilihat bergantian dengan fotonya dan dihapus kalau tidak suka. Stiker ikut tersimpan bersama catatannya, dan kalau pembuatannya gagal, penyimpanan fotonya tidak ikut batal.
+- **Foto tanpa cuking ditahan sebelum disimpan**: begitu foto dijepret, file itu dibaca ulang lewat model yang sama (bukan frame pratinjau), dan tombol "Simpan & Tandain!" tetap mati selama jawabannya belum ada atau model tidak menemukan cuking. Hasil pemeriksaannya tertulis tepat di bawah foto, dan kalau model meleset ada satu jalan keluar "Simpan saja": label otomatis bisa salah, dan momen yang sudah lewat tidak bisa dijepret ulang. Kalau pemeriksaan gagal karena file atau perangkatnya bermasalah, penyimpanan tidak ikut ditahan, supaya satu bug Play Services tidak menghilangkan catatan yang sah.
+- **Stiker cuking dari foto**: setelah menjepret, tombol "Buat stiker" memotong latar fotonya di HP lalu menaruh cukingnya di kanvas transparan 512 px. Foto lama juga bisa dibuatkan stiker kapan saja dari layar Detail, selama penemuan itu belum punya stiker. Sebelum disimpan, stiker bisa dilihat bergantian dengan fotonya dan dihapus kalau tidak suka. Stiker ikut tersimpan bersama catatannya, dan kalau pembuatannya gagal, penyimpanan fotonya tidak ikut batal.
 - **Detail cuking**: foto full-width, chip tanggal, chip koordinat, chip jarak dari lokasimu, nama, catatan, tombol bagikan, dan hapus dengan dialog konfirmasi. Kalau penemuan itu punya stiker, ada pilihan **Foto / Stiker** di bawah gambarnya, dan stikernya ikut jadi salah satu bentuk bagikan.
 - **Peta cukingnya di layar detail**: kartu peta berisi catatan cuking itu saja, dipaskan supaya seluruh perjalanannya masuk layar (bukan berpusat di tempat terakhir dia ketemu). Kartunya selalu ada, juga saat cukingnya baru ketemu sekali, karena peta menjelaskan dia di mana sekilas sedangkan koordinat tidak. Judulnya menyesuaikan: "Jejak di peta" kalau ada perjalanan untuk digambar, "Lokasinya di peta" kalau tempatnya cuma satu. Menyentuh satu titik di situ memilih catatan itu di riwayat di bawahnya.
 - **Riwayat ketemu**: tiap catatan punya fotonya sendiri, dan cuking yang sudah ketemu berkali-kali bisa dipilih satu per satu untuk dipamerkan di atas. Yang lama tidak pernah diedit, yang baru selalu jadi catatan baru.
@@ -39,7 +40,7 @@ Spesifikasi produknya ada di [`spesifikasi-app-penanda-kucing.md`](spesifikasi-a
 |---|---|
 | UI | Jetpack Compose + Material 3 |
 | Database | Room (KSP) |
-| Peta | osmdroid (OpenStreetMap) |
+| Peta | Google Maps SDK for Android (`play-services-maps`) |
 | Lokasi | `play-services-location` (FusedLocationProviderClient) |
 | Kamera | CameraX (`LifecycleCameraController` + `PreviewView`) |
 | Stiker | ML Kit Subject Segmentation (`play-services-mlkit-subject-segmentation`) |
@@ -49,7 +50,7 @@ Spesifikasi produknya ada di [`spesifikasi-app-penanda-kucing.md`](spesifikasi-a
 | Async | Coroutines + Flow |
 | Foto | Coil |
 
-Kenapa osmdroid, bukan Google Maps SDK: tidak perlu API key, akun Google Cloud, maupun risiko billing saat dirilis ke Play Store. Tile peta tetap butuh internet, tapi data cukingmu (foto, catatan, koordinat) tidak pernah dikirim ke mana pun.
+Kenapa Google Maps: pemilik memintanya, dan tile-nya punya nama tempat yang dikenali pengguna. Ongkosnya tiga hal yang harus disebut jujur: kunci API dibatasi nama paket + sidik SHA-1 di Google Cloud Console, project-nya harus punya billing aktif, dan gambar petanya diminta ke Google. Yang tidak ditagih: SKU **Maps SDK** untuk Android tertulis *unlimited* di daftar harga Google Maps Platform (diperiksa 16 Nov 2026), sedangkan yang ditagih per muatan adalah Dynamic Maps untuk web serta SKU lain seperti Places dan Geocoding. Billing tetap wajib ada untuk membuat kuncinya, jadi kuota per API dipasang supaya SKU lain tidak terpakai tanpa sengaja. Data cukingmu (foto, catatan, koordinat) tetap tidak dikirim ke mana pun; yang keluar cuma permintaan gambar peta untuk area yang sedang dilihat.
 
 Widget layar utama memakai **RemoteViews bawaan Android, bukan Jetpack Glance**. Alasannya konkret: `FontFamily` di Glance hanya menerima nama font sistem, jadi Fredoka dan Nunito tidak bisa dipakai, padahal keduanya bagian dari identitas app ini. Memakai RemoteViews juga berarti tidak ada dependency baru sama sekali untuk widget.
 
@@ -62,6 +63,8 @@ Prasyarat:
 - **JDK 21** (project memakai Gradle daemon JVM toolchain 21)
 - **Android SDK Platform 37** (`compileSdk = 37`), Build Tools, dan `local.properties` yang menunjuk ke SDK
 - `minSdk = 29` (Android 10), `targetSdk = 36`
+- Kunci Google Maps di `local.properties` (`MAPS_API_KEY=...`) atau environment `MAPS_API_KEY`. Tanpa kunci, build tetap jalan tapi petanya abu-abu di HP.
+- Build debug dan build rilis ditandatangani sertifikat berbeda, dan kunci yang dibatasi nama paket + SHA-1 hanya menerima sidik yang didaftarkan. APK rilis lokal memakai sidik `AC:C6:79:90:91:65:45:C8:42:41:2D:A3:AD:1E:2C:86:42:76:0B:78`, jadi sidik itu harus ada di pembatasan kunci. Kalau app dipasang dari Play, Play menandatangani ulang dengan sertifikat App Signing, dan sidik dari Play Console itulah yang perlu didaftarkan. Gejalanya peta abu-abu dengan `Authorization failure` di logcat, bukan crash.
 
 ```bash
 # build APK debug
@@ -189,7 +192,7 @@ Yang **belum** ada untuk listing, dan belum bisa saya buat tanpa keputusanmu: fe
 
 ```
 app/src/main/java/com/khalied/cukinggo/
-├─ CukingGoApp.kt              # Application, init AppContainer + cache tile osmdroid
+├─ CukingGoApp.kt              # Application, init AppContainer
 ├─ MainActivity.kt             # host Compose, menerapkan tema pilihan pengguna
 ├─ di/AppContainer.kt          # service locator sederhana
 ├─ data/local/                 # CatEntity, CatDao, CatDatabase, DisplayPreferences
@@ -210,7 +213,7 @@ Alurnya satu arah: `Room` → `CatRepository` → `ViewModel` (StateFlow) → Co
 
 - Foto disimpan di `filesDir` sebagai `cat_<timestamp>.jpg`, yang masuk database hanya path-nya.
 - Tidak ada permission storage, karena foto dan cache tile peta berada di storage internal app.
-- Cache tile osmdroid juga di `cacheDir`, jadi tidak ada file yang bocor ke folder publik.
+- Cache gambar peta milik Maps SDK juga di `cacheDir` app, jadi tidak ada file yang bocor ke folder publik. Yang keluar dari HP cuma permintaan gambar peta ke Google, dan itu tidak memuat data cuking.
 - Kolom nama ditambahkan lewat migrasi Room versi 1 ke 2 (`ALTER TABLE cats ADD COLUMN name TEXT`), jadi catatan lama tetap ada setelah update, hanya kolom barunya yang kosong.
 - Database dan foto **dikecualikan dari cloud backup** (transfer antar-HP lewat `dataExtractionRules` tetap boleh), supaya klaim "100% lokal" tetap jujur.
 - Widget layar utama memakai `FileProvider` untuk memberi launcher izin baca **satu URI** foto yang sedang tampil. Provider-nya `exported=false`, tidak ada file lain yang bisa diminta, dan pemeriksaan di `widget/WidgetPhoto.kt` hanya meloloskan file `cat_*.jpg` di `filesDir`. Foto tetap tidak keluar dari HP.
@@ -223,7 +226,7 @@ Alurnya satu arah: `Room` → `CatRepository` → `ViewModel` (StateFlow) → Co
 
 ## Pengujian
 
-156 unit test di `app/src/test` menutup logika yang tidak butuh device:
+173 unit test di `app/src/test` menutup logika yang tidak butuh device:
 
 | Test | Yang diuji |
 |---|---|
@@ -245,13 +248,14 @@ Alurnya satu arah: `Room` → `CatRepository` → `ViewModel` (StateFlow) → Co
 | `sticker/StickerGeometryTest` | tepi potongan dari alpha, bantalan yang tidak keluar dari gambar, dan skala 512 px yang muat tanpa memotong cuking |
 | `detect/CatLabelTest` | pemilihan label cuking dari keluaran model: huruf besar-kecil tidak membedakan, skor tertinggi yang dipakai, dan kata lain yang mengandung "cat" tidak ikut dihitung |
 | `detect/CatPresenceTest` | jeda nyala-padam isyarat: butuh dua frame berturut untuk menyala, tiga untuk padam, dan hitungannya direset saat analisis dilepas |
+| `detect/PhotoCheckTest` | aturan simpan: foto tanpa cuking dan foto yang belum selesai dicek menahan simpan, sedangkan foto yang lolos, pemeriksaan yang gagal, dan keadaan tanpa foto tidak |
 | `whatsapp/StickerPackFormatTest` | manifest paket yang ditulis bisa dibaca kembali, tab dan baris baru tidak memecah barisnya, batas 3–30 stiker, pemotongan ke 30 terbaru, dan nama file berurutan |
 | `whatsapp/StickerPackSelectionTest` | pilihan stiker: ketukan memasukkan/mengeluarkan, batas 30 menolak tambahan tapi tetap boleh mengeluarkan, pilihan boleh turun di bawah 3, urutan paket mengikuti urutan tampil, dan stiker yang sudah dihapus dibuang dari pilihan |
 | `whatsapp/StickerPackRejectionTest` | alasan penolakan dari WhatsApp: provider yang tidak ditemukan dikenali sebagai WhatsApp duplikat (huruf besar-kecil dan spasi di tepi tidak mengubah hasil), authority lain dan alasan lain dibiarkan apa adanya, dan dialog yang ditutup tanpa alasan tidak dianggap penolakan |
 
 Delapan test instrumented di `app/src/androidTest` butuh HP. `CatLabelerTest` memastikan model benar-benar dimuat dari APK dan foto cuking sungguhan mendapat label "Cat" di atas ambang; `CatTargetOverlayTest` memastikan baris "Cuking terlihat" hanya muncul saat isyaratnya menyala; `StickerPackExportTest` memastikan paket yang ditulis benar-benar WebP 512 px di bawah 100 KB dengan ikon tray 96 px, provider menjawab dengan kolom yang dipakai WhatsApp, dan file di luar daftar paket tidak bisa dibuka.
 
-Status terakhir: build sukses, 168 unit test hijau, dan 8 test instrumented hijau di Vivo 1918 (Android 11). `lintDebug` sekarang hijau: 0 error, 46 warning. Tujuh error lama diperbaiki di sumbernya, bukan disupresi: opt-in Camera2 di `CameraCapture.kt` memakai `androidx.annotation.OptIn` (yang dibaca lint, sedangkan `kotlin.OptIn` dibuang saat compile), dan pemeriksaan izin notifikasi dipindah ke `canPostNotifications` dengan batas versi plus penanganan `SecurityException` saat mengirim. Satu aturan lint dimatikan dengan alasan tertulis di [`app/lint.xml`](app/lint.xml): `PluralsCandidate`, karena aplikasi ini hanya berbahasa Indonesia dan bahasa Indonesia tidak mengubah bentuk kata karena jumlah.
+Status terakhir: build sukses, 173 unit test hijau, dan 8 test instrumented hijau di Vivo 1918 (Android 11). `lintDebug` sekarang hijau: 0 error, 44 warning. Tujuh error lama diperbaiki di sumbernya, bukan disupresi: opt-in Camera2 di `CameraCapture.kt` memakai `androidx.annotation.OptIn` (yang dibaca lint, sedangkan `kotlin.OptIn` dibuang saat compile), dan pemeriksaan izin notifikasi dipindah ke `canPostNotifications` dengan batas versi plus penanganan `SecurityException` saat mengirim. Satu aturan lint dimatikan dengan alasan tertulis di [`app/lint.xml`](app/lint.xml): `PluralsCandidate`, karena aplikasi ini hanya berbahasa Indonesia dan bahasa Indonesia tidak mengubah bentuk kata karena jumlah.
 
 ## Yang belum diverifikasi
 
@@ -276,6 +280,7 @@ Beberapa hal hanya bisa dibuktikan di perangkat, jadi belum saya klaim lulus:
 - Tepi bulu stiker belum dinilai dengan mata. Yang sudah terukur: di emulator (Pixel 8a) alur lengkapnya jalan (model terunduh, PNG 512 x 512 ber-alpha, pratinjau bisa ditukar, file pindah ke `filesDir` saat disimpan, ikut terhapus saat catatan dihapus, dan migrasi 4 ke 5 jalan di data lama), dan di Vivo 1918 (Android 11) pemotongan foto cuking asli menghasilkan PNG 512 x 512 dengan 52% piksel transparan dan tepi kosong 25 px di sisi terpanjang. Yang belum: apakah tepi bulunya enak dilihat, dan apakah modelnya tetap tersedia di HP tanpa Play Services.
 - Deteksi cuking belum pernah melihat cuking betulan di frame. Yang sudah terbukti di Vivo 1918: frame kamera mengalir ke analyzer (206 frame dalam 9,5 detik, 44 di antaranya dianalisis, jadi sekitar 4,6 per detik) dan jalur isyarat sampai layar berjalan — dengan ambang diturunkan sementara ke nol, baris "Cuking terlihat, jepret kalau pas" benar-benar muncul di pratinjau. Ambangnya sudah dikembalikan ke 0,4 dan build terakhir dibangun ulang. Yang belum: apakah cuking asli di depan kamera melewati ambang 0,4, dan seberapa sering foto cuking di poster atau layar ikut memicu isyaratnya.
 - Biaya baterai dan panas deteksi belum diukur: yang dicatat baru 10 detik di Vivo 1918 tanpa cat, bukan sesi memotret sungguhan yang lebih lama.
+- Penahanan simpan belum pernah dicoba di HP: yang terbukti baru build dan 5 unit test untuk aturannya, belum alur jepret sampai tombol mati lalu "Simpan saja" ditekan. Dua hal yang perlu dilihat mata: apakah chip "Cukingnya kelihatan" / "Cukingnya nggak kebaca" enak dibaca di bawah foto, dan apakah jeda pemeriksaan terasa lama di HP lambat. Satu risiko yang sudah terbaca dari kode: label model dicocokkan persis ke kata "cat", jadi foto anak kucing yang cuma dilabeli "Kitten" akan ditolak walaupun cukingnya jelas ada. Jalan keluar "Simpan saja" menutup kasus itu, tapi angkanya belum diukur.
 - Layar ganti foto juga memakai frame bidik yang sama, tapi jalur itu belum dicoba di HP (butuh catatan lama untuk diedit).
 - Bagikan stiker baru sampai membuka lembar bagikan sistem; belum pernah benar-benar dikirim ke WhatsApp atau app lain, jadi apakah alpha-nya bertahan di app tujuan belum terbukti. Di lembar bagikan Vivo, target yang muncul antara lain Messages, Email, dan TikTok.
 - Paket stiker WhatsApp sudah jalan sampai ujung di Vivo 1918: chooser menampilkan WhatsApp dan WhatsApp Business, WhatsApp membuka layar paket dengan nama **CukingGo**, ikon tray, dan tiga stiker (tercatat di provider: satu `metadata`, satu `stickers`, lalu tray dan tiap stiker diambil lewat `stickers_asset`), lalu "ADD TO YOUR STICKERS" menambahkan paketnya — app langsung berubah ke "Paket ini sudah ada di WhatsApp" dan tombolnya jadi "Perbarui paket di WhatsApp". Yang belum: jalur WhatsApp Business (yang terbuka selalu WhatsApp biasa), dan apakah stiker benar-benar muncul di tray saat mengirim pesan (belum dibuka di chat).

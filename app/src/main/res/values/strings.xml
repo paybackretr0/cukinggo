@@ -25,7 +25,6 @@
     <string name="list_delete_hint">Geser kartu ke kiri buat hapus.</string>
     <string name="home_my_location">Ke lokasi kamu</string>
     <string name="map_offline_notice">Peta butuh internet buat gambarnya. Catatan cukingmu tetap aman di HP.</string>
-    <string name="map_tiles_failed_notice">Peta belum bisa dimuat. Coba lagi ya.</string>
     <string name="home_location_unknown">Lokasi kamu belum kebaca 😿 Coba lagi sebentar ya.</string>
     <string name="home_location_permission">Izin lokasi belum aktif. Buka Pengaturan → Izin untuk mengaktifkan.</string>
     <string name="fab_add_cat">Tandai cuking</string>
@@ -36,8 +35,15 @@
     <string name="add_camera_hint">Arahkan ke cukingnya, lalu jepret 📸</string>
     <string name="add_camera_zoom_hint">Masih jauh? Cubit layarnya, atau pakai tombol zoom di atas.</string>
     <string name="add_camera_cat_seen">Cuking terlihat, jepret kalau pas</string>
+    <string name="add_photo_checking">Lagi ngecek fotonya…</string>
+    <string name="add_photo_has_cat">Cukingnya kelihatan</string>
+    <string name="add_photo_no_cat">Cukingnya nggak kebaca</string>
+    <string name="add_photo_no_cat_hint">Cukingnya nggak kebaca di foto ini. Coba jepret ulang dengan cuking yang lebih jelas, atau simpan saja kalau kamu yakin dia ada di sana.</string>
+    <string name="add_photo_checking_hint">Fotonya masih dicek, tunggu sebentar ya.</string>
+    <string name="add_photo_check_failed">Fotonya nggak bisa dicek sekarang, tapi tetap bisa disimpan.</string>
+    <string name="add_save_anyway">Simpan saja</string>
     <string name="add_capture">Jepret</string>
-    <string name="add_retake">Ambil ulang</string>
+    <string name="add_retake">Jepret ulang</string>
     <string name="add_name_label">Nama cuking</string>
     <string name="add_name_hint">Misal: si Kumis, si Belang</string>
     <string name="add_name_support">Opsional. Nggak harus nama asli, cukup dari ciri khasnya saja.</string>
@@ -52,6 +58,8 @@
     <string name="add_error_no_photo">Fotonya belum ada, jepret dulu ya 📸</string>
     <string name="add_error_cat_missing">Cukingnya sudah nggak ada di catatan. Coba tandai ulang ya.</string>
     <string name="add_error_camera">Kameranya lagi nggak bisa dipakai. Coba lagi ya.</string>
+    <string name="add_error_no_cat">Cukingnya nggak kebaca di foto ini. Coba jepret ulang ya 📸</string>
+    <string name="add_error_photo_checking">Fotonya masih dicek. Tunggu sebentar ya.</string>
     <string name="add_error_save">Cukingnya gagal disimpan. Coba sekali lagi ya.</string>
     <string name="add_retry">Coba lagi</string>
     <string name="add_sticker_make">Buat stiker</string>
@@ -102,6 +110,9 @@
     <string name="detail_missing">Cukingnya sudah nggak ada di catatan.</string>
     <string name="detail_preview_photo">Foto</string>
     <string name="detail_preview_sticker">Stiker</string>
+    <string name="detail_sticker_make">Buat stiker dari foto ini</string>
+    <string name="detail_sticker_working">Lagi motong latarnya…</string>
+    <string name="detail_sticker_hint">Latar fotonya dibuang di HP kamu, jadi yang tersisa cuma cukingnya.</string>
     <string name="detail_location_title">Lokasinya di peta</string>
     <string name="detail_trail_title">Jejak di peta</string>
     <string name="detail_trail_caption">Garis menghubungkan tiap tempat dia ketemu. Yang lebih terang berarti lebih baru.</string>
@@ -287,8 +298,8 @@
     <string name="sticker_pack_duplicate_body">WhatsApp duplikat berjalan terpisah dari app lain, dan CukingGo hanya terpasang di ruang utama. Jadi file stikernya tidak bisa diambil dari sana. Coba lagi, lalu pilih WhatsApp yang biasa kamu pakai di daftar aplikasi. Kalau butuh dua nomor, WhatsApp Business bisa membaca paket ini.</string>
     <string name="sticker_pack_no_whatsapp">WhatsApp belum terpasang di HP ini, jadi paketnya belum bisa ditambahkan.</string>
     <string name="sticker_pack_too_few_title">Butuh %1$d stiker dulu</string>
-    <string name="sticker_pack_too_few_body">Sekarang baru %1$d. Stiker dibuat saat kamu memeriksa foto setelah menjepret, lewat tombol "Buat stiker". Setelah cukup, paketnya bisa ditambahkan ke WhatsApp dari sini.</string>
-    <string name="sticker_pack_empty">Belum ada stiker sama sekali. Stiker dibuat saat memeriksa foto setelah menjepret.</string>
+    <string name="sticker_pack_too_few_body">Sekarang baru %1$d. Stiker bisa dibuat dari foto mana pun, baik setelah menjepret maupun dari tombol "Buat stiker" di layar detail. Setelah cukup, paketnya bisa ditambahkan ke WhatsApp dari sini.</string>
+    <string name="sticker_pack_empty">Belum ada stiker sama sekali. Buka detail salah satu cuking, lalu tekan "Buat stiker".</string>
     <string name="sticker_pack_accessibility">Stiker cuking</string>
     <string name="sticker_pack_accessibility_named">Stiker cuking bernama %1$s</string>
 

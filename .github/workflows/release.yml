@@ -78,6 +78,9 @@ jobs:
           KEYSTORE_FILE: ${{ runner.temp }}/upload-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          # Tanpa kunci ini, AAB yang diunggah tidak membawa kunci Maps dan peta
+          # penguji jadi abu-abu walau build lokal di laptop normal.
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew :app:bundleRelease --console=plain
 
       # KEY_PASSWORD tidak dikirim terpisah: keystore-nya PKCS12, jadi password
@@ -89,6 +92,7 @@ jobs:
           KEYSTORE_FILE: ${{ runner.temp }}/upload-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew :app:publishReleaseBundle --console=plain
 
       - name: Simpan AAB

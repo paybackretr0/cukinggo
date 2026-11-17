@@ -283,6 +283,23 @@ class CatRepository(
     }
 
     /**
+     * Menyimpan stiker yang dibuat belakangan untuk penemuan yang sudah ada.
+     *
+     * Urutannya sama dengan penggantian foto: file baru dipindah dan dicatat lebih
+     * dulu, baru stiker lama dihapus. Stiker lama menggambarkan foto yang sama, jadi
+     * kalau urutannya dibalik ada saat catatan menunjuk file yang sudah tidak ada.
+     */
+    suspend fun setSightingSticker(sightingId: Long, stickerCapture: File): String =
+        withContext(ioDispatcher) {
+            val previousSticker = catSightingDao.getStickerPath(sightingId)
+            val stickerPath = imageStorageHelper.moveStickerToInternalStorage(stickerCapture)
+            catSightingDao.updateStickerPath(sightingId, stickerPath)
+            imageStorageHelper.deleteStoredFile(previousSticker)
+            onCatsChanged()
+            stickerPath
+        }
+
+    /**
      * Menghapus satu penemuan.
      *
      * Kalau itu penemuan terakhir cukingnya, profilnya ikut terhapus: profil

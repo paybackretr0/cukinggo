@@ -6,6 +6,8 @@ import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Ambang keyakinan label cuking.
@@ -67,6 +69,42 @@ class CatDetector : Closeable {
         }
         return true
     }
+
+    /**
+     * Membaca satu gambar sekali jalan, lalu berhenti.
+     *
+     * Dipakai untuk memeriksa foto yang sudah dijepret, bukan frame pratinjau.
+     * Beda dengan [analyze], di sini tidak ada frame yang boleh dilewati: satu
+     * foto berarti satu jawaban, jadi permintaannya selalu dijalankan.
+     *
+     * `null` berarti model gagal menjawab. Itu sengaja dipisah dari skor rendah,
+     * supaya pemanggil tidak menghukum pengguna karena perangkatnya yang gagal.
+     */
+    suspend fun confidence(image: InputImage): Float? =
+        suspendCancellableCoroutine { continuation ->
+            try {
+                labeler.process(image)
+                    .addOnSuccessListener { labels ->
+                        if (continuation.isActive) {
+                            continuation.resume(
+                                catConfidence(
+                                    labels.map {
+                                        CatLabel(text = it.text, confidence = it.confidence)
+                                    }
+                                )
+                            )
+                        }
+                    }
+                    .addOnFailureListener {
+                        if (continuation.isActive) continuation.resume(null)
+                    }
+            } catch (error: Throwable) {
+                // Klien yang sudah ditutup melempar dari sini, bukan lewat
+                // listener. Task-nya tidak pernah terbentuk, jadi callback tidak
+                // akan datang dan tanpa cabang ini penantiannya menggantung.
+                if (continuation.isActive) continuation.resume(null)
+            }
+        }
 
     override fun close() {
         labeler.close()

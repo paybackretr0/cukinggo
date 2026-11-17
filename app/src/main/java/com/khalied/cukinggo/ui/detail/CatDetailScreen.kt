@@ -27,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -118,6 +119,7 @@ fun CatDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val stickerState by viewModel.stickerState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val container = remember(context) { context.appContainer }
     var distanceFromUser by remember { mutableStateOf<Double?>(null) }
@@ -206,6 +208,8 @@ fun CatDetailScreen(
                             onSelectSighting = { sighting -> selectedSightingId = sighting.id },
                             onAddSighting = { onAddSighting(state.cat.id) },
                             onEdit = { onEdit(selectedSighting.id) },
+                            onMakeSticker = viewModel::makeSticker,
+                            stickerState = stickerState,
                             onDeleteSighting = viewModel::deleteSighting,
                             onDeleteRequest = { showDeleteDialog = true },
                             topBarPadding = topBarPadding,
@@ -291,6 +295,8 @@ private fun DetailContent(
     onSelectSighting: (CatSighting) -> Unit,
     onAddSighting: () -> Unit,
     onEdit: () -> Unit,
+    onMakeSticker: (CatSighting) -> Unit,
+    stickerState: DetailStickerState,
     onDeleteSighting: (CatSighting) -> Unit,
     onDeleteRequest: () -> Unit,
     /** Ruang yang disisakan di atas daftar supaya kontennya lewat di belakang bar kaca. */
@@ -301,9 +307,6 @@ private fun DetailContent(
     // Penemuan yang sedang ditanyakan mau dihapus, null berarti tidak ada
     // pertanyaan yang terbuka.
     var sightingToDelete by remember { mutableStateOf<CatSighting?>(null) }
-    // Sama seperti di Home: peta ada di dalam daftar yang menggulir, dan guliran itu
-    // yang lebih dulu memangsa geseran jari di atas peta. Alasannya di CatMapView.
-    var mapGestureActive by remember { mutableStateOf(false) }
 
     val shareMessage = shareMessageFor(selectedSighting)
 
@@ -312,14 +315,17 @@ private fun DetailContent(
             .navigationBarsPadding()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
-        // Daftar ini berhenti menggulir selagi jari ada di peta, supaya geseran dan
-        // pinch sampai ke osmdroid utuh.
-        userScrollEnabled = !mapGestureActive,
         // contentPadding, bukan padding biasa: kontennya harus tetap bisa lewat
         // di belakang bar kaca saat digulir, bukan terpotong di bawahnya.
         contentPadding = PaddingValues(top = topBarPadding)
     ) {
-        item { SightingMedia(sighting = selectedSighting) }
+        item {
+            SightingMedia(
+                sighting = selectedSighting,
+                stickerState = stickerState,
+                onMakeSticker = { onMakeSticker(selectedSighting) }
+            )
+        }
 
         // Video pendamping ditaruh tepat di bawah fotonya, bukan di bagian lain:
         // ia pasangan dari foto itu, dan yang mencari gerak-gerik cukingnya akan
@@ -370,8 +376,7 @@ private fun DetailContent(
         item {
             CatLocationMap(
                 cat = cat,
-                onSightingClick = onSelectSighting,
-                onGestureActive = { active -> mapGestureActive = active }
+                onSightingClick = onSelectSighting
             )
         }
 
@@ -565,6 +570,8 @@ private fun DetailContent(
 @Composable
 private fun SightingMedia(
     sighting: CatSighting,
+    stickerState: DetailStickerState,
+    onMakeSticker: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val stickerFile = remember(sighting.stickerPath) {
@@ -624,7 +631,63 @@ private fun SightingMedia(
                     onClick = { showSticker = true }
                 )
             }
+        } else {
+            StickerOffer(
+                state = stickerState,
+                onMakeSticker = onMakeSticker,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
+    }
+}
+
+/**
+ * Tawaran membuat stiker untuk foto yang sudah tersimpan.
+ *
+ * Ditaruh tepat di bawah fotonya, bukan di baris tombol bawah: yang dibuat adalah
+ * turunan foto itu, dan tombolnya hanya ada selama foto itu belum punya stiker.
+ * Begitu stikernya ada, yang berlaku adalah pilihan Foto/Stiker di atasnya.
+ */
+@Composable
+private fun StickerOffer(
+    state: DetailStickerState,
+    onMakeSticker: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isWorking = state.workingSightingId != null
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        TextButton(
+            onClick = onMakeSticker,
+            enabled = !isWorking
+        ) {
+            if (isWorking) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.size(8.dp))
+            }
+            Text(
+                text = stringResource(
+                    if (isWorking) {
+                        R.string.detail_sticker_working
+                    } else {
+                        R.string.detail_sticker_make
+                    }
+                )
+            )
+        }
+        Text(
+            text = stringResource(state.errorRes ?: R.string.detail_sticker_hint),
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (state.errorRes != null) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        )
     }
 }
 
@@ -686,7 +749,6 @@ private fun MediaChoiceChip(
 private fun CatLocationMap(
     cat: Cat,
     onSightingClick: (CatSighting) -> Unit,
-    onGestureActive: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Satu tempat bukan perjalanan, jadi tidak ada garis yang perlu dijelaskan.
@@ -723,8 +785,7 @@ private fun CatLocationMap(
                 showLocateButton = false,
                 // Seluruh perjalanannya yang mau dilihat di kartu ini, jadi petanya
                 // dipaskan ke bentangnya, bukan ke tempat terakhir saja.
-                fitToContent = true,
-                onGestureActive = onGestureActive
+                fitToContent = true
             )
         }
         if (hasTrail) {

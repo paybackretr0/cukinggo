@@ -15,7 +15,7 @@ paging = "3.3.6"
 navigationCompose = "2.10.0"
 camerax = "1.6.2"
 playServicesLocation = "21.4.0"
-osmdroid = "6.1.20"
+playServicesMaps = "19.1.0"
 coil = "3.6.3"
 mlkitSubjectSegmentation = "16.0.0-beta1"
 mlkitImageLabeling = "17.0.9"
@@ -59,7 +59,7 @@ androidx-camera-video = { group = "androidx.camera", name = "camera-video", vers
 
 # Location + map
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
-osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
+play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
 # Stiker: potong latar cuking di HP. Modelnya diunduh lewat Play Services
 # (unbundled), jadi yang masuk APK cuma kliennya.

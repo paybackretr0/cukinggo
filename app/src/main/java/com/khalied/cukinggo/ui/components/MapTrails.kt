@@ -79,8 +79,8 @@ private fun trailFor(catId: Long, sightings: List<CatSighting>): CatTrail? {
  * Warna garis jejak, satu warna tetap per cuking.
  *
  * Dipilih dari keluarga palet app, tapi dalam versi pekat. Alasannya kontras:
- * garis ini digambar di atas tile peta, dan tile osmdroid selalu terang (tidak ikut
- * mode gelap app), jadi versi pastel dari palet Frost terlalu pudar di sana.
+ * garis ini digambar di atas tile peta, dan tile Google Maps selalu terang (tidak
+ * ikut mode gelap app), jadi versi pastel dari palet Frost terlalu pudar di sana.
  * Karena warnanya berfungsi sebagai penanda data, yaitu "garis ini milik cuking
  * yang mana", ia tidak dipakai di permukaan UI yang lain, dan sengaja tetap
  * berbeda rona satu sama lain ketimbang diseragamkan jadi biru.
