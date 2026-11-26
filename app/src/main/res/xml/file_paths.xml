@@ -13,4 +13,12 @@
     <files-path
         name="cat_photos"
         path="." />
+    <!--
+      Kartu Story Instagram. Isinya kartu sementara yang bisa dibuat ulang dari
+      foto aslinya, jadi cuma folder story di cache yang dibuka, bukan seluruh
+      cache.
+    -->
+    <cache-path
+        name="story_cards"
+        path="story/" />
 </paths>

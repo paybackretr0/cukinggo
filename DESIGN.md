@@ -753,7 +753,17 @@ Keputusan dan alasan (R-31, satu baris per keputusan):
 - **Bagikan punya pilihan "teks saja" dan "salin teks":** Instagram dan sebagian app lain mengabaikan teks yang menempel pada gambar, dan itu perilaku app penerimanya yang tidak bisa dipaksa dari sini; dengan pilihan ini pengguna tetap bisa membawa teksnya sendiri.
 - **Kamera memilih lensa dari panjang fokus setara terdekat 26 mm, bukan kamera belakang pertama:** urutan kamera bisa menunjuk lensa ultra-wide di sebagian HP, dan lensa utamanya dikenali dari angka, bukan dari urutan itu.
 - **Zoom tersedia lewat cubitan dan tombol angka:** tombolnya yang membuat kemampuannya kelihatan tanpa menebak, sedangkan cubitan yang membuatnya terasa seperti kamera biasa; angka yang muncul hanya yang memang didukung kamera.
+- **Flash punya tiga keadaan, bukan satu tombol nyala-mati:** foto cuking sering diambil di gang atau teras yang terangnya beda-beda, jadi "auto" perlu ada sebagai pilihan yang bisa diandalkan tanpa memikirkan lampu; tombolnya hanya muncul kalau perangkatnya punya flash, supaya tidak ada tombol yang diam saja (R-26).
+- **Flash jadi satu tombol berputar di dalam frame, bukan tiga chip berbaris:** tiga chip memakan satu baris penuh di atas pratinjau, sedangkan label keadaan sekarang sudah cukup dibaca sekilas dan satu ketukan memutar mati, auto, nyala.
+- **Tombol jepret, zoom, dan flash menempel di dalam frame, bukan berbaris di bawahnya:** layar kamera ikut menggulir, dan jepret yang baru terlihat setelah digulir dulu bukan kamera; dengan begini jepret selalu di tempat yang sama, tepat di atas pratinjau.
 - **Area kamera jadi satu komponen bersama untuk menandai dan mengedit:** dua layar yang sama-sama memotret tidak boleh punya dua versi pratinjau yang bisa saling menyimpang, apalagi setelah ada zoom.
+- **Fokus ketuk memakai fokus bawaan `LifecycleCameraController`, bukan hitungan sendiri:** controller sudah memetakan titik sentuh ke area sensor lewat `PreviewView`, dan ring kecil di titik itu satu-satunya kabar bahwa ketukannya masuk serta fokusnya terkunci.
+- **Kecerahan tidak diberi slider sendiri:** `LifecycleCameraController` tidak membuka kompensasi eksposur; yang didapat dari ketukan adalah pengukuran cahaya di titik itu, dan slider sungguhan berarti memindahkan alur kamera ke Camera2Interop untuk satu kontrol.
+- **Torch video satu tombol nyala-mati, bukan tiga keadaan seperti flash foto:** torch menyala terus selama merekam, jadi "auto" tidak punya arti di situ, dan lampunya dimatikan saat layar ditinggalkan supaya tidak menguras baterai.
+- **Pencarian daftar menyentuh nama dan catatan sekaligus, dengan jeda 250 ms:** dua kolom itu yang diingat pengguna, sedangkan jeda mencegah tiap huruf membatalkan dan memulai ulang query paging.
+- **Saringan "paling sering" mengurutkan lewat subquery hitung, bukan kolom tersimpan:** jumlah penemuan berubah setiap ada catatan baru, jadi angka tersimpan pasti basi dan harus dirawat sendiri.
+- **Peta panas dihitung di grid 48x48 lalu diperbesar, bukan lingkaran per titik:** penemuan yang berdekatan harus menyatu jadi satu bercak dengan gradasi halus, bukan tumpukan lingkaran bertepi keras.
+- **Gradasi peta panas kuning ke merah di luar palet tema:** warnanya penanda data, bukan permukaan UI, dan gradasi itulah yang membuat tingkat kepadatan terbaca; polanya sama dengan warna jejak yang juga tinggal di file peta (R-29).
 - **Channel notifikasi dibuat sejak app dibuka, dan area pantauan disinkronkan saat app dibuka:** tanpa itu, channel baru ada setelah dialognya disentuh, dan area yang belum tersinkron tidak akan pernah berbunyi.
 - **Ada tombol "coba kirim notifikasi" di dialog kabar dekat:** fitur ini bisa gagal di banyak tempat tanpa terlihat (izin, channel, penghemat baterai), dan geofencenya baru berbunyi kalau pengguna kebetulan lewat; satu kabar yang diminta langsung memisahkan "izinnya bermasalah" dari "memang belum lewat".
 
@@ -847,6 +857,7 @@ Keputusan dan alasan (R-31, satu baris per keputusan):
 - **Isyarat nyala setelah dua frame, padam setelah tiga:** satu frame bisa meleset walau cukingnya masih di depan kamera; tanpa jeda, cincin di layar menyala-mati tiap beberapa ratus milidetik dan itu terbaca seperti kamera rusak. Padamnya lebih panjang dari nyalanya karena kehilangan isyarat lebih mengganggu daripada terlambat menyala.
 - **Jepret tetap manual, tidak ada jepret otomatis saat cuking terdeteksi:** detektor ini cuma bilang "ada cuking", bukan "cukingnya sudah bagus"; menjepret sendiri berarti membuang keputusan ke model yang tidak melihat framing, dan hasil jeleknya tidak bisa disalahkan ke siapa pun.
 - **Yang digambar sudut bingkai, bukan kotak posisi cuking:** kotak yang bergerak mengikuti objek akan terbaca seperti kamera yang memilih sendiri, padahal jepretnya tetap di tangan pengguna. Sudutnya digambar dua kali (garis gelap di bawah garis berwarna) karena pratinjau bisa terang atau gelap.
+- **Baris keadaan frame selalu tampil, bukan cuma saat cuking terlihat:** baris yang baru muncul sesekali tidak bisa dibedakan dari indikator yang rusak atau hilang. Dengan selalu ada, "belum ada cuking di frame" dan "cuking terlihat" sama-sama terbaca, dan sudut bingkainya tetap jadi penanda area yang dipantau.
 - **Getar sekali saat isyarat menyala:** yang dikabarkan adalah perubahannya, bukan tiap frame; getar berulang bikin kamera terasa berisik.
 - **Detektor baru dibuat saat frame pertama dibutuhkan:** layar ganti foto memakai komponen kamera yang sama tapi belum tentu membuka kameranya, jadi memuat model saat layar dibuka berarti membayar ongkos tanpa ada yang memakainya.
 - **Layar ganti foto ikut memakai frame bidik yang sama:** bingkai yang selalu tampil tapi tidak pernah menyala adalah kontrol rusak (R-26), jadi pilihannya memasang deteksi di sana juga, bukan mematikan bingkainya.
@@ -950,6 +961,32 @@ Label model dicocokkan persis ke kata `cat`, jadi foto anak kucing yang cuma dil
 `Kitten` akan ditolak dan harus lewat "Simpan saja". Model label juga tidak punya
 jawaban "pasti bukan kucing": skor rendah dan tidak ada label kucing sama-sama berakhir
 sebagai "tidak kebaca". Berapa lama pemeriksaan terasa di HP lambat belum diukur.
+
+## Kartu Story Instagram (permintaan pemilik, sesi 2026-11-26)
+
+Reading this as: satu pilihan bagikan baru di dialog yang sudah ada, bukan layar
+editor baru. Dial tetap **ENERGY 2 / RHYTHM 2 / MOTION 2**; yang berubah cuma
+gambar yang dikirim.
+
+Keputusan dan alasan (R-31, satu baris per keputusan):
+
+- **Kartunya digambar jadi PNG 1080x1920 di HP, bukan foto mentah:** Instagram tidak membuka cara menaruh bingkai atau teks di composer-nya, jadi satu-satunya tempat desain bisa terjadi adalah di gambar yang kita kirim. Rasio 9:16 juga membuat hasilnya sama di HP mana pun.
+- **Tiga tampilan yang bisa dipilih, bukan satu kartu kaku:** satu desain memaksa satu suasana untuk semua cerita. Ketiganya tetap memakai susunan keterangan yang sama, jadi yang berubah cuma bingkai dan hiasannya: **Tempel Kertas** (foto miring, telinga cuking, selotip), **Balon Bicara** (foto di dalam balon dengan ekor), dan **Malam Lucu** (latar gelap, garis kuning, konfeti).
+- **Tiap keterangan diberi label pill berwarna tetap (NAMA kuning, KEGIATAN merah muda, LOKASI biru muda):** deretan angka dan kalimat di bawah foto gampang tertukar, apalagi karena kegiatan boleh kosong. Warnanya sengaja sama di ketiga desain supaya pengguna tidak perlu belajar ulang di kartu berikutnya.
+- **Hiasan acak berbenih dari id penemuan, bukan acak tiap gambar:** taburan hati, cakar, bintang, dan coretan boleh terasa spontan, tapi kartu yang sama harus tetap sama saat dibuka lagi, dan pratinjaunya harus sama dengan hasil akhirnya.
+- **Pratinjau di pemilih digambar oleh kode yang sama dengan kartu aslinya:** kalau pratinjau digambar ulang dengan Compose, dua versi desain pasti menyimpang, dan yang dipilih pengguna bukan yang dia dapat.
+- **Isi penting dijauhkan dari 250 px atas dan 300 px bawah:** dua area itu ketutup UI Instagram (profil, tombol balas, kirim), dan teks yang tertutup tombol balas adalah teks yang tidak pernah dibaca. Hiasan boleh masuk ke dua area itu, keterangan tidak.
+- **Share lewat `ACTION_SEND` ke paket Instagram, bukan `com.instagram.share.ADD_TO_STORY`:** intent Story langsung mewajibkan Facebook App ID sejak Januari 2023; tanpa App ID Instagram justru menampilkan galat "app ini belum mendukung sharing ke Stories". `ACTION_SEND` tetap membuka composer Instagram, pengguna tinggal memilih Story, dan tidak ada app Meta yang harus dibuat serta dijaga.
+- **Tombolnya jujur menyebut Instagram, dan kegagalannya dijelaskan:** app tidak bisa memasang Instagram, jadi satu-satunya kegagalan yang masuk akal di sini adalah app tujuannya tidak ada; toast-nya menyebut itu, bukan "gagal membagikan".
+- **Kartunya di `cacheDir/story`, bukan `filesDir`:** kartu ini bisa dibuat ulang kapan saja dari foto aslinya, jadi tidak perlu ikut menempati penyimpanan catatan; FileProvider-nya cuma dibuka selebar folder itu, bukan seluruh cache.
+- **Penggambaran kartu di luar main thread:** dekode foto plus kanvas 1080x1920 cukup untuk menjatuhkan frame, padahal dialognya masih di layar.
+
+Batas yang diketahui: ketiga kartu sudah dirender di Vivo 1918 dan diperiksa
+dengan mata (dengan foto buatan, karena butuh data cuking asli untuk foto
+sungguhan). Yang belum dicoba: dialog pemilih tampilannya di HP dan alur sampai
+terbit di Instagram. Yang belum terbukti juga: apakah Instagram menerima PNG
+1080x1920 tanpa dipotong, dan bagaimana ia memperlakukan area aman di versi
+Instagram yang berbeda.
 
 ## Override yang perlu keputusan pemilik produk
 

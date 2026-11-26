@@ -76,6 +76,29 @@ fun catStickerShareIntent(context: Context, stickerPath: String): Intent? {
 }
 
 /**
+ * Intent kartu Story ke Instagram.
+ *
+ * Memakai `ACTION_SEND` ke paket Instagram, bukan `com.instagram.share.ADD_TO_STORY`.
+ * Intent Story langsung itu mewajibkan Facebook App ID sejak Januari 2023, dan
+ * tanpa App ID Instagram justru menampilkan galat "app ini belum mendukung
+ * sharing ke Stories". Lewat `ACTION_SEND`, composer Instagram tetap terbuka
+ * dengan kartunya sudah terpasang, dan pengguna tinggal memilih Story.
+ *
+ * `null` kalau filenya sudah tidak ada. Pemanggil yang menjelaskan ke pengguna.
+ */
+fun instagramStoryIntent(context: Context, cardFile: File): Intent? {
+    val cardUri = mediaUriFor(context, cardFile.absolutePath) ?: return null
+    return Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, cardUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        setPackage(INSTAGRAM_PACKAGE)
+    }
+}
+
+private const val INSTAGRAM_PACKAGE = "com.instagram.android"
+
+/**
  * Intent "bagikan teks saja": isi pesannya tanpa foto.
  *
  * Ada karena sebagian app, Instagram di antaranya, mengabaikan teks yang

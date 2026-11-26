@@ -52,7 +52,10 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.GroundOverlay
+import com.google.android.gms.maps.model.GroundOverlayOptions
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
@@ -67,7 +70,9 @@ import com.khalied.cukinggo.ui.theme.Ink
 import com.khalied.cukinggo.ui.theme.brutalShadow
 import com.khalied.cukinggo.util.isOnline
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 private const val DEFAULT_LAT = -6.2
@@ -144,6 +149,12 @@ private const val TRAIL_ALPHA_DIMMED = 0x33
 private const val TRAIL_ALPHA_OLDEST = 0x66
 private const val TRAIL_ALPHA_NEWEST = 0xFF
 
+/** Lapisan panas duduk paling bawah: jejak, titik user, dan marker tetap di atasnya. */
+private const val HEAT_Z_INDEX = 0.5f
+
+/** Sedikit bening supaya nama jalan dan tempat di bawahnya tetap terbaca. */
+private const val HEAT_TRANSPARENCY = 0.35f
+
 /** Satu marker di peta: foto satu penemuan, atau gelembung angka berisi beberapa penemuan. */
 private data class MarkerSpec(
     val key: String,
@@ -183,6 +194,8 @@ fun CatMapView(
     showLocateButton: Boolean = true,
     fitToContent: Boolean = false,
     highlightCatId: Long? = null,
+    /** Lapisan sebaran: makin pekat artinya makin banyak penemuan di situ. */
+    showHeatmap: Boolean = false,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -566,6 +579,32 @@ fun CatMapView(
                 trailOverlays.add(polyline)
             }
         }
+    }
+
+    // --- peta panas: sebaran semua penemuan ---
+    // Gambarnya dihitung di thread latar (512x512 piksel plus penghalusan), lalu
+    // dipasang sebagai GroundOverlay supaya menempel di koordinat, bukan di layar.
+    var heatOverlay by remember { mutableStateOf<GroundOverlay?>(null) }
+    LaunchedEffect(showHeatmap, sightings, googleMap) {
+        val map = googleMap ?: return@LaunchedEffect
+        heatOverlay?.remove()
+        heatOverlay = null
+        if (!showHeatmap || sightings.isEmpty()) return@LaunchedEffect
+
+        val layer = withContext(Dispatchers.Default) { CatHeatmap.render(sightings) }
+            ?: return@LaunchedEffect
+        heatOverlay = map.addGroundOverlay(
+            GroundOverlayOptions()
+                .image(BitmapDescriptorFactory.fromBitmap(layer.bitmap))
+                .positionFromBounds(
+                    LatLngBounds(
+                        LatLng(layer.south, layer.west),
+                        LatLng(layer.north, layer.east)
+                    )
+                )
+                .transparency(HEAT_TRANSPARENCY)
+                .zIndex(HEAT_Z_INDEX)
+        )
     }
 
     Box(modifier = modifier) {
