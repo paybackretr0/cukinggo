@@ -115,6 +115,24 @@ fun VideoRecorder(
         }
     }
 
+    // Lampu tetap berbeda dari flash foto: ia menyala terus selama merekam, jadi
+    // cukup satu tombol nyala/mati, bukan tiga keadaan.
+    var flashAvailable by remember { mutableStateOf(false) }
+    var torchOn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(controller) {
+        repeat(20) {
+            flashAvailable = runCatching { controller.cameraInfo?.hasFlashUnit() == true }
+                .getOrDefault(false)
+            if (flashAvailable) return@LaunchedEffect
+            delay(100)
+        }
+    }
+
+    LaunchedEffect(controller, torchOn) {
+        runCatching { controller.enableTorch(torchOn) }
+    }
+
     DisposableEffect(lifecycleOwner) {
         runCatching { controller.bindToLifecycle(lifecycleOwner) }
             .onFailure { cameraFailed = true }
@@ -122,6 +140,9 @@ fun VideoRecorder(
             runCatching { activeRecording?.stop() }
             runCatching { activeRecording?.close() }
             if (!handedOff) container.imageStorageHelper.discardCapture(activeFile)
+            // Lampu dimatikan saat meninggalkan layar: torch milik kamera, bukan
+            // layar ini, dan lampu yang tertinggal menyala menguras baterai.
+            runCatching { controller.enableTorch(false) }
             controller.unbind()
         }
     }
@@ -221,6 +242,21 @@ fun VideoRecorder(
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
+            }
+        }
+
+        if (flashAvailable) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    false to R.string.video_torch_off,
+                    true to R.string.video_torch_on
+                ).forEach { (on, label) ->
+                    OptionChip(
+                        label = stringResource(label),
+                        selected = torchOn == on,
+                        onClick = { torchOn = on }
+                    )
+                }
             }
         }
 

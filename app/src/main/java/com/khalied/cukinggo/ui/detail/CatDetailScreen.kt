@@ -1,7 +1,10 @@
 package com.khalied.cukinggo.ui.detail
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,14 +38,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -83,9 +91,16 @@ import com.khalied.cukinggo.util.formatDayLabel
 import com.khalied.cukinggo.util.formatDistance
 import com.khalied.cukinggo.util.formatFullDateTime
 import com.khalied.cukinggo.util.formatTime
+import com.khalied.cukinggo.util.instagramStoryIntent
+import com.khalied.cukinggo.util.StoryDesign
 import com.khalied.cukinggo.util.mapsLinkFor
+import com.khalied.cukinggo.util.renderStoryCard
+import com.khalied.cukinggo.util.renderStoryPreviews
 import java.io.File
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Batas tunggu singkat: cukup untuk satu fix GPS kalau belum ada posisi tersimpan. */
 private const val DETAIL_LOCATION_TIMEOUT_MILLIS = 5_000L
@@ -304,6 +319,10 @@ private fun DetailContent(
     modifier: Modifier = Modifier
 ) {
     var showShareOptions by remember { mutableStateOf(false) }
+    // Pemilih tampilan Story dibuka setelah dialog bagikan ditutup, bukan
+    // ditumpuk di atasnya: dua dialog bertumpuk membuat tombol kembali terasa
+    // ambigu.
+    var showStoryDesign by remember { mutableStateOf(false) }
     // Penemuan yang sedang ditanyakan mau dihapus, null berarti tidak ada
     // pertanyaan yang terbuka.
     var sightingToDelete by remember { mutableStateOf<CatSighting?>(null) }
@@ -538,7 +557,19 @@ private fun DetailContent(
         ShareOptionsDialog(
             sighting = selectedSighting,
             message = shareMessage,
+            onChooseStory = {
+                showShareOptions = false
+                showStoryDesign = true
+            },
             onDismiss = { showShareOptions = false }
+        )
+    }
+
+    if (showStoryDesign) {
+        StoryDesignDialog(
+            sighting = selectedSighting,
+            seenCount = cat.sightings.size,
+            onDismiss = { showStoryDesign = false }
         )
     }
 
@@ -961,6 +992,7 @@ private fun ShareCatButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 private fun ShareOptionsDialog(
     sighting: CatSighting,
     message: String,
+    onChooseStory: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -982,6 +1014,11 @@ private fun ShareOptionsDialog(
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ShareOptionRow(
+                    title = stringResource(R.string.share_option_story),
+                    description = stringResource(R.string.share_option_story_desc),
+                    onClick = onChooseStory
+                )
                 sighting.videoPath?.let { videoPath ->
                     ShareOptionRow(
                         title = stringResource(R.string.share_option_video_and_text),
@@ -1089,6 +1126,176 @@ private fun ShareOptionRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+/**
+ * Pemilih tampilan kartu Story.
+ *
+ * Pratinjaunya digambar oleh kode yang sama dengan kartu aslinya, cuma
+ * diperkecil, jadi yang dipilih di sini benar-benar sama dengan yang terkirim.
+ * Bitmap pratinjaunya di-recycle saat dialognya ditutup.
+ */
+@Composable
+private fun StoryDesignDialog(
+    sighting: CatSighting,
+    seenCount: Int,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var selected by remember { mutableStateOf(StoryDesign.PAPER) }
+    val previews = remember { mutableStateMapOf<StoryDesign, Bitmap>() }
+    var preparing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(sighting.id) {
+        val rendered = withContext(Dispatchers.IO) {
+            renderStoryPreviews(context, sighting, seenCount)
+        }
+        previews.putAll(rendered)
+    }
+    DisposableEffect(Unit) {
+        onDispose { previews.values.forEach { it.recycle() } }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                text = stringResource(R.string.story_design_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                StoryDesign.values().forEach { design ->
+                    StoryDesignRow(
+                        design = design,
+                        preview = previews[design],
+                        selected = selected == design,
+                        onClick = { selected = design }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (preparing) return@TextButton
+                    preparing = true
+                    scope.launch {
+                        // Satu foto penuh plus kanvas 1080x1920 cukup untuk
+                        // menjatuhkan frame, jadi digambar di thread lain
+                        // selagi dialognya masih di layar.
+                        val card = withContext(Dispatchers.IO) {
+                            renderStoryCard(context, sighting, seenCount, selected)
+                        }
+                        val intent = card?.let { instagramStoryIntent(context, it) }
+                        onDismiss()
+                        if (intent == null) {
+                            Toast.makeText(
+                                context,
+                                R.string.story_card_failed,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@launch
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (error: ActivityNotFoundException) {
+                            // Instagram tidak memasang dirinya di sini, dan itu
+                            // satu-satunya kegagalan yang masuk akal: app
+                            // tujuannya memang tidak ada.
+                            Toast.makeText(
+                                context,
+                                R.string.story_instagram_missing,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+            ) {
+                Text(
+                    text = stringResource(
+                        if (preparing) {
+                            R.string.story_design_preparing
+                        } else {
+                            R.string.story_design_share
+                        }
+                    )
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun StoryDesignRow(
+    design: StoryDesign,
+    preview: Bitmap?,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val shape = MaterialTheme.shapes.large
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(
+                if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+            )
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .padding(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 48.dp, height = 86.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            if (preview != null) {
+                Image(
+                    bitmap = preview.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+        Spacer(Modifier.size(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(design.labelRes()),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = stringResource(design.descriptionRes()),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+private fun StoryDesign.labelRes(): Int = when (this) {
+    StoryDesign.PAPER -> R.string.story_design_paper
+    StoryDesign.BUBBLE -> R.string.story_design_bubble
+    StoryDesign.NIGHT -> R.string.story_design_night
+}
+
+private fun StoryDesign.descriptionRes(): Int = when (this) {
+    StoryDesign.PAPER -> R.string.story_design_paper_desc
+    StoryDesign.BUBBLE -> R.string.story_design_bubble_desc
+    StoryDesign.NIGHT -> R.string.story_design_night_desc
 }
 
 /** Pertanyaan sebelum satu kegiatan dihapus dari riwayat. */

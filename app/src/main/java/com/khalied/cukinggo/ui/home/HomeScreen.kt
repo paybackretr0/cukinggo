@@ -85,6 +85,7 @@ import com.khalied.cukinggo.ui.components.CatMapView
 import com.khalied.cukinggo.ui.components.CatTrail
 import com.khalied.cukinggo.ui.components.InfoChip
 import com.khalied.cukinggo.ui.components.NearbyAlertDialog
+import com.khalied.cukinggo.ui.components.OptionChip
 import com.khalied.cukinggo.ui.components.SleepingCatIllustration
 import com.khalied.cukinggo.ui.components.SwipeDeleteHint
 import com.khalied.cukinggo.ui.components.AppearancePickerDialog
@@ -178,6 +179,9 @@ fun HomeScreen(
         latestSightings.associateBy { sighting -> sighting.catId }
     }
     var highlightedCatId by remember { mutableStateOf<Long?>(null) }
+    // Peta panas: lapisan sebaran, mati secara bawaan karena peta biasa sudah
+    // memuat foto dan jejak. Yang menyalakannya tahu apa yang sedang dicari.
+    var showHeatmap by remember { mutableStateOf(false) }
     // Cuking yang disorot bisa terhapus dari layar lain, dan sorotannya tidak boleh
     // tertinggal menunjuk ke cuking yang sudah tidak ada.
     LaunchedEffect(trails) {
@@ -399,6 +403,20 @@ fun HomeScreen(
                     }
                 }
 
+                // Tombol lapisan sebaran duduk tepat di atas petanya, bukan di
+                // header: ia mengubah apa yang digambar peta di bawahnya.
+                if (sightings.isNotEmpty()) {
+                    item(key = "heat-toggle") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptionChip(
+                                label = stringResource(R.string.map_heatmap_toggle),
+                                selected = showHeatmap,
+                                onClick = { showHeatmap = !showHeatmap }
+                            )
+                        }
+                    }
+                }
+
                 // Peta tetap bidang pekat bergaris tebal: tile peta sudah ramai,
                 // jadi yang dibutuhkan cuma batas yang jelas, bukan hiasan.
                 item(key = "map") {
@@ -416,7 +434,8 @@ fun HomeScreen(
                             sightings = sightings,
                             onSightingClick = onSightingClick,
                             modifier = Modifier.fillMaxSize(),
-                            highlightCatId = highlightedCatId
+                            highlightCatId = highlightedCatId,
+                            showHeatmap = showHeatmap
                         )
                     }
                 }

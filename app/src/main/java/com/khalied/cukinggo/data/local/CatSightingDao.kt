@@ -53,14 +53,31 @@ interface CatSightingDao {
     suspend fun getLatestSightingForCat(catId: Long): CatSightingRow?
 
     /**
-     * Seluruh penemuan untuk halaman "Semua cuking", sehalaman per permintaan.
+     * Halaman daftar dengan pencarian dan saringan.
      *
-     * Room yang mengurus batas barisnya, dan PagingSource ini ditandai basi
-     * sendiri saat isi tabelnya berubah, jadi penemuan yang baru ditambah atau
-     * dihapus tidak perlu diberitahukan dari luar.
+     * Pencariannya menyentuh nama cuking dan catatan kegiatannya sekaligus: dua
+     * kolom itu yang diingat pengguna, sedangkan lokasi dan waktu sudah punya
+     * jalurnya sendiri lewat peta dan riwayat.
+     *
+     * Saringan "paling sering" mengurutkan per jumlah penemuan cukingnya, jadi
+     * ia memakai subquery hitung, bukan kolom yang tersimpan: jumlahnya berubah
+     * setiap ada catatan baru dan tidak perlu disimpan ulang.
      */
-    @Query(SIGHTING_WITH_NAME + NEWEST_FIRST)
-    fun pagingSourceAllSightings(): PagingSource<Int, CatSightingRow>
+    @Query(
+        SIGHTING_WITH_NAME +
+            " WHERE (:search = ''" +
+            " OR (c.name IS NOT NULL AND c.name LIKE '%' || :search || '%')" +
+            " OR (s.description IS NOT NULL AND s.description LIKE '%' || :search || '%'))" +
+            " AND (:onlyUnnamed = 0 OR c.name IS NULL)" +
+            " ORDER BY CASE WHEN :mostSeen = 1" +
+            " THEN (SELECT COUNT(*) FROM cat_sightings x WHERE x.catId = s.catId)" +
+            " ELSE 0 END DESC, s.timestamp DESC, s.id DESC"
+    )
+    fun pagingSourceFiltered(
+        search: String,
+        onlyUnnamed: Boolean,
+        mostSeen: Boolean
+    ): PagingSource<Int, CatSightingRow>
 
     /** Jumlah seluruh penemuan, dipakai chip jumlah di Home dan halaman daftar. */
     @Query("SELECT COUNT(*) FROM cat_sightings")

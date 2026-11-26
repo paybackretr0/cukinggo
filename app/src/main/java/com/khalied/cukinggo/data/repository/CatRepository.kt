@@ -67,7 +67,11 @@ class CatRepository(
      * Halaman pertamanya baru dimuat saat flow-nya dikumpulkan, jadi layar yang
      * tidak dibuka tidak membaca apa-apa.
      */
-    fun pagingSightings(): Flow<PagingData<CatSighting>> =
+    fun pagingSightings(
+        search: String = "",
+        onlyUnnamed: Boolean = false,
+        mostSeen: Boolean = false
+    ): Flow<PagingData<CatSighting>> =
         Pager(
             config = PagingConfig(
                 pageSize = CAT_PAGE_SIZE,
@@ -79,7 +83,13 @@ class CatRepository(
                 // foto terbaca seperti catatan yang gagal dimuat.
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = { catSightingDao.pagingSourceAllSightings() }
+            pagingSourceFactory = {
+                catSightingDao.pagingSourceFiltered(
+                    search = search,
+                    onlyUnnamed = onlyUnnamed,
+                    mostSeen = mostSeen
+                )
+            }
         ).flow.map { pagingData -> pagingData.map { row -> row.toDomain() } }
 
     /** Jumlah seluruh penemuan, dipakai chip jumlah. */
